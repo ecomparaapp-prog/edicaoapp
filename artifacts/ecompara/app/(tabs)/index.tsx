@@ -51,15 +51,11 @@ export default function HomeScreen() {
               style={styles.logoImage}
               resizeMode="contain"
             />
-            <View>
+            {isLoggedIn && (
               <Text style={[styles.greeting, { color: C.textSecondary }]}>
-                {isLoggedIn ? `Olá, ${user?.name.split(" ")[0]}` : "Bem-vindo ao"}
+                Olá, {user?.name.split(" ")[0]}
               </Text>
-              <View style={styles.logoRow}>
-                <Text style={[styles.logoText, { color: C.text }]}>ecompa</Text>
-                <Text style={[styles.logoTextRed]}>ra</Text>
-              </View>
-            </View>
+            )}
           </View>
           <View style={styles.headerActions}>
             <Pressable
@@ -279,12 +275,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 4,
   },
-  logoBlock: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logoImage: { width: 34, height: 34, borderRadius: 8 },
-  greeting: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  logoRow: { flexDirection: "row", alignItems: "center" },
-  logoText: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  logoTextRed: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#CC0000" },
+  logoBlock: { flexDirection: "row", alignItems: "center", gap: 10 },
+  logoImage: { width: 130, height: 40, borderRadius: 6 },
+  greeting: { fontSize: 13, fontFamily: "Inter_500Medium" },
   headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
   iconBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   loginBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },

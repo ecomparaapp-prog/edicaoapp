@@ -19,32 +19,20 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: C.primary,
-        tabBarInactiveTintColor: C.tabIconDefault,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : isDark ? "#0A0A0A" : "#FFFFFF",
-          borderTopWidth: 1,
-          borderTopColor: C.border,
+          backgroundColor: "#CC0000",
+          borderTopWidth: 0,
           elevation: 0,
+          shadowOpacity: 0,
           paddingBottom: isWeb ? 8 : insets.bottom || 8,
           height: isWeb ? 64 : (insets.bottom ? insets.bottom + 50 : 60),
         },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={80}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: isDark ? "#0A0A0A" : "#FFFFFF" },
-              ]}
-            />
-          ),
+        tabBarBackground: () => (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#CC0000" }]} />
+        ),
+        tabBarActiveTintColor: "#FFFFFF",
+        tabBarInactiveTintColor: "rgba(255,255,255,0.55)",
         tabBarLabelStyle: {
           fontSize: 10,
           fontFamily: "Inter_500Medium",
