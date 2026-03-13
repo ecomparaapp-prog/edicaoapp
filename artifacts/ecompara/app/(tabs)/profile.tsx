@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
@@ -27,6 +28,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const { user, setUser, isLoggedIn, activeTab, setActiveTab, retailerStore, updateRetailerProduct } = useApp();
+  const { toggleTheme } = useTheme();
 
   const [editingEan, setEditingEan] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
@@ -58,7 +60,7 @@ export default function ProfileScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  if (activeTab === "retailer") {
+  if (activeTab === "retailer" && isLoggedIn) {
     return <RetailerPanel topPad={topPad} bottomPad={bottomPad} isDark={isDark} C={C} onSwitchToCustomer={() => setActiveTab("customer")} retailerStore={retailerStore} editingEan={editingEan} setEditingEan={setEditingEan} editPrice={editPrice} setEditPrice={setEditPrice} handleSavePrice={handleSavePrice} />;
   }
 
@@ -68,13 +70,23 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: C.background }]}>
           <Text style={[styles.title, { color: C.text }]}>Perfil</Text>
-          <Pressable
-            style={[styles.switchModeBtn, { backgroundColor: C.backgroundSecondary }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab("retailer"); }}
-          >
-            <Feather name="store" size={14} color={C.textSecondary} />
-            <Text style={[styles.switchModeTxt, { color: C.textSecondary }]}>Área Lojista</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <Pressable
+              style={[styles.iconBtnSm, { backgroundColor: C.backgroundSecondary }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}
+            >
+              <Feather name={isDark ? "sun" : "moon"} size={16} color={C.text} />
+            </Pressable>
+            {isLoggedIn && (
+              <Pressable
+                style={[styles.switchModeBtn, { backgroundColor: C.backgroundSecondary }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab("retailer"); }}
+              >
+                <Feather name="store" size={14} color={C.textSecondary} />
+                <Text style={[styles.switchModeTxt, { color: C.textSecondary }]}>Área Lojista</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {isLoggedIn ? (
@@ -337,6 +349,7 @@ function PlanCard({ isDark, C, plan, current }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12 },
+  iconBtnSm: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 22, fontFamily: "Inter_700Bold" },
   subtitle2: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   switchModeBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
