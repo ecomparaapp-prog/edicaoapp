@@ -138,7 +138,10 @@ export default function HomeScreen() {
             renderItem={({ item }) => (
               <Pressable
                 style={[styles.bannerCard, { backgroundColor: item.color, width: BANNER_WIDTH }]}
-                onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/store/${item.storeId}`);
+                }}
               >
                 <View style={styles.bannerContent}>
                   <View style={[styles.bannerTag, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
@@ -195,7 +198,10 @@ export default function HomeScreen() {
                 styles.storeCard,
                 { backgroundColor: C.surfaceElevated, borderColor: C.border },
               ]}
-              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/store/${item.id}`);
+              }}
             >
               <View
                 style={[

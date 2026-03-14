@@ -27,6 +27,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="product/[ean]" options={{ presentation: "card", headerShown: false }} />
+      <Stack.Screen name="store/[id]" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="scanner" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="retailer-scanner" options={{ presentation: "modal", headerShown: false }} />
     </Stack>

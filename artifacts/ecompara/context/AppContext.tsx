@@ -103,8 +103,8 @@ const MOCK_STORES: Store[] = [
 ];
 
 const MOCK_BANNERS: Banner[] = [
-  { id: "b1", storeId: "1", storeName: "Superbom", title: "Segunda e Terça", subtitle: "Filé Mignon com até 40% off!", color: "#CC0000" },
-  { id: "b2", storeId: "2", storeName: "Vivendas", title: "Final de Semana", subtitle: "Frutas e Verduras Frescas", color: "#1B5E20" },
+  { id: "b1", storeId: "4", storeName: "Superbom", title: "Segunda e Terça", subtitle: "Filé Mignon com até 40% off!", color: "#CC0000" },
+  { id: "b2", storeId: "1", storeName: "Vivendas", title: "Final de Semana", subtitle: "Frutas e Verduras Frescas", color: "#1B5E20" },
   { id: "b3", storeId: "3", storeName: "Ultrabox", title: "Promoção Especial", subtitle: "Produtos de limpeza -30%", color: "#0D47A1" },
 ];
 
