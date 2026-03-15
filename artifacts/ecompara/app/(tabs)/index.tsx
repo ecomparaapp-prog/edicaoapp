@@ -46,11 +46,13 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: C.background }]}>
           <View style={styles.logoBlock}>
-            <Image
-              source={require("@/assets/images/logo-ecompara.png")}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+            <View style={styles.logoPill}>
+              <Image
+                source={require("@/assets/images/logo-cropped.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
             {isLoggedIn && (
               <Text style={[styles.greeting, { color: C.textSecondary }]}>
                 Olá, {user?.name.split(" ")[0]}
@@ -281,8 +283,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 4,
   },
-  logoBlock: { flexDirection: "row", alignItems: "center", gap: 10 },
-  logoImage: { width: 130, height: 40, borderRadius: 6 },
+  logoBlock: { flexDirection: "row", alignItems: "center", gap: 8 },
+  logoPill: { backgroundColor: "#0A0A0A", borderRadius: 12, paddingHorizontal: 4, paddingVertical: 2 },
+  logoImage: { width: 210, height: 101 },
   greeting: { fontSize: 13, fontFamily: "Inter_500Medium" },
   headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
   iconBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
