@@ -3,8 +3,11 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Image,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import type { CosmosProduct } from "@/services/cosmosService";
 
 export default function ScannerScreen() {
   const colorScheme = useColorScheme();
@@ -22,38 +26,94 @@ export default function ScannerScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { getProductByEAN, addToShoppingList } = useApp();
+  const { getProductByEAN, addToShoppingList, lookupEAN, addManualProduct } = useApp();
+
   const [manualEan, setManualEan] = useState("");
-  const [found, setFound] = useState<any>(null);
+  const [cosmosProduct, setCosmosProduct] = useState<CosmosProduct | null>(null);
+  const [localProduct, setLocalProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualName, setManualName] = useState("");
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
 
-  const handleManualSearch = () => {
+  const resetState = () => {
+    setCosmosProduct(null);
+    setLocalProduct(null);
+    setError("");
+    setShowManualForm(false);
+    setManualName("");
+  };
+
+  const handleManualSearch = async () => {
     const ean = manualEan.trim();
     if (!ean) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const product = getProductByEAN(ean);
-    if (product) {
-      setFound(product);
-      setError("");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
-      setFound(null);
-      setError("Produto não encontrado no catálogo EAN");
+    resetState();
+    setLoading(true);
+
+    try {
+      const result = await lookupEAN(ean);
+
+      if (result.found && result.product) {
+        setCosmosProduct(result.product);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const local = getProductByEAN(ean);
+        if (local) setLocalProduct(local);
+      } else if (result.error) {
+        const local = getProductByEAN(ean);
+        if (local) {
+          setLocalProduct(local);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          setError(result.error);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
+      } else {
+        const local = getProductByEAN(ean);
+        if (local) {
+          setLocalProduct(local);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          setShowManualForm(true);
+          setError("Produto não encontrado no catálogo. Cadastre manualmente e ganhe +50 pts!");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        }
+      }
+    } catch {
+      setError("Erro ao buscar produto. Tente novamente.");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleManualSubmit = () => {
+    const name = manualName.trim();
+    if (!name) return;
+    addManualProduct(manualEan.trim(), name);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    addToShoppingList({
+      eanCode: manualEan.trim(),
+      productName: name,
+      quantity: 1,
+      checked: false,
+    });
+    router.back();
+  };
+
   const getBestPrice = (product: any) => {
-    if (!product.prices.length) return null;
+    if (!product.prices?.length) return null;
     return product.prices.reduce((min: any, p: any) => (p.price < min.price ? p : min));
   };
 
+  const displayName = cosmosProduct?.description || localProduct?.name || "";
+  const displayBrand = cosmosProduct?.brand || localProduct?.brand || "";
+
   return (
     <View style={[styles.container, { backgroundColor: C.background, paddingTop: topPad, paddingBottom: bottomPad }]}>
-      {/* Close */}
       <View style={styles.headerRow}>
         <Text style={[styles.title, { color: C.text }]}>Escanear código</Text>
         <Pressable
@@ -64,112 +124,169 @@ export default function ScannerScreen() {
         </Pressable>
       </View>
 
-      {/* Camera placeholder */}
-      <View style={[styles.cameraArea, { backgroundColor: "#111", borderColor: C.border }]}>
-        <View style={styles.scannerOverlay}>
-          <View style={[styles.scanCorner, styles.tlCorner]} />
-          <View style={[styles.scanCorner, styles.trCorner]} />
-          <View style={[styles.scanCorner, styles.blCorner]} />
-          <View style={[styles.scanCorner, styles.brCorner]} />
-          <View style={[styles.scanLine, { backgroundColor: C.primary }]} />
-        </View>
-        <Text style={styles.cameraHint}>Câmera disponível no app instalado</Text>
-      </View>
-
-      <Text style={[styles.orText, { color: C.textMuted }]}>ou digite o código manualmente</Text>
-
-      {/* Manual input */}
-      <View style={[styles.inputRow, { backgroundColor: C.backgroundSecondary, marginHorizontal: 16 }]}>
-        <MaterialCommunityIcons name="barcode-scan" size={20} color={C.textMuted} />
-        <TextInput
-          style={[styles.input, { color: C.text }]}
-          placeholder="EAN-13: 7891000053508"
-          placeholderTextColor={C.textMuted}
-          value={manualEan}
-          onChangeText={(t) => { setManualEan(t); setError(""); setFound(null); }}
-          keyboardType="numeric"
-          maxLength={14}
-          returnKeyType="search"
-          onSubmitEditing={handleManualSearch}
-        />
-        {manualEan.length > 0 && (
-          <Pressable onPress={() => { setManualEan(""); setFound(null); setError(""); }}>
-            <Feather name="x" size={16} color={C.textMuted} />
-          </Pressable>
-        )}
-      </View>
-
-      {/* Quick EAN examples */}
-      <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
-        <Text style={[styles.quickLabel, { color: C.textMuted }]}>Exemplos para testar:</Text>
-        <View style={styles.quickRow}>
-          {["7891000053508", "7891910000197", "7894900700015"].map((ean) => (
-            <Pressable
-              key={ean}
-              style={[styles.quickChip, { backgroundColor: C.backgroundSecondary }]}
-              onPress={() => { setManualEan(ean); setError(""); setFound(null); }}
-            >
-              <Text style={[styles.quickChipText, { color: C.textSecondary }]}>{ean.slice(-6)}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      <Pressable
-        style={[styles.searchBtn, { backgroundColor: C.primary, marginHorizontal: 16 }]}
-        onPress={handleManualSearch}
-      >
-        <Feather name="search" size={18} color="#fff" />
-        <Text style={styles.searchBtnText}>Buscar produto</Text>
-      </Pressable>
-
-      {/* Error */}
-      {error ? (
-        <View style={[styles.errorCard, { backgroundColor: "#CC000020", marginHorizontal: 16 }]}>
-          <Feather name="alert-circle" size={16} color="#CC0000" />
-          <Text style={[styles.errorText, { color: "#CC0000" }]}>{error}</Text>
-        </View>
-      ) : null}
-
-      {/* Found product */}
-      {found ? (
-        <View style={[styles.foundCard, { backgroundColor: C.surfaceElevated, borderColor: C.primary, marginHorizontal: 16 }]}>
-          <View style={[styles.foundIcon, { backgroundColor: C.primary + "20" }]}>
-            <MaterialCommunityIcons name="package-variant" size={28} color={C.primary} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 16, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+        <View style={[styles.cameraArea, { backgroundColor: "#111", borderColor: C.border }]}>
+          <View style={styles.scannerOverlay}>
+            <View style={[styles.scanCorner, styles.tlCorner]} />
+            <View style={[styles.scanCorner, styles.trCorner]} />
+            <View style={[styles.scanCorner, styles.blCorner]} />
+            <View style={[styles.scanCorner, styles.brCorner]} />
+            <View style={[styles.scanLine, { backgroundColor: C.primary }]} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.foundName, { color: C.text }]}>{found.name}</Text>
-            <Text style={[styles.foundBrand, { color: C.textMuted }]}>{found.brand} · {found.ean}</Text>
-            {getBestPrice(found) && (
-              <Text style={[styles.foundPrice, { color: C.primary }]}>
-                A partir de R$ {getBestPrice(found).price.toFixed(2).replace(".", ",")} · {getBestPrice(found).storeName}
-              </Text>
+          <Text style={styles.cameraHint}>Câmera disponível no app instalado</Text>
+        </View>
+
+        <Text style={[styles.orText, { color: C.textMuted }]}>ou digite o código manualmente</Text>
+
+        <View style={[styles.inputRow, { backgroundColor: C.backgroundSecondary, marginHorizontal: 16 }]}>
+          <MaterialCommunityIcons name="barcode-scan" size={20} color={C.textMuted} />
+          <TextInput
+            style={[styles.input, { color: C.text }]}
+            placeholder="EAN-13: 7891000053508"
+            placeholderTextColor={C.textMuted}
+            value={manualEan}
+            onChangeText={(t) => { setManualEan(t); resetState(); setError(""); }}
+            keyboardType="numeric"
+            maxLength={14}
+            returnKeyType="search"
+            onSubmitEditing={handleManualSearch}
+          />
+          {manualEan.length > 0 && (
+            <Pressable onPress={() => { setManualEan(""); resetState(); setError(""); }}>
+              <Feather name="x" size={16} color={C.textMuted} />
+            </Pressable>
+          )}
+        </View>
+
+        <View style={{ paddingHorizontal: 16 }}>
+          <Text style={[styles.quickLabel, { color: C.textMuted }]}>Exemplos para testar:</Text>
+          <View style={styles.quickRow}>
+            {["7891000053508", "7891910000197", "7894900700015"].map((ean) => (
+              <Pressable
+                key={ean}
+                style={[styles.quickChip, { backgroundColor: C.backgroundSecondary }]}
+                onPress={() => { setManualEan(ean); resetState(); setError(""); }}
+              >
+                <Text style={[styles.quickChipText, { color: C.textSecondary }]}>{ean.slice(-6)}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <Pressable
+          style={[styles.searchBtn, { backgroundColor: loading ? C.textMuted : C.primary, marginHorizontal: 16 }]}
+          onPress={handleManualSearch}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Feather name="search" size={18} color="#fff" />
+          )}
+          <Text style={styles.searchBtnText}>{loading ? "Buscando..." : "Buscar produto"}</Text>
+        </Pressable>
+
+        {error && !showManualForm ? (
+          <View style={[styles.errorCard, { backgroundColor: "#CC000020", marginHorizontal: 16 }]}>
+            <Feather name="alert-circle" size={16} color="#CC0000" />
+            <Text style={[styles.errorText, { color: "#CC0000" }]}>{error}</Text>
+          </View>
+        ) : null}
+
+        {(cosmosProduct || localProduct) && !showManualForm ? (
+          <View style={[styles.foundCard, { backgroundColor: C.surfaceElevated, borderColor: C.primary, marginHorizontal: 16 }]}>
+            {cosmosProduct?.thumbnailUrl ? (
+              <Image
+                source={{ uri: cosmosProduct.thumbnailUrl }}
+                style={styles.productImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={[styles.foundIcon, { backgroundColor: C.primary + "20" }]}>
+                <MaterialCommunityIcons name="package-variant" size={28} color={C.primary} />
+              </View>
             )}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.foundName, { color: C.text }]}>{displayName}</Text>
+              <Text style={[styles.foundBrand, { color: C.textMuted }]}>
+                {displayBrand}{displayBrand ? " · " : ""}{manualEan.trim()}
+              </Text>
+              {cosmosProduct?.category ? (
+                <Text style={[styles.foundCategory, { color: C.textSecondary }]}>{cosmosProduct.category}</Text>
+              ) : null}
+              {localProduct && getBestPrice(localProduct) && (
+                <Text style={[styles.foundPrice, { color: C.primary }]}>
+                  A partir de R$ {getBestPrice(localProduct).price.toFixed(2).replace(".", ",")} · {getBestPrice(localProduct).storeName}
+                </Text>
+              )}
+            </View>
+            <View style={styles.foundActions}>
+              <Pressable
+                style={[styles.foundBtn, { backgroundColor: C.primary }]}
+                onPress={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  const best = localProduct ? getBestPrice(localProduct) : null;
+                  addToShoppingList({
+                    eanCode: manualEan.trim(),
+                    productName: displayName,
+                    quantity: 1,
+                    checked: false,
+                    bestPrice: best?.price,
+                    bestStore: best?.storeName,
+                  });
+                  router.back();
+                }}
+              >
+                <Feather name="plus" size={14} color="#fff" />
+              </Pressable>
+              {localProduct && (
+                <Pressable
+                  style={[styles.foundBtn, { backgroundColor: C.backgroundTertiary }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.replace({ pathname: "/product/[ean]", params: { ean: localProduct.ean } });
+                  }}
+                >
+                  <Feather name="eye" size={14} color={C.text} />
+                </Pressable>
+              )}
+            </View>
           </View>
-          <View style={styles.foundActions}>
+        ) : null}
+
+        {showManualForm ? (
+          <View style={[styles.manualCard, { backgroundColor: C.surfaceElevated, borderColor: "#F59E0B", marginHorizontal: 16 }]}>
+            <View style={[styles.manualHeader, { backgroundColor: "#F59E0B20" }]}>
+              <Feather name="edit-3" size={16} color="#F59E0B" />
+              <Text style={[styles.manualTitle, { color: C.text }]}>Cadastro manual (+50 pts)</Text>
+            </View>
+            <Text style={[styles.manualSubtitle, { color: C.textMuted }]}>
+              EAN {manualEan.trim()} não encontrado. Ajude a comunidade cadastrando!
+            </Text>
+            <View style={[styles.inputRow, { backgroundColor: C.backgroundSecondary }]}>
+              <Feather name="package" size={18} color={C.textMuted} />
+              <TextInput
+                style={[styles.input, { color: C.text }]}
+                placeholder="Nome do produto..."
+                placeholderTextColor={C.textMuted}
+                value={manualName}
+                onChangeText={setManualName}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleManualSubmit}
+              />
+            </View>
             <Pressable
-              style={[styles.foundBtn, { backgroundColor: C.primary }]}
-              onPress={() => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                const best = getBestPrice(found);
-                addToShoppingList({ eanCode: found.ean, productName: found.name, quantity: 1, checked: false, bestPrice: best?.price, bestStore: best?.storeName });
-                router.back();
-              }}
+              style={[styles.searchBtn, { backgroundColor: manualName.trim() ? "#F59E0B" : C.textMuted }]}
+              onPress={handleManualSubmit}
+              disabled={!manualName.trim()}
             >
-              <Feather name="plus" size={14} color="#fff" />
-            </Pressable>
-            <Pressable
-              style={[styles.foundBtn, { backgroundColor: C.backgroundTertiary }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.replace({ pathname: "/product/[ean]", params: { ean: found.ean } });
-              }}
-            >
-              <Feather name="eye" size={14} color={C.text} />
+              <Feather name="check" size={18} color="#fff" />
+              <Text style={styles.searchBtnText}>Cadastrar e ganhar 50 pts</Text>
             </Pressable>
           </View>
-        </View>
-      ) : null}
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
@@ -198,12 +315,18 @@ const styles = StyleSheet.create({
   searchBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14 },
   searchBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
   errorCard: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, padding: 12 },
-  errorText: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  errorText: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
   foundCard: { flexDirection: "row", alignItems: "center", borderRadius: 16, padding: 14, borderWidth: 1.5, gap: 12 },
+  productImage: { width: 56, height: 56, borderRadius: 10 },
   foundIcon: { width: 50, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   foundName: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   foundBrand: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 1 },
+  foundCategory: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 1 },
   foundPrice: { fontSize: 12, fontFamily: "Inter_700Bold", marginTop: 3 },
   foundActions: { flexDirection: "column", gap: 6 },
   foundBtn: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  manualCard: { borderRadius: 16, borderWidth: 1.5, overflow: "hidden", gap: 12, padding: 14 },
+  manualHeader: { flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 10, marginBottom: -4 },
+  manualTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  manualSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
 });

@@ -41,19 +41,59 @@ eanRouter.get("/products/ean/:ean", async (req, res) => {
       }
     }
 
+    const staleEntry = cached.length > 0 ? cached[0] : null;
+
     const token = process.env.COSMOS_TOKEN;
     if (!token) {
+      if (staleEntry) {
+        res.json({
+          found: true,
+          source: "cache",
+          stale: true,
+          product: {
+            ean: staleEntry.ean,
+            description: staleEntry.description,
+            brand: staleEntry.brand,
+            category: staleEntry.category,
+            thumbnailUrl: staleEntry.thumbnailUrl,
+          },
+        });
+        return;
+      }
       res.status(503).json({ error: "Serviço de catálogo não configurado." });
       return;
     }
 
-    const cosmosRes = await fetch(`${COSMOS_BASE}/${ean}`, {
-      headers: {
-        "X-Cosmos-Token": token,
-        "Content-Type": "application/json",
-        "User-Agent": "eCompara/1.0",
-      },
-    });
+    let cosmosRes: Response;
+    try {
+      cosmosRes = await fetch(`${COSMOS_BASE}/${ean}`, {
+        headers: {
+          "X-Cosmos-Token": token,
+          "Content-Type": "application/json",
+          "User-Agent": "eCompara/1.0",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+    } catch (fetchErr) {
+      console.error("Cosmos fetch error:", fetchErr);
+      if (staleEntry) {
+        res.json({
+          found: true,
+          source: "cache",
+          stale: true,
+          product: {
+            ean: staleEntry.ean,
+            description: staleEntry.description,
+            brand: staleEntry.brand,
+            category: staleEntry.category,
+            thumbnailUrl: staleEntry.thumbnailUrl,
+          },
+        });
+        return;
+      }
+      res.status(502).json({ error: "Erro ao consultar catálogo externo." });
+      return;
+    }
 
     if (cosmosRes.status === 404) {
       res.json({ found: false, ean });
@@ -63,6 +103,21 @@ eanRouter.get("/products/ean/:ean", async (req, res) => {
     if (!cosmosRes.ok) {
       const text = await cosmosRes.text();
       console.error(`Cosmos API error ${cosmosRes.status}: ${text}`);
+      if (staleEntry) {
+        res.json({
+          found: true,
+          source: "cache",
+          stale: true,
+          product: {
+            ean: staleEntry.ean,
+            description: staleEntry.description,
+            brand: staleEntry.brand,
+            category: staleEntry.category,
+            thumbnailUrl: staleEntry.thumbnailUrl,
+          },
+        });
+        return;
+      }
       res.status(502).json({ error: "Erro ao consultar catálogo externo." });
       return;
     }

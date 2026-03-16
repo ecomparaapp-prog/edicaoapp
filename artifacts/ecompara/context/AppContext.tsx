@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { lookupEAN as cosmosLookupEAN, type EanLookupResult, type CosmosProduct } from "@/services/cosmosService";
 
 export type UserRole = "customer" | "retailer" | null;
 
@@ -168,6 +169,8 @@ type AppContextType = {
   products: Product[];
   searchProducts: (query: string) => Product[];
   getProductByEAN: (ean: string) => Product | undefined;
+  lookupEAN: (ean: string) => Promise<EanLookupResult>;
+  addManualProduct: (ean: string, name: string) => void;
   retailerStore: RetailerStore | null;
   updateRetailerProduct: (ean: string, price: number) => void;
   submitPriceUpdate: (ean: string, price: number, storeId: string) => void;
@@ -287,6 +290,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRetailerStore({ ...retailerStore, products: updated });
   };
 
+  const lookupEAN = async (ean: string): Promise<EanLookupResult> => {
+    return cosmosLookupEAN(ean);
+  };
+
+  const addManualProduct = (ean: string, name: string) => {
+    const exists = MOCK_PRODUCTS.find((p) => p.ean === ean);
+    if (!exists) {
+      MOCK_PRODUCTS.push({
+        ean,
+        name,
+        brand: "Manual",
+        category: "Outros",
+        prices: [],
+      });
+    }
+    if (user) {
+      setUserState({
+        ...user,
+        points: user.points + 50,
+        totalPriceUpdates: user.totalPriceUpdates + 1,
+      });
+    }
+  };
+
   const submitPriceUpdate = (_ean: string, _price: number, _storeId: string) => {
     if (user) {
       setUserState({
@@ -314,6 +341,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         products: MOCK_PRODUCTS,
         searchProducts,
         getProductByEAN,
+        lookupEAN,
+        addManualProduct,
         retailerStore,
         updateRetailerProduct,
         submitPriceUpdate,
