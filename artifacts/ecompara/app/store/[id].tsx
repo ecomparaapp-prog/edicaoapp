@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import React, { useMemo, useState } from "react";
 import {
+  Linking,
   Platform,
   Pressable,
   SectionList,
@@ -114,6 +115,35 @@ export default function StoreScreen() {
           </View>
         )}
       </View>
+
+      {store.status === "verified" && (store.phone || store.website) && (
+        <View style={[styles.verifiedBar, { backgroundColor: C.backgroundSecondary, borderBottomColor: C.border }]}>
+          <View style={[styles.verifiedTag, { backgroundColor: "#E8F5E9" }]}>
+            <Feather name="check-circle" size={10} color="#2E7D32" />
+            <Text style={{ color: "#2E7D32", fontSize: 10, fontFamily: "Inter_700Bold" }}>Verificado</Text>
+          </View>
+          {store.phone && (
+            <Pressable
+              style={styles.verifiedLink}
+              onPress={() => Linking.openURL(`tel:${store.phone}`)}
+              hitSlop={4}
+            >
+              <Feather name="phone" size={12} color={C.primary} />
+              <Text style={[styles.verifiedLinkText, { color: C.primary }]}>{store.phone}</Text>
+            </Pressable>
+          )}
+          {store.website && (
+            <Pressable
+              style={styles.verifiedLink}
+              onPress={() => Linking.openURL(store.website!)}
+              hitSlop={4}
+            >
+              <Feather name="globe" size={12} color={C.primary} />
+              <Text style={[styles.verifiedLinkText, { color: C.primary }]}>Visitar site</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       {/* Subtitle bar */}
       <View style={[styles.subtitleBar, { backgroundColor: C.backgroundSecondary }]}>
@@ -288,6 +318,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   addBtnTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  verifiedBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  verifiedTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  verifiedLink: { flexDirection: "row", alignItems: "center", gap: 4 },
+  verifiedLinkText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
   emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
   emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 40 },

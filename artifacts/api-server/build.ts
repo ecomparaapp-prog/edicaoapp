@@ -1,7 +1,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { build as esbuild } from "esbuild";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, copyFile, mkdir } from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +67,13 @@ async function buildAll() {
     external: externals,
     logLevel: "info",
   });
+
+  await mkdir(distDir, { recursive: true });
+  await copyFile(
+    path.resolve(__dirname, "src/admin.html"),
+    path.resolve(distDir, "admin.html"),
+  );
+  console.log("copied admin.html to dist/");
 }
 
 buildAll().catch((err) => {

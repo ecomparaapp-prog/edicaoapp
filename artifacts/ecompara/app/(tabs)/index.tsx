@@ -8,6 +8,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -302,20 +303,28 @@ export default function HomeScreen() {
                       <Text style={styles.verifiedBadgeText}>Verificado</Text>
                     </View>
                     {item.phone && (
-                      <View style={styles.storeDistRow}>
+                      <Pressable
+                        style={styles.storeDistRow}
+                        onPress={() => Linking.openURL(`tel:${item.phone}`)}
+                        hitSlop={4}
+                      >
                         <Feather name="phone" size={9} color={C.primary} />
                         <Text style={[styles.storeMetaLink, { color: C.primary }]} numberOfLines={1}>
                           {item.phone}
                         </Text>
-                      </View>
+                      </Pressable>
                     )}
                     {item.website && (
-                      <View style={styles.storeDistRow}>
+                      <Pressable
+                        style={styles.storeDistRow}
+                        onPress={() => Linking.openURL(item.website!)}
+                        hitSlop={4}
+                      >
                         <Feather name="globe" size={9} color={C.primary} />
                         <Text style={[styles.storeMetaLink, { color: C.primary }]} numberOfLines={1}>
                           Site
                         </Text>
-                      </View>
+                      </Pressable>
                     )}
                   </>
                 )}
