@@ -131,8 +131,6 @@ async function fetchNearbyPage(
     (body as Record<string, unknown>).pageToken = pageToken;
   }
 
-  await recordCall();
-
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -153,6 +151,8 @@ async function fetchNearbyPage(
   if (data.error) {
     throw new Error(`Places API (New) error: ${data.error.status ?? ""} — ${data.error.message ?? ""}`);
   }
+
+  await recordCall();
 
   return { places: data.places ?? [], nextPageToken: data.nextPageToken };
 }
@@ -218,39 +218,38 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
             ? buildPhotoUrl(place.photos[0].name, apiKey)
             : null;
 
-        const geomExpr = sql`ST_SetSRID(ST_MakePoint(${place.location.longitude}, ${place.location.latitude}), 4326)::geography`;
+        const lng = place.location.longitude;
+        const lat = place.location.latitude;
+        const geomSql = sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography`;
 
-        await db
-          .insert(placesCacheTable)
-          .values({
-            googlePlaceId: place.id,
-            name: place.displayName?.text ?? "Supermercado",
-            address: place.formattedAddress ?? null,
-            lat: place.location.latitude,
-            lng: place.location.longitude,
-            phone: place.nationalPhoneNumber ?? null,
-            website: place.websiteUri ?? null,
-            photoUrl,
-            rating: place.rating ?? null,
-            status: "shadow",
-            geom: geomExpr as unknown as string,
-            syncedAt: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: placesCacheTable.googlePlaceId,
-            set: {
-              name: place.displayName?.text ?? "Supermercado",
-              address: place.formattedAddress ?? null,
-              lat: place.location.latitude,
-              lng: place.location.longitude,
-              phone: place.nationalPhoneNumber ?? null,
-              website: place.websiteUri ?? null,
-              photoUrl,
-              rating: place.rating ?? null,
-              geom: geomExpr as unknown as string,
-              syncedAt: new Date(),
-            },
-          });
+        await db.execute(sql`
+          INSERT INTO places_cache (google_place_id, name, address, lat, lng, phone, website, photo_url, rating, status, geom, synced_at)
+          VALUES (
+            ${place.id},
+            ${place.displayName?.text ?? "Supermercado"},
+            ${place.formattedAddress ?? null},
+            ${lat},
+            ${lng},
+            ${place.nationalPhoneNumber ?? null},
+            ${place.websiteUri ?? null},
+            ${photoUrl},
+            ${place.rating ?? null},
+            'shadow',
+            ${geomSql},
+            NOW()
+          )
+          ON CONFLICT (google_place_id) DO UPDATE SET
+            name = EXCLUDED.name,
+            address = EXCLUDED.address,
+            lat = EXCLUDED.lat,
+            lng = EXCLUDED.lng,
+            phone = EXCLUDED.phone,
+            website = EXCLUDED.website,
+            photo_url = EXCLUDED.photo_url,
+            rating = EXCLUDED.rating,
+            geom = EXCLUDED.geom,
+            synced_at = NOW()
+        `);
 
         synced++;
       }
