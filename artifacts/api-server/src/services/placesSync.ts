@@ -7,7 +7,8 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 
-const PLACES_BASE = "https://maps.googleapis.com/maps/api/place";
+// Places API (New) endpoints
+const PLACES_NEW_BASE = "https://places.googleapis.com/v1";
 const MONTHLY_CALL_LIMIT = parseInt(process.env.PLACES_MONTHLY_CALL_LIMIT ?? "200", 10);
 const THROTTLE_THRESHOLD = 0.8;
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -77,20 +78,33 @@ async function recordCall(): Promise<void> {
   }
 }
 
-interface PlacesNearbyResult {
-  place_id: string;
-  name: string;
-  vicinity?: string;
-  geometry: { location: { lat: number; lng: number } };
-  rating?: number;
-  photos?: { photo_reference: string }[];
+// --- Places API (New) types ---
+
+interface PlacesNewLocation {
+  latitude: number;
+  longitude: number;
 }
 
-interface PlacesNearbyResponse {
-  results: PlacesNearbyResult[];
-  next_page_token?: string;
-  status: string;
-  error_message?: string;
+interface PlacesNewPlace {
+  id: string;
+  displayName?: { text?: string };
+  formattedAddress?: string;
+  location?: PlacesNewLocation;
+  rating?: number;
+  nationalPhoneNumber?: string;
+  websiteUri?: string;
+  photos?: { name: string }[];
+}
+
+interface PlacesNewNearbyResponse {
+  places?: PlacesNewPlace[];
+  nextPageToken?: string;
+  error?: { message?: string; status?: string };
+}
+
+function buildPhotoUrl(photoName: string, apiKey: string): string {
+  // Places API (New) photo URL format
+  return `${PLACES_NEW_BASE}/${photoName}/media?maxWidthPx=400&key=${apiKey}`;
 }
 
 async function fetchNearbyPage(
@@ -99,37 +113,48 @@ async function fetchNearbyPage(
   radiusM: number,
   pageToken: string | null,
   apiKey: string,
-): Promise<PlacesNearbyResponse> {
-  let url = `${PLACES_BASE}/nearbysearch/json?location=${lat},${lng}&radius=${radiusM}&type=supermarket&key=${apiKey}`;
-  if (pageToken) url += `&pagetoken=${encodeURIComponent(pageToken)}`;
+): Promise<{ places: PlacesNewPlace[]; nextPageToken?: string }> {
+  const url = `${PLACES_NEW_BASE}/places:searchNearby`;
+
+  const body: Record<string, unknown> = {
+    includedTypes: ["supermarket", "grocery_store"],
+    maxResultCount: 20,
+    locationRestriction: {
+      circle: {
+        center: { latitude: lat, longitude: lng },
+        radius: radiusM,
+      },
+    },
+  };
+
+  if (pageToken) {
+    (body as Record<string, unknown>).pageToken = pageToken;
+  }
 
   await recordCall();
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-  if (!res.ok) throw new Error(`Places API HTTP ${res.status}`);
-  return res.json() as Promise<PlacesNearbyResponse>;
-}
 
-async function fetchPlaceDetails(
-  placeId: string,
-  apiKey: string,
-): Promise<{ phone?: string; website?: string } | null> {
-  try {
-    const url = `${PLACES_BASE}/details/json?place_id=${placeId}&fields=formatted_phone_number,website&key=${apiKey}`;
-    await recordCall();
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const data = await res.json() as { result?: { formatted_phone_number?: string; website?: string } };
-    return {
-      phone: data.result?.formatted_phone_number ?? undefined,
-      website: data.result?.website ?? undefined,
-    };
-  } catch {
-    return null;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": apiKey,
+      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.nationalPhoneNumber,places.websiteUri,places.photos",
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(12000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Places API (New) HTTP ${res.status}: ${text}`);
   }
-}
 
-function buildPhotoUrl(photoRef: string, apiKey: string): string {
-  return `${PLACES_BASE}/photo?maxwidth=400&photo_reference=${photoRef}&key=${apiKey}`;
+  const data = await res.json() as PlacesNewNearbyResponse;
+  if (data.error) {
+    throw new Error(`Places API (New) error: ${data.error.status ?? ""} — ${data.error.message ?? ""}`);
+  }
+
+  return { places: data.places ?? [], nextPageToken: data.nextPageToken };
 }
 
 export interface SyncResult {
@@ -147,7 +172,7 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
 
   const credit = await getCreditStatus();
   if (credit.suspended || credit.limitReached) {
-    console.warn(`[PlacesSync] Sync bloqueado por throttle para zona ${zone.name}`);
+    console.warn(`[PlacesSync] Sync bloqueado por throttle para zona "${zone.name}"`);
     return { synced: 0, skipped: 0, throttled: true };
   }
 
@@ -167,18 +192,17 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
         break;
       }
 
-      const response = await fetchNearbyPage(zone.lat, zone.lng, radiusM, pageToken, apiKey);
+      const { places, nextPageToken } = await fetchNearbyPage(
+        zone.lat, zone.lng, radiusM, pageToken, apiKey
+      );
 
-      if (response.status !== "OK" && response.status !== "ZERO_RESULTS") {
-        console.error(`[PlacesSync] Erro Places API: ${response.status} — ${response.error_message ?? ""}`);
-        break;
-      }
+      for (const place of places) {
+        if (!place.id || !place.location) continue;
 
-      for (const place of response.results) {
         const existing = await db
           .select({ syncedAt: placesCacheTable.syncedAt })
           .from(placesCacheTable)
-          .where(eq(placesCacheTable.googlePlaceId, place.place_id))
+          .where(eq(placesCacheTable.googlePlaceId, place.id))
           .limit(1);
 
         if (existing.length > 0) {
@@ -190,29 +214,20 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
         }
 
         const photoUrl =
-          place.photos?.[0]?.photo_reference
-            ? buildPhotoUrl(place.photos[0].photo_reference, apiKey)
+          place.photos?.[0]?.name
+            ? buildPhotoUrl(place.photos[0].name, apiKey)
             : null;
-
-        const freshCredit2 = await getCreditStatus();
-        let phone: string | null = null;
-        let website: string | null = null;
-        if (!freshCredit2.suspended && !freshCredit2.limitReached) {
-          const details = await fetchPlaceDetails(place.place_id, apiKey);
-          phone = details?.phone ?? null;
-          website = details?.website ?? null;
-        }
 
         await db
           .insert(placesCacheTable)
           .values({
-            googlePlaceId: place.place_id,
-            name: place.name,
-            address: place.vicinity ?? null,
-            lat: place.geometry.location.lat,
-            lng: place.geometry.location.lng,
-            phone,
-            website,
+            googlePlaceId: place.id,
+            name: place.displayName?.text ?? "Supermercado",
+            address: place.formattedAddress ?? null,
+            lat: place.location.latitude,
+            lng: place.location.longitude,
+            phone: place.nationalPhoneNumber ?? null,
+            website: place.websiteUri ?? null,
             photoUrl,
             rating: place.rating ?? null,
             isPartner: false,
@@ -221,10 +236,12 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
           .onConflictDoUpdate({
             target: placesCacheTable.googlePlaceId,
             set: {
-              name: place.name,
-              address: place.vicinity ?? null,
-              lat: place.geometry.location.lat,
-              lng: place.geometry.location.lng,
+              name: place.displayName?.text ?? "Supermercado",
+              address: place.formattedAddress ?? null,
+              lat: place.location.latitude,
+              lng: place.location.longitude,
+              phone: place.nationalPhoneNumber ?? null,
+              website: place.websiteUri ?? null,
               photoUrl,
               rating: place.rating ?? null,
               syncedAt: new Date(),
@@ -234,7 +251,7 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
         synced++;
       }
 
-      pageToken = response.next_page_token ?? null;
+      pageToken = nextPageToken ?? null;
       page++;
     } while (pageToken && page < 3);
 
@@ -243,6 +260,7 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
       .set({ lastSyncedAt: new Date() })
       .where(eq(searchZonesTable.id, zone.id));
 
+    console.log(`[PlacesSync] Zona "${zone.name}": ${synced} salvas, ${skipped} já atualizadas.`);
     return { synced, skipped, throttled: false };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
