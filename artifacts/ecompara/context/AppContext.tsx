@@ -197,6 +197,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
   const [activeTab, setActiveTab] = useState<"customer" | "retailer">("customer");
+  // In-memory cache of products discovered via Cosmos API (makes Cosmos primary source)
+  const [cosmosCache, setCosmosCache] = useState<Record<string, Product>>({});
 
   const mockRetailerStore: RetailerStore = {
     id: "r1",
@@ -274,9 +276,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const searchProducts = (query: string): Product[] => {
-    if (!query.trim()) return MOCK_PRODUCTS;
+    // Merge MOCK_PRODUCTS with Cosmos-discovered products (cosmosCache takes precedence by EAN)
+    const cosmosValues = Object.values(cosmosCache);
+    const cosmosEans = new Set(cosmosValues.map((p) => p.ean));
+    const allProducts = [...cosmosValues, ...MOCK_PRODUCTS.filter((p) => !cosmosEans.has(p.ean))];
+    if (!query.trim()) return allProducts;
     const q = query.toLowerCase();
-    return MOCK_PRODUCTS.filter(
+    return allProducts.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.brand.toLowerCase().includes(q) ||
@@ -308,7 +314,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const getProductByEAN = (ean: string): Product | undefined => {
-    return MOCK_PRODUCTS.find((p) => p.ean === ean);
+    // Cosmos-discovered products take precedence over mock data
+    return cosmosCache[ean] ?? MOCK_PRODUCTS.find((p) => p.ean === ean);
   };
 
   const updateRetailerProduct = (ean: string, price: number) => {
@@ -320,7 +327,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const lookupEAN = async (ean: string): Promise<EanLookupResult> => {
-    return cosmosLookupEAN(ean);
+    const result = await cosmosLookupEAN(ean);
+    // Store found products in cosmosCache so getProductByEAN can use them
+    if (result.found && result.product) {
+      const p = result.product;
+      setCosmosCache((prev) => ({
+        ...prev,
+        [ean]: {
+          ean,
+          name: p.description,
+          brand: p.brand || "—",
+          category: p.category || "Outros",
+          image: p.thumbnailUrl || undefined,
+          // Preserve existing prices if we already have a mock entry
+          prices: MOCK_PRODUCTS.find((m) => m.ean === ean)?.prices ?? [],
+        },
+      }));
+    }
+    return result;
   };
 
   const addManualProduct = (ean: string, name: string) => {
@@ -362,7 +386,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         stores: MOCK_STORES,
         banners: MOCK_BANNERS,
         leaderboard: MOCK_GAME_LEADERBOARD,
-        products: MOCK_PRODUCTS,
+        products: (() => {
+          const cosmosValues = Object.values(cosmosCache);
+          const cosmosEans = new Set(cosmosValues.map((p) => p.ean));
+          return [...cosmosValues, ...MOCK_PRODUCTS.filter((p) => !cosmosEans.has(p.ean))];
+        })(),
         searchProducts,
         searchProductsAsync,
         getProductByEAN,

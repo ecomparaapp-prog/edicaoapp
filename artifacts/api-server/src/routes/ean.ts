@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { eanCacheTable } from "@workspace/db/schema";
-import { eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ilike, ne, or, sql } from "drizzle-orm";
 
 interface CosmosResponse {
   description?: string;
@@ -16,6 +16,8 @@ const eanRouter = Router();
 
 const COSMOS_BASE = "https://api.cosmos.bluesoft.com.br/gtins";
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const NEGATIVE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const NOT_FOUND_SENTINEL = "__not_found__";
 
 eanRouter.get("/products/ean/:ean", async (req, res) => {
   const { ean } = req.params;
@@ -33,24 +35,35 @@ eanRouter.get("/products/ean/:ean", async (req, res) => {
       .limit(1);
 
     if (cached.length > 0) {
-      const age = Date.now() - new Date(cached[0].cachedAt).getTime();
-      if (age < CACHE_TTL_MS) {
+      const entry = cached[0];
+      const age = Date.now() - new Date(entry.cachedAt).getTime();
+      // Negative cache hit (sentinel for EAN not found)
+      if (entry.description === NOT_FOUND_SENTINEL) {
+        if (age < NEGATIVE_CACHE_TTL_MS) {
+          res.json({ found: false, ean, source: "cache" });
+          return;
+        }
+      } else if (age < CACHE_TTL_MS) {
+        // Positive cache hit
         res.json({
           found: true,
           source: "cache",
           product: {
-            ean: cached[0].ean,
-            description: cached[0].description,
-            brand: cached[0].brand,
-            category: cached[0].category,
-            thumbnailUrl: cached[0].thumbnailUrl,
+            ean: entry.ean,
+            description: entry.description,
+            brand: entry.brand,
+            category: entry.category,
+            thumbnailUrl: entry.thumbnailUrl,
           },
         });
         return;
       }
     }
 
-    const staleEntry = cached.length > 0 ? cached[0] : null;
+    // Only use as stale fallback if it's a real product (not a sentinel)
+    const staleEntry = cached.length > 0 && cached[0].description !== NOT_FOUND_SENTINEL
+      ? cached[0]
+      : null;
 
     const token = process.env.COSMOS_TOKEN;
     if (!token) {
@@ -105,6 +118,22 @@ eanRouter.get("/products/ean/:ean", async (req, res) => {
     }
 
     if (cosmosRes.status === 404) {
+      // Write negative cache sentinel so we don't re-query Cosmos for this EAN
+      await db
+        .insert(eanCacheTable)
+        .values({
+          ean,
+          description: NOT_FOUND_SENTINEL,
+          brand: null,
+          category: null,
+          thumbnailUrl: null,
+          rawJson: null,
+          cachedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: eanCacheTable.ean,
+          set: { description: NOT_FOUND_SENTINEL, brand: null, category: null, thumbnailUrl: null, rawJson: null, cachedAt: new Date() },
+        });
       res.json({ found: false, ean });
       return;
     }
@@ -197,11 +226,14 @@ eanRouter.get("/products/search", async (req, res) => {
       })
       .from(eanCacheTable)
       .where(
-        or(
-          ilike(eanCacheTable.description, pattern),
-          ilike(eanCacheTable.brand, pattern),
-          ilike(eanCacheTable.category, pattern),
-          sql`${eanCacheTable.ean} LIKE ${pattern}`
+        and(
+          ne(eanCacheTable.description, NOT_FOUND_SENTINEL),
+          or(
+            ilike(eanCacheTable.description, pattern),
+            ilike(eanCacheTable.brand, pattern),
+            ilike(eanCacheTable.category, pattern),
+            sql`${eanCacheTable.ean} LIKE ${pattern}`
+          )
         )
       )
       .limit(20);
