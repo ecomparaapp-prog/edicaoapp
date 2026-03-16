@@ -61,8 +61,8 @@ storesRouter.get("/stores/nearby", async (req, res) => {
       photoUrl: r.photoUrl,
       rating: r.rating,
       status: r.status,
-      isPartner: r.status === "verified",
-      isShadow: r.status === "shadow",
+      is_partner: r.status === "verified",
+      is_shadow: r.status === "shadow",
       distanceKm: Math.round((r.distanceM / 1000) * 10) / 10,
       syncedAt: r.syncedAt,
     }));

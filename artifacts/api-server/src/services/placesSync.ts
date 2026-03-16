@@ -218,6 +218,8 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
             ? buildPhotoUrl(place.photos[0].name, apiKey)
             : null;
 
+        const geomExpr = sql`ST_SetSRID(ST_MakePoint(${place.location.longitude}, ${place.location.latitude}), 4326)::geography`;
+
         await db
           .insert(placesCacheTable)
           .values({
@@ -231,6 +233,7 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
             photoUrl,
             rating: place.rating ?? null,
             status: "shadow",
+            geom: geomExpr as unknown as string,
             syncedAt: new Date(),
           })
           .onConflictDoUpdate({
@@ -244,6 +247,7 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
               website: place.websiteUri ?? null,
               photoUrl,
               rating: place.rating ?? null,
+              geom: geomExpr as unknown as string,
               syncedAt: new Date(),
             },
           });

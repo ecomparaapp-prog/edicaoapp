@@ -369,26 +369,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setStoresLoading(true);
     try {
       const nearbyStores = await fetchNearbyStores(lat, lng, radiusKm);
-      if (nearbyStores.length > 0) {
-        const mapped: Store[] = nearbyStores.map((s: NearbyStore) => ({
-          id: s.googlePlaceId,
-          name: s.name,
-          distance: s.distanceKm,
-          address: s.address ?? "",
-          lat: s.lat,
-          lng: s.lng,
-          plan: s.status === "verified" ? "plus" : "normal",
-          googlePlaceId: s.googlePlaceId,
-          phone: s.phone ?? undefined,
-          website: s.website ?? undefined,
-          rating: s.rating ?? undefined,
-          status: s.status,
-          isPartner: s.status === "verified",
-          isShadow: s.status === "shadow",
-          photoUrl: s.photoUrl ?? undefined,
-        }));
-        setStores(mapped);
-      }
+      const mapped: Store[] = nearbyStores.map((s: NearbyStore) => ({
+        id: s.googlePlaceId,
+        name: s.name,
+        distance: s.distanceKm,
+        address: s.address ?? "",
+        lat: s.lat,
+        lng: s.lng,
+        plan: s.status === "verified" ? "plus" : "normal",
+        googlePlaceId: s.googlePlaceId,
+        phone: s.phone ?? undefined,
+        website: s.website ?? undefined,
+        rating: s.rating ?? undefined,
+        status: s.status,
+        isPartner: s.is_partner,
+        isShadow: s.is_shadow,
+        photoUrl: s.photoUrl ?? undefined,
+      }));
+      setStores(mapped);
     } catch {
       // fallback stays as MOCK_STORES
     } finally {

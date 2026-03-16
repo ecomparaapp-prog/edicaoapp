@@ -12,8 +12,8 @@ export interface NearbyStore {
   photoUrl: string | null;
   rating: number | null;
   status: "shadow" | "verified";
-  isPartner: boolean;
-  isShadow: boolean;
+  is_partner: boolean;
+  is_shadow: boolean;
   distanceKm: number;
   syncedAt: string;
 }
