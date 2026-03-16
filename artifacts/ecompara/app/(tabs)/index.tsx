@@ -343,7 +343,7 @@ export default function HomeScreen() {
                       setClaimStore(item);
                     }}
                   >
-                    <Text style={styles.claimBtnText}>Este é meu negócio</Text>
+                    <Text style={styles.claimBtnText}>Solicitar parceria</Text>
                   </Pressable>
                 )}
               </Pressable>
@@ -401,7 +401,7 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalBox, { backgroundColor: isDark ? C.backgroundSecondary : "#fff" }]}>
             <View style={styles.modalHandle} />
-            <Text style={[styles.modalTitle, { color: C.text }]}>Este é meu negócio</Text>
+            <Text style={[styles.modalTitle, { color: C.text }]}>Solicitar parceria</Text>
             <Text style={[styles.modalSubtitle, { color: C.textSecondary }]}>
               Solicite parceria para {claimStore?.name} e comece a divulgar preços e promoções.
             </Text>
