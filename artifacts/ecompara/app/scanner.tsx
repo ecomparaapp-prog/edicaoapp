@@ -1,10 +1,10 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -17,7 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
-import { useApp } from "@/context/AppContext";
+import { useApp, type Product, type StorePrice } from "@/context/AppContext";
 import type { CosmosProduct } from "@/services/cosmosService";
 
 export default function ScannerScreen() {
@@ -30,7 +30,7 @@ export default function ScannerScreen() {
 
   const [manualEan, setManualEan] = useState("");
   const [cosmosProduct, setCosmosProduct] = useState<CosmosProduct | null>(null);
-  const [localProduct, setLocalProduct] = useState<any>(null);
+  const [localProduct, setLocalProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showManualForm, setShowManualForm] = useState(false);
@@ -104,9 +104,9 @@ export default function ScannerScreen() {
     router.back();
   };
 
-  const getBestPrice = (product: any) => {
+  const getBestPrice = (product: Product): StorePrice | null => {
     if (!product.prices?.length) return null;
-    return product.prices.reduce((min: any, p: any) => (p.price < min.price ? p : min));
+    return product.prices.reduce((min, p) => (p.price < min.price ? p : min));
   };
 
   const displayName = cosmosProduct?.description || localProduct?.name || "";
@@ -199,7 +199,8 @@ export default function ScannerScreen() {
               <Image
                 source={{ uri: cosmosProduct.thumbnailUrl }}
                 style={styles.productImage}
-                resizeMode="contain"
+                contentFit="contain"
+                transition={200}
               />
             ) : (
               <View style={[styles.foundIcon, { backgroundColor: C.primary + "20" }]}>
@@ -214,11 +215,11 @@ export default function ScannerScreen() {
               {cosmosProduct?.category ? (
                 <Text style={[styles.foundCategory, { color: C.textSecondary }]}>{cosmosProduct.category}</Text>
               ) : null}
-              {localProduct && getBestPrice(localProduct) && (
+              {localProduct && getBestPrice(localProduct) ? (
                 <Text style={[styles.foundPrice, { color: C.primary }]}>
-                  A partir de R$ {getBestPrice(localProduct).price.toFixed(2).replace(".", ",")} · {getBestPrice(localProduct).storeName}
+                  A partir de R$ {getBestPrice(localProduct)!.price.toFixed(2).replace(".", ",")} · {getBestPrice(localProduct)!.storeName}
                 </Text>
-              )}
+              ) : null}
             </View>
             <View style={styles.foundActions}>
               <Pressable

@@ -1,11 +1,11 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -18,7 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
-import { useApp } from "@/context/AppContext";
+import { useApp, type Product } from "@/context/AppContext";
 import type { CosmosProduct } from "@/services/cosmosService";
 
 export default function RetailerScannerScreen() {
@@ -32,7 +32,7 @@ export default function RetailerScannerScreen() {
   const [ean, setEan] = useState("");
   const [price, setPrice] = useState("");
   const [cosmosProduct, setCosmosProduct] = useState<CosmosProduct | null>(null);
-  const [localProduct, setLocalProduct] = useState<any>(null);
+  const [localProduct, setLocalProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showManualForm, setShowManualForm] = useState(false);
@@ -113,11 +113,19 @@ export default function RetailerScannerScreen() {
   const handleManualSubmit = () => {
     const name = manualName.trim();
     if (!name) return;
-    addManualProduct(ean.trim(), name);
+    const productEan = ean.trim();
+    addManualProduct(productEan, name);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const newProduct: Product = {
+      ean: productEan,
+      name,
+      brand: "Manual",
+      category: "Outros",
+      prices: [],
+    };
+    setLocalProduct(newProduct);
     setShowManualForm(false);
     setCosmosProduct(null);
-    setLocalProduct({ ean: ean.trim(), name, brand: "Manual", category: "Outros", prices: [] });
     setError("");
   };
 
@@ -226,7 +234,8 @@ export default function RetailerScannerScreen() {
               <Image
                 source={{ uri: cosmosProduct.thumbnailUrl }}
                 style={styles.productImage}
-                resizeMode="contain"
+                contentFit="contain"
+                transition={200}
               />
             ) : (
               <View style={[styles.foundIcon, { backgroundColor: C.primary + "15" }]}>
