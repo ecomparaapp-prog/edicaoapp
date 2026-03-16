@@ -1,6 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { lookupEAN as cosmosLookupEAN, type EanLookupResult, type CosmosProduct } from "@/services/cosmosService";
+import {
+  lookupEAN as cosmosLookupEAN,
+  searchProducts as cosmosSearchProducts,
+  type EanLookupResult,
+  type CosmosProduct,
+} from "@/services/cosmosService";
 
 export type UserRole = "customer" | "retailer" | null;
 
@@ -168,6 +173,7 @@ type AppContextType = {
   leaderboard: GameEntry[];
   products: Product[];
   searchProducts: (query: string) => Product[];
+  searchProductsAsync: (query: string) => Promise<Product[]>;
   getProductByEAN: (ean: string) => Product | undefined;
   lookupEAN: (ean: string) => Promise<EanLookupResult>;
   addManualProduct: (ean: string, name: string) => void;
@@ -278,6 +284,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const searchProductsAsync = async (query: string): Promise<Product[]> => {
+    const localResults = searchProducts(query);
+
+    try {
+      const cosmosResults = await cosmosSearchProducts(query);
+      const localEans = new Set(localResults.map((p) => p.ean));
+      const cosmosAsProducts: Product[] = cosmosResults
+        .filter((c) => !localEans.has(c.ean))
+        .map((c) => ({
+          ean: c.ean,
+          name: c.description,
+          brand: c.brand || "—",
+          category: c.category || "Outros",
+          image: c.thumbnailUrl || undefined,
+          prices: [],
+        }));
+
+      return [...localResults, ...cosmosAsProducts];
+    } catch {
+      return localResults;
+    }
+  };
+
   const getProductByEAN = (ean: string): Product | undefined => {
     return MOCK_PRODUCTS.find((p) => p.ean === ean);
   };
@@ -305,20 +334,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         prices: [],
       });
     }
-    if (user) {
-      setUserState({
-        ...user,
-        points: user.points + 50,
-        totalPriceUpdates: user.totalPriceUpdates + 1,
-      });
-    }
+    submitPriceUpdate(ean, 0, "", 50);
   };
 
-  const submitPriceUpdate = (_ean: string, _price: number, _storeId: string) => {
+  const submitPriceUpdate = (_ean: string, _price: number, _storeId: string, bonusPoints?: number) => {
     if (user) {
+      const pts = bonusPoints ?? 10;
       setUserState({
         ...user,
-        points: user.points + 10,
+        points: user.points + pts,
         totalPriceUpdates: user.totalPriceUpdates + 1,
       });
     }
@@ -340,6 +364,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         leaderboard: MOCK_GAME_LEADERBOARD,
         products: MOCK_PRODUCTS,
         searchProducts,
+        searchProductsAsync,
         getProductByEAN,
         lookupEAN,
         addManualProduct,

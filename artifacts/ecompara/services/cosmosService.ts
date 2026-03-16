@@ -12,9 +12,14 @@ export interface CosmosProduct {
 export interface EanLookupResult {
   found: boolean;
   source?: "cache" | "cosmos";
+  stale?: boolean;
   product?: CosmosProduct;
   ean?: string;
   error?: string;
+}
+
+export interface ProductSearchResult {
+  products: CosmosProduct[];
 }
 
 function getApiBaseUrl(): string {
@@ -49,16 +54,38 @@ export async function lookupEAN(ean: string): Promise<EanLookupResult> {
     clearTimeout(timeout);
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
+      const body: { error?: string } = await res.json().catch(() => ({}));
       return { found: false, ean, error: body.error || `HTTP ${res.status}` };
     }
 
     return await res.json();
-  } catch (err: any) {
+  } catch (err: unknown) {
     clearTimeout(timeout);
-    if (err.name === "AbortError") {
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    if (isAbort) {
       return { found: false, ean, error: "Tempo esgotado. Tente novamente." };
     }
     return { found: false, ean, error: "Erro de conexão com o servidor." };
+  }
+}
+
+export async function searchProducts(query: string): Promise<CosmosProduct[]> {
+  if (!query || query.trim().length < 2) return [];
+
+  const base = getApiBaseUrl();
+  const url = `${base}/products/search?q=${encodeURIComponent(query.trim())}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!res.ok) return [];
+
+    const data: ProductSearchResult = await res.json();
+    return data.products || [];
+  } catch {
+    return [];
   }
 }

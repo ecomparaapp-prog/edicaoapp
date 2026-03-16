@@ -1,7 +1,16 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { eanCacheTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, ilike, or, sql } from "drizzle-orm";
+
+interface CosmosResponse {
+  description?: string;
+  commercial_unit?: { type_packaging?: string };
+  brand?: { name?: string };
+  gpc?: { description?: string };
+  ncm?: { description?: string };
+  thumbnail?: string;
+}
 
 const eanRouter = Router();
 
@@ -122,7 +131,7 @@ eanRouter.get("/products/ean/:ean", async (req, res) => {
       return;
     }
 
-    const data: any = await cosmosRes.json();
+    const data = await cosmosRes.json() as CosmosResponse;
 
     const description = data.description || data.commercial_unit?.type_packaging || "Produto sem nome";
     const brand = data.brand?.name || null;
@@ -166,6 +175,41 @@ eanRouter.get("/products/ean/:ean", async (req, res) => {
   } catch (err) {
     console.error("EAN lookup error:", err);
     res.status(500).json({ error: "Erro interno ao buscar produto." });
+  }
+});
+
+eanRouter.get("/products/search", async (req, res) => {
+  const query = (req.query.q as string || "").trim();
+  if (!query || query.length < 2) {
+    res.json({ products: [] });
+    return;
+  }
+
+  try {
+    const pattern = `%${query}%`;
+    const results = await db
+      .select({
+        ean: eanCacheTable.ean,
+        description: eanCacheTable.description,
+        brand: eanCacheTable.brand,
+        category: eanCacheTable.category,
+        thumbnailUrl: eanCacheTable.thumbnailUrl,
+      })
+      .from(eanCacheTable)
+      .where(
+        or(
+          ilike(eanCacheTable.description, pattern),
+          ilike(eanCacheTable.brand, pattern),
+          ilike(eanCacheTable.category, pattern),
+          sql`${eanCacheTable.ean} LIKE ${pattern}`
+        )
+      )
+      .limit(20);
+
+    res.json({ products: results });
+  } catch (err) {
+    console.error("Product search error:", err);
+    res.status(500).json({ error: "Erro ao buscar produtos." });
   }
 });
 
