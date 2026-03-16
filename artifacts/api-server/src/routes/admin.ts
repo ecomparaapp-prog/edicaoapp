@@ -44,7 +44,14 @@ adminRouter.post("/admin/zones", async (req, res) => {
       })
       .returning();
 
-    res.status(201).json({ zone });
+    let syncResult = null;
+    try {
+      syncResult = await syncZone(zone);
+    } catch (syncErr) {
+      console.error("Auto-sync after zone creation failed:", syncErr);
+    }
+
+    res.status(201).json({ zone, syncResult });
   } catch (err) {
     console.error("POST /admin/zones error:", err);
     res.status(500).json({ error: "Erro ao criar zona." });

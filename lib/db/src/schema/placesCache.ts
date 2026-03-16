@@ -1,4 +1,4 @@
-import { pgTable, text, doublePrecision, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, doublePrecision, timestamp } from "drizzle-orm/pg-core";
 
 export const placesCacheTable = pgTable("places_cache", {
   googlePlaceId: text("google_place_id").primaryKey(),
@@ -10,7 +10,7 @@ export const placesCacheTable = pgTable("places_cache", {
   website: text("website"),
   photoUrl: text("photo_url"),
   rating: doublePrecision("rating"),
-  isPartner: boolean("is_partner").notNull().default(false),
+  status: text("status").notNull().default("shadow"),
   syncedAt: timestamp("synced_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

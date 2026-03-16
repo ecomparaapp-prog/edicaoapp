@@ -82,10 +82,11 @@ Database layer using Drizzle ORM with PostgreSQL + PostGIS. Exports a Drizzle cl
 - Tables:
   - `ean_cache` — EAN product cache from Cosmos API (30-day TTL, negative cache sentinel)
   - `search_zones` — geographic zones for Google Places bulk search (name, lat, lng, radius_km, active, last_synced_at)
-  - `places_cache` — Google Places results (google_place_id PK, name, address, lat, lng, phone, website, photo_url, rating, is_partner, synced_at; 30-day TTL)
+  - `places_cache` — Google Places results (google_place_id PK, name, address, lat, lng, phone, website, photo_url, rating, status text 'shadow'|'verified', synced_at; 30-day TTL; `geom geography(Point,4326)` generated stored column + GIST index for fast spatial queries)
   - `partnership_requests` — "Este é meu negócio" claim requests (google_place_id, requester_name, requester_email, message)
   - `api_credit_usage` — monthly Google Places API call counter with throttle state (month_key unique, calls_count, suspended_at)
-- PostGIS enabled; ST_DWithin + ST_MakePoint used in `/api/stores/nearby` for geographic proximity queries
+- PostGIS enabled; `geom` column with GIST index used for ST_DWithin queries in `/api/stores/nearby`
+- Note: `geom` column and `spatial_ref_sys` table are managed outside Drizzle (via raw SQL); do NOT run `drizzle-kit push` without `--force` or it will try to drop them
 - `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`)
 - Exports: `.` (pool, db, schema), `./schema` (schema only)
 
@@ -104,8 +105,8 @@ Expo React Native mobile app (the main eCompara app).
   - `loadNearbyStores(lat, lng, radiusKm)` — fetches from backend, maps to Store[], updates state
   - `submitStoreClaim(claim)` — calls `/api/stores/claim`
 - **UI**:
-  - Shadow stores (is_shadow=true): opacity 0.55 + "Este é meu negócio" button → claim modal
-  - Verified/partner stores: full card (logo photo, rating, PLUS badge)
+  - Shadow stores (status='shadow'): gray overlay (0.45 opacity) + "Este é meu negócio" claim CTA button → claim modal
+  - Verified stores (status='verified'): highlighted card with primary border, "Verificado" badge, clickable phone/website metadata
   - Claim modal: requester_name, requester_email, message → POST /api/stores/claim
 - **Maps**: react-native-maps pinned at 1.18.0 (do NOT change)
 - **UUID**: `Date.now().toString() + Math.random()` (no uuid package)

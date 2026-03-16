@@ -68,6 +68,7 @@ export interface Store {
   phone?: string;
   website?: string;
   rating?: number;
+  status?: "shadow" | "verified";
   isPartner?: boolean;
   isShadow?: boolean;
   photoUrl?: string;
@@ -376,13 +377,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           address: s.address ?? "",
           lat: s.lat,
           lng: s.lng,
-          plan: s.isPartner ? "plus" : "normal",
+          plan: s.status === "verified" ? "plus" : "normal",
           googlePlaceId: s.googlePlaceId,
           phone: s.phone ?? undefined,
           website: s.website ?? undefined,
           rating: s.rating ?? undefined,
-          isPartner: s.isPartner,
-          isShadow: s.isShadow,
+          status: s.status,
+          isPartner: s.status === "verified",
+          isShadow: s.status === "shadow",
           photoUrl: s.photoUrl ?? undefined,
         }));
         setStores(mapped);

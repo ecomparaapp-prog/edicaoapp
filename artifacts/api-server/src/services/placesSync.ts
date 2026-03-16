@@ -230,7 +230,7 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
             website: place.websiteUri ?? null,
             photoUrl,
             rating: place.rating ?? null,
-            isPartner: false,
+            status: "shadow",
             syncedAt: new Date(),
           })
           .onConflictDoUpdate({

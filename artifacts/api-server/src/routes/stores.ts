@@ -4,7 +4,7 @@ import {
   placesCacheTable,
   partnershipRequestsTable,
 } from "@workspace/db/schema";
-import { sql, desc } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 const storesRouter = Router();
 
@@ -32,18 +32,18 @@ storesRouter.get("/stores/nearby", async (req, res) => {
         website: placesCacheTable.website,
         photoUrl: placesCacheTable.photoUrl,
         rating: placesCacheTable.rating,
-        isPartner: placesCacheTable.isPartner,
+        status: placesCacheTable.status,
         syncedAt: placesCacheTable.syncedAt,
         distanceM: sql<number>`ST_Distance(
-          ST_MakePoint(${placesCacheTable.lng}, ${placesCacheTable.lat})::geography,
-          ST_MakePoint(${lng}, ${lat})::geography
+          geom,
+          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
         )`.as("distance_m"),
       })
       .from(placesCacheTable)
       .where(
         sql`ST_DWithin(
-          ST_MakePoint(${placesCacheTable.lng}, ${placesCacheTable.lat})::geography,
-          ST_MakePoint(${lng}, ${lat})::geography,
+          geom,
+          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
           ${radiusM}
         )`
       )
@@ -51,9 +51,20 @@ storesRouter.get("/stores/nearby", async (req, res) => {
       .limit(50);
 
     const stores = rows.map((r) => ({
-      ...r,
+      googlePlaceId: r.googlePlaceId,
+      name: r.name,
+      address: r.address,
+      lat: r.lat,
+      lng: r.lng,
+      phone: r.phone,
+      website: r.website,
+      photoUrl: r.photoUrl,
+      rating: r.rating,
+      status: r.status,
+      isPartner: r.status === "verified",
+      isShadow: r.status === "shadow",
       distanceKm: Math.round((r.distanceM / 1000) * 10) / 10,
-      isShadow: !r.isPartner,
+      syncedAt: r.syncedAt,
     }));
 
     res.json({ stores });

@@ -240,12 +240,13 @@ export default function HomeScreen() {
           ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
           renderItem={({ item }) => {
             const isShadow = item.isShadow === true;
+            const isVerified = item.status === "verified";
             return (
               <Pressable
                 style={[
                   styles.storeCard,
                   { backgroundColor: C.surfaceElevated, borderColor: C.border },
-                  isShadow && { opacity: 0.55 },
+                  isVerified && { borderColor: C.primary, borderWidth: 1.5 },
                 ]}
                 onPress={() => {
                   if (isShadow) return;
@@ -253,6 +254,10 @@ export default function HomeScreen() {
                   router.push(`/store/${item.id}`);
                 }}
               >
+                {isShadow && (
+                  <View style={styles.shadowOverlay} pointerEvents="none" />
+                )}
+
                 <View
                   style={[
                     styles.storeLogoCircle,
@@ -270,7 +275,7 @@ export default function HomeScreen() {
                   )}
                 </View>
 
-                <Text style={[styles.storeName, { color: C.text }]} numberOfLines={2}>
+                <Text style={[styles.storeName, { color: isShadow ? C.textMuted : C.text }]} numberOfLines={2}>
                   {item.name}
                 </Text>
 
@@ -283,14 +288,39 @@ export default function HomeScreen() {
 
                 {item.rating != null && (
                   <View style={styles.storeDistRow}>
-                    <Ionicons name="star" size={10} color="#F9A825" />
+                    <Ionicons name="star" size={10} color={isShadow ? "#999" : "#F9A825"} />
                     <Text style={[styles.storeDist, { color: C.textMuted }]}>
                       {item.rating.toFixed(1)}
                     </Text>
                   </View>
                 )}
 
-                {!isShadow && item.plan === "plus" && (
+                {isVerified && (
+                  <>
+                    <View style={[styles.verifiedBadge, { backgroundColor: "#E8F5E9" }]}>
+                      <Feather name="check-circle" size={9} color="#2E7D32" />
+                      <Text style={styles.verifiedBadgeText}>Verificado</Text>
+                    </View>
+                    {item.phone && (
+                      <View style={styles.storeDistRow}>
+                        <Feather name="phone" size={9} color={C.primary} />
+                        <Text style={[styles.storeMetaLink, { color: C.primary }]} numberOfLines={1}>
+                          {item.phone}
+                        </Text>
+                      </View>
+                    )}
+                    {item.website && (
+                      <View style={styles.storeDistRow}>
+                        <Feather name="globe" size={9} color={C.primary} />
+                        <Text style={[styles.storeMetaLink, { color: C.primary }]} numberOfLines={1}>
+                          Site
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                )}
+
+                {!isShadow && item.plan === "plus" && !isVerified && (
                   <View style={[styles.planBadge, { backgroundColor: C.primary }]}>
                     <Text style={styles.planBadgeText}>PLUS</Text>
                   </View>
@@ -489,11 +519,18 @@ const styles = StyleSheet.create({
   },
   radiusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   storeCard: {
-    width: 110,
+    width: 120,
     borderRadius: 14,
     padding: 12,
     alignItems: "center",
     borderWidth: 1,
+    overflow: "hidden",
+  },
+  shadowOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(128,128,128,0.45)",
+    borderRadius: 14,
+    zIndex: 10,
   },
   storeLogoCircle: {
     width: 48,
@@ -509,6 +546,17 @@ const styles = StyleSheet.create({
   storeDist: { fontSize: 10, fontFamily: "Inter_400Regular" },
   planBadge: { marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
   planBadgeText: { color: "#fff", fontSize: 8, fontFamily: "Inter_700Bold" },
+  verifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  verifiedBadgeText: { color: "#2E7D32", fontSize: 8, fontFamily: "Inter_700Bold" },
+  storeMetaLink: { fontSize: 8, fontFamily: "Inter_500Medium" },
   claimBtn: {
     marginTop: 6,
     backgroundColor: "#CC0000",
