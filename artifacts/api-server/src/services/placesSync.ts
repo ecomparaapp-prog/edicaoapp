@@ -131,16 +131,21 @@ async function fetchNearbyPage(
     (body as Record<string, unknown>).pageToken = pageToken;
   }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.nationalPhoneNumber,places.websiteUri,places.photos",
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(12000),
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.nationalPhoneNumber,places.websiteUri,places.photos",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(12000),
+    });
+  } finally {
+    await recordCall();
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -151,8 +156,6 @@ async function fetchNearbyPage(
   if (data.error) {
     throw new Error(`Places API (New) error: ${data.error.status ?? ""} — ${data.error.message ?? ""}`);
   }
-
-  await recordCall();
 
   return { places: data.places ?? [], nextPageToken: data.nextPageToken };
 }
