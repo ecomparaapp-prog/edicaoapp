@@ -75,17 +75,22 @@ export async function searchProducts(query: string): Promise<CosmosProduct[]> {
   const base = getApiBaseUrl();
   const url = `${base}/products/search?q=${encodeURIComponent(query.trim())}`;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
   try {
     const res = await fetch(url, {
       headers: { "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(5000),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeout);
     if (!res.ok) return [];
 
     const data: ProductSearchResult = await res.json();
     return data.products || [];
   } catch {
+    clearTimeout(timeout);
     return [];
   }
 }
