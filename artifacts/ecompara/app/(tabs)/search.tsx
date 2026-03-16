@@ -1,8 +1,9 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Platform,
   Pressable,
@@ -23,16 +24,32 @@ export default function SearchScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { searchProducts, addToShoppingList } = useApp();
+  const { searchProducts, searchProductsAsync, addToShoppingList } = useApp();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Product[]>(searchProducts(""));
+  const [results, setResults] = useState<Product[]>(() => searchProducts(""));
+  const [searching, setSearching] = useState(false);
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : 90;
 
+  // Show local results instantly, then enrich with Cosmos cache after debounce
+  useEffect(() => {
+    setResults(searchProducts(query));
+    let cancelled = false;
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const asyncResults = await searchProductsAsync(query);
+        if (!cancelled) setResults(asyncResults);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); setSearching(false); };
+  }, [query]);
+
   const handleSearch = (text: string) => {
     setQuery(text);
-    setResults(searchProducts(text));
   };
 
   const getBestPrice = (product: Product) => {
@@ -150,13 +167,19 @@ export default function SearchScreen() {
             <Text style={[styles.emptyText, { color: C.textMuted }]}>Nenhum produto encontrado</Text>
           </View>
         )}
-        ListHeaderComponent={() =>
-          results.length > 0 ? (
-            <Text style={[styles.resultCount, { color: C.textMuted }]}>
-              {results.length} produto{results.length !== 1 ? "s" : ""} encontrado{results.length !== 1 ? "s" : ""}
-            </Text>
-          ) : null
-        }
+        ListHeaderComponent={() => (
+          <View style={styles.resultsHeader}>
+            {searching ? (
+              <ActivityIndicator size="small" color={C.primary} />
+            ) : null}
+            {results.length > 0 ? (
+              <Text style={[styles.resultCount, { color: C.textMuted }]}>
+                {results.length} produto{results.length !== 1 ? "s" : ""} encontrado{results.length !== 1 ? "s" : ""}
+                {searching ? " · buscando mais..." : ""}
+              </Text>
+            ) : null}
+          </View>
+        )}
       />
     </View>
   );
@@ -176,7 +199,8 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   scanBtn: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  resultCount: { fontSize: 12, fontFamily: "Inter_500Medium", marginBottom: 8 },
+  resultsHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  resultCount: { fontSize: 12, fontFamily: "Inter_500Medium", flex: 1 },
   productCard: {
     flexDirection: "row",
     alignItems: "center",

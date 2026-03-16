@@ -1,7 +1,7 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -126,9 +126,10 @@ export default function ShoppingListScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
 
-  const { shoppingList, toggleShoppingItem, removeFromShoppingList, clearShoppingList, addToShoppingList, searchProducts, products, stores } = useApp();
+  const { shoppingList, toggleShoppingItem, removeFromShoppingList, clearShoppingList, addToShoppingList, searchProducts, searchProductsAsync, products, stores } = useApp();
 
   const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const inputRef = useRef<TextInput>(null);
 
   const topPad = isWeb ? 67 : insets.top;
@@ -137,10 +138,18 @@ export default function ShoppingListScreen() {
   const checked = shoppingList.filter((i) => i.checked);
   const unchecked = shoppingList.filter((i) => !i.checked);
 
-  // Live search suggestions (max 5)
-  const suggestions = useMemo(() => {
-    if (!query.trim()) return [];
-    return searchProducts(query).slice(0, 5);
+  // Live search suggestions — show local results instantly, then enrich with Cosmos cache
+  useEffect(() => {
+    if (!query.trim()) { setSuggestions([]); return; }
+    // Immediate local results
+    setSuggestions(searchProducts(query).slice(0, 5));
+    // Async enrich with Cosmos cache after debounce
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const asyncResults = await searchProductsAsync(query);
+      if (!cancelled) setSuggestions(asyncResults.slice(0, 5));
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [query]);
 
   // 3 strategies (only when list has EAN-backed items)
@@ -349,7 +358,9 @@ export default function ShoppingListScreen() {
 
 /* ─── sub-components ─── */
 
-function ItemRow({ item, C, onToggle, onRemove }: { item: ShoppingItem; C: any; onToggle: () => void; onRemove: () => void }) {
+type ThemeColors = typeof Colors.light;
+
+function ItemRow({ item, C, onToggle, onRemove }: { item: ShoppingItem; C: ThemeColors; onToggle: () => void; onRemove: () => void }) {
   return (
     <Pressable
       style={[styles.item, { backgroundColor: C.surfaceElevated, borderColor: item.checked ? C.success : C.border, opacity: item.checked ? 0.65 : 1 }]}
@@ -377,7 +388,20 @@ function ItemRow({ item, C, onToggle, onRemove }: { item: ShoppingItem; C: any; 
   );
 }
 
-function StrategyCard({ icon, label, storeNames, total, badge, distance, accentColor, C, isDark, onSearch }: any) {
+type StrategyCardProps = {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  label: string;
+  storeNames: string;
+  total: number;
+  badge?: string;
+  distance?: string;
+  accentColor: string;
+  C: ThemeColors;
+  isDark: boolean;
+  onSearch: () => void;
+};
+
+function StrategyCard({ icon, label, storeNames, total, badge, distance, accentColor, C, isDark, onSearch }: StrategyCardProps) {
   return (
     <View style={[styles.stratCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
       <View style={[styles.stratIconBox, { backgroundColor: accentColor + "18" }]}>
