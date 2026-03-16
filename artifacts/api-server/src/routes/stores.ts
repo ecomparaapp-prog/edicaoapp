@@ -18,6 +18,11 @@ storesRouter.get("/stores/nearby", async (req, res) => {
     return;
   }
 
+  if (isNaN(radiusKm) || radiusKm <= 0 || radiusKm > 50) {
+    res.status(400).json({ error: "radius_km deve ser entre 0 e 50." });
+    return;
+  }
+
   const radiusM = radiusKm * 1000;
 
   try {
