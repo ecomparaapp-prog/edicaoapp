@@ -1,27 +1,35 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   useColorScheme,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
-import { useApp } from "@/context/AppContext";
+import { useApp, type Store } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
+import type { ClaimRequest } from "@/services/storesService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
+
+const DEFAULT_LAT = -15.8013;
+const DEFAULT_LNG = -47.8876;
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -29,12 +37,47 @@ export default function HomeScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user, isLoggedIn, stores, banners } = useApp();
+  const { user, isLoggedIn, stores, storesLoading, loadNearbyStores, submitStoreClaim, banners } = useApp();
   const { toggleTheme } = useTheme();
   const [activeBanner, setActiveBanner] = useState(0);
 
+  const [claimStore, setClaimStore] = useState<Store | null>(null);
+  const [claimName, setClaimName] = useState("");
+  const [claimEmail, setClaimEmail] = useState("");
+  const [claimMsg, setClaimMsg] = useState("");
+  const [claimSending, setClaimSending] = useState(false);
+
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : (insets.bottom ? insets.bottom + 60 : 80);
+
+  useEffect(() => {
+    loadNearbyStores(DEFAULT_LAT, DEFAULT_LNG, 10);
+  }, []);
+
+  const handleClaim = async () => {
+    if (!claimStore) return;
+    if (!claimName.trim() || !claimEmail.trim()) {
+      Alert.alert("Atenção", "Preencha nome e e-mail para continuar.");
+      return;
+    }
+    setClaimSending(true);
+    const claim: ClaimRequest = {
+      googlePlaceId: claimStore.googlePlaceId ?? claimStore.id,
+      placeName: claimStore.name,
+      requesterName: claimName.trim(),
+      requesterEmail: claimEmail.trim(),
+      message: claimMsg.trim(),
+    };
+    const result = await submitStoreClaim(claim);
+    setClaimSending(false);
+    if (result.ok) {
+      setClaimStore(null);
+      setClaimName(""); setClaimEmail(""); setClaimMsg("");
+      Alert.alert("Pedido enviado!", "Entraremos em contato em breve.");
+    } else {
+      Alert.alert("Erro", result.error ?? "Não foi possível enviar o pedido.");
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
@@ -178,9 +221,12 @@ export default function HomeScreen() {
         <View style={{ marginTop: 24, paddingHorizontal: 16 }}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: C.text }]}>Supermercados</Text>
-            <View style={[styles.radiusBadge, { backgroundColor: C.backgroundSecondary }]}>
-              <Feather name="map-pin" size={11} color={C.primary} />
-              <Text style={[styles.radiusText, { color: C.primary }]}>5km</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              {storesLoading && <ActivityIndicator size="small" color={C.primary} />}
+              <View style={[styles.radiusBadge, { backgroundColor: C.backgroundSecondary }]}>
+                <Feather name="map-pin" size={11} color={C.primary} />
+                <Text style={[styles.radiusText, { color: C.primary }]}>10km</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -192,41 +238,78 @@ export default function HomeScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12 }}
           ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-          renderItem={({ item }) => (
-            <Pressable
-              style={[
-                styles.storeCard,
-                { backgroundColor: C.surfaceElevated, borderColor: C.border },
-              ]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push(`/store/${item.id}`);
-              }}
-            >
-              <View
+          renderItem={({ item }) => {
+            const isShadow = item.isShadow === true;
+            return (
+              <Pressable
                 style={[
-                  styles.storeLogoCircle,
-                  { backgroundColor: isDark ? C.backgroundTertiary : "#F0F0F0" },
+                  styles.storeCard,
+                  { backgroundColor: C.surfaceElevated, borderColor: C.border },
+                  isShadow && { opacity: 0.55 },
                 ]}
+                onPress={() => {
+                  if (isShadow) return;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/store/${item.id}`);
+                }}
               >
-                <Feather name="shopping-bag" size={22} color={C.primary} />
-              </View>
-              <Text style={[styles.storeName, { color: C.text }]} numberOfLines={2}>
-                {item.name}
-              </Text>
-              <View style={styles.storeDistRow}>
-                <Feather name="map-pin" size={10} color={C.textMuted} />
-                <Text style={[styles.storeDist, { color: C.textMuted }]}>
-                  {item.distance}km
-                </Text>
-              </View>
-              {item.plan === "plus" && (
-                <View style={[styles.planBadge, { backgroundColor: C.primary }]}>
-                  <Text style={styles.planBadgeText}>PLUS</Text>
+                <View
+                  style={[
+                    styles.storeLogoCircle,
+                    { backgroundColor: isDark ? C.backgroundTertiary : "#F0F0F0" },
+                  ]}
+                >
+                  {item.photoUrl ? (
+                    <Image
+                      source={{ uri: item.photoUrl }}
+                      style={{ width: 48, height: 48, borderRadius: 24 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Feather name="shopping-bag" size={22} color={isShadow ? C.textMuted : C.primary} />
+                  )}
                 </View>
-              )}
-            </Pressable>
-          )}
+
+                <Text style={[styles.storeName, { color: C.text }]} numberOfLines={2}>
+                  {item.name}
+                </Text>
+
+                <View style={styles.storeDistRow}>
+                  <Feather name="map-pin" size={10} color={C.textMuted} />
+                  <Text style={[styles.storeDist, { color: C.textMuted }]}>
+                    {item.distance}km
+                  </Text>
+                </View>
+
+                {item.rating != null && (
+                  <View style={styles.storeDistRow}>
+                    <Ionicons name="star" size={10} color="#F9A825" />
+                    <Text style={[styles.storeDist, { color: C.textMuted }]}>
+                      {item.rating.toFixed(1)}
+                    </Text>
+                  </View>
+                )}
+
+                {!isShadow && item.plan === "plus" && (
+                  <View style={[styles.planBadge, { backgroundColor: C.primary }]}>
+                    <Text style={styles.planBadgeText}>PLUS</Text>
+                  </View>
+                )}
+
+                {isShadow && (
+                  <Pressable
+                    style={styles.claimBtn}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      setClaimStore(item);
+                    }}
+                  >
+                    <Text style={styles.claimBtnText}>Este é meu negócio</Text>
+                  </Pressable>
+                )}
+              </Pressable>
+            );
+          }}
         />
 
         {/* Quick Actions */}
@@ -268,6 +351,74 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Claim Modal */}
+      <Modal
+        visible={!!claimStore}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setClaimStore(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { backgroundColor: isDark ? C.backgroundSecondary : "#fff" }]}>
+            <View style={styles.modalHandle} />
+            <Text style={[styles.modalTitle, { color: C.text }]}>Este é meu negócio</Text>
+            <Text style={[styles.modalSubtitle, { color: C.textSecondary }]}>
+              Solicite parceria para {claimStore?.name} e comece a divulgar preços e promoções.
+            </Text>
+
+            <Text style={[styles.fieldLabel, { color: C.textSecondary }]}>Seu nome completo *</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.backgroundTertiary, color: C.text }]}
+              value={claimName}
+              onChangeText={setClaimName}
+              placeholder="Nome do responsável"
+              placeholderTextColor={C.textMuted}
+            />
+
+            <Text style={[styles.fieldLabel, { color: C.textSecondary }]}>E-mail de contato *</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.backgroundTertiary, color: C.text }]}
+              value={claimEmail}
+              onChangeText={setClaimEmail}
+              placeholder="seu@email.com"
+              placeholderTextColor={C.textMuted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            <Text style={[styles.fieldLabel, { color: C.textSecondary }]}>Mensagem (opcional)</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline, { backgroundColor: C.backgroundTertiary, color: C.text }]}
+              value={claimMsg}
+              onChangeText={setClaimMsg}
+              placeholder="Conte um pouco sobre seu estabelecimento..."
+              placeholderTextColor={C.textMuted}
+              multiline
+              numberOfLines={3}
+            />
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnCancel, { backgroundColor: C.backgroundTertiary }]}
+                onPress={() => setClaimStore(null)}
+              >
+                <Text style={[styles.modalBtnText, { color: C.textSecondary }]}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnSend, { opacity: claimSending ? 0.6 : 1 }]}
+                onPress={handleClaim}
+                disabled={claimSending}
+              >
+                {claimSending
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={[styles.modalBtnText, { color: "#fff" }]}>Enviar pedido</Text>
+                }
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -338,7 +489,7 @@ const styles = StyleSheet.create({
   },
   radiusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   storeCard: {
-    width: 100,
+    width: 110,
     borderRadius: 14,
     padding: 12,
     alignItems: "center",
@@ -351,13 +502,58 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
+    overflow: "hidden",
   },
   storeName: { fontSize: 11, fontFamily: "Inter_600SemiBold", textAlign: "center", lineHeight: 14 },
   storeDistRow: { flexDirection: "row", alignItems: "center", gap: 2, marginTop: 4 },
   storeDist: { fontSize: 10, fontFamily: "Inter_400Regular" },
   planBadge: { marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
   planBadgeText: { color: "#fff", fontSize: 8, fontFamily: "Inter_700Bold" },
+  claimBtn: {
+    marginTop: 6,
+    backgroundColor: "#CC0000",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  claimBtnText: { color: "#fff", fontSize: 8, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   quickActions: { flexDirection: "row", gap: 10 },
   quickCard: { flex: 1, borderRadius: 14, padding: 16, alignItems: "center", gap: 8 },
   quickCardText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "flex-end",
+  },
+  modalBox: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 36,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#ddd",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 6 },
+  modalSubtitle: { fontSize: 13, fontFamily: "Inter_400Regular", marginBottom: 20, lineHeight: 18 },
+  fieldLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", marginBottom: 6 },
+  input: {
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 14,
+  },
+  inputMultiline: { height: 80, textAlignVertical: "top" },
+  modalActions: { flexDirection: "row", gap: 10, marginTop: 4 },
+  modalBtn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  modalBtnCancel: {},
+  modalBtnSend: { backgroundColor: "#CC0000" },
+  modalBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

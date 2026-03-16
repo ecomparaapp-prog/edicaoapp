@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eCompara — Painel Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f8; color: #1a1a2e; min-height: 100vh; }
+    header { background: #CC0000; color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+    header h1 { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+    header span { font-size: 13px; opacity: .8; }
+    .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 24px; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); overflow: hidden; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .card-header h2 { font-size: 16px; font-weight: 600; }
+    .card-body { padding: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #f9f9fb; text-align: left; padding: 10px 12px; font-weight: 600; color: #555; border-bottom: 1px solid #eee; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: #e6f4ea; color: #1b5e20; }
+    .badge-red { background: #fce4e4; color: #b71c1c; }
+    .badge-yellow { background: #fff8e1; color: #e65100; }
+    .badge-gray { background: #f0f0f0; color: #666; }
+    button { cursor: pointer; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; padding: 8px 16px; transition: opacity .15s; }
+    button:hover { opacity: .85; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-red { background: #CC0000; color: #fff; }
+    .btn-gray { background: #e0e0e0; color: #333; }
+    .btn-green { background: #2e7d32; color: #fff; }
+    .btn-small { padding: 5px 10px; font-size: 12px; }
+    form.inline { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    input, select { border: 1px solid #ddd; border-radius: 8px; padding: 8px 12px; font-size: 13px; width: 100%; outline: none; }
+    input:focus { border-color: #CC0000; }
+    .field { display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 1; }
+    .field label { font-size: 12px; font-weight: 600; color: #666; }
+    .progress-bar { height: 10px; border-radius: 99px; background: #eee; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width .3s; }
+    .msg { padding: 10px 16px; border-radius: 8px; font-size: 13px; margin-top: 10px; display: none; }
+    .msg-ok { background: #e6f4ea; color: #1b5e20; }
+    .msg-err { background: #fce4e4; color: #b71c1c; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-left: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { color: #999; font-size: 13px; font-style: italic; padding: 16px 0; text-align: center; }
+    .credit-row { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
+    .credit-stat { display: flex; flex-direction: column; gap: 2px; }
+    .credit-stat .val { font-size: 28px; font-weight: 700; line-height: 1; }
+    .credit-stat .lbl { font-size: 12px; color: #888; }
+    .alert-banner { background: #fff3cd; border-left: 4px solid #e65100; padding: 10px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #7c4700; display: none; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>eCompara Admin</h1>
+    <span>Painel de Gerenciamento de Supermercados</span>
+  </header>
+
+  <div class="container">
+
+    <!-- Credit Status -->
+    <div class="card" id="credit-card">
+      <div class="card-header"><h2>Crédito Google Places (mês atual)</h2><button class="btn-gray btn-small" onclick="loadCredit()">Atualizar</button></div>
+      <div class="card-body">
+        <div class="credit-row" id="credit-content"><span class="empty">Carregando…</span></div>
+        <div class="alert-banner" id="throttle-alert">⚠ Throttle ativado — novas varreduras estão suspensas até o próximo mês. O banco de dados local continua operando normalmente.</div>
+      </div>
+    </div>
+
+    <!-- Search Zones -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Zonas de Busca</h2>
+      </div>
+      <div class="card-body">
+        <form class="inline" id="zone-form" onsubmit="createZone(event)">
+          <div class="field"><label>Nome da Zona</label><input id="z-name" placeholder="Ex: Águas Claras" required /></div>
+          <div class="field" style="max-width:130px"><label>Latitude</label><input id="z-lat" type="number" step="any" placeholder="-15.8367" required /></div>
+          <div class="field" style="max-width:130px"><label>Longitude</label><input id="z-lng" type="number" step="any" placeholder="-48.1393" required /></div>
+          <div class="field" style="max-width:110px"><label>Raio (km)</label><input id="z-radius" type="number" step="0.5" min="0.5" max="50" value="5" required /></div>
+          <div class="field" style="min-width:auto; flex:0"><label>&nbsp;</label><button type="submit" class="btn-red" id="zone-submit-btn">+ Criar Zona</button></div>
+        </form>
+        <div class="msg" id="zone-msg"></div>
+        <div style="margin-top:20px; overflow-x:auto;">
+          <table>
+            <thead><tr><th>Nome</th><th>Lat</th><th>Lng</th><th>Raio</th><th>Último Sync</th><th>Ações</th></tr></thead>
+            <tbody id="zones-body"><tr><td colspan="6" class="empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Partnership Requests -->
+    <div class="card">
+      <div class="card-header"><h2>Pedidos de Parceria</h2><button class="btn-gray btn-small" onclick="loadPartnerships()">Atualizar</button></div>
+      <div class="card-body">
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Data</th><th>Estabelecimento</th><th>Nome</th><th>E-mail</th><th>Mensagem</th></tr></thead>
+            <tbody id="partnerships-body"><tr><td colspan="5" class="empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const BASE = '/api';
+
+    // ── Utilities ────────────────────────────────────────────────
+    function fmt(dateStr) {
+      if (!dateStr) return '<span class="badge badge-gray">Nunca</span>';
+      const d = new Date(dateStr);
+      return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+    function showMsg(id, text, ok) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'msg ' + (ok ? 'msg-ok' : 'msg-err');
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 5000);
+    }
+
+    // ── Credit ────────────────────────────────────────────────────
+    async function loadCredit() {
+      try {
+        const r = await fetch(`${BASE}/admin/credit`);
+        const d = await r.json();
+        const pct = d.percentUsed ?? 0;
+        const color = pct >= 80 ? '#CC0000' : pct >= 50 ? '#e65100' : '#2e7d32';
+        document.getElementById('credit-content').innerHTML = `
+          <div class="credit-stat"><div class="val">${d.callsCount ?? 0}</div><div class="lbl">Chamadas realizadas</div></div>
+          <div class="credit-stat"><div class="val">${d.limit ?? 200}</div><div class="lbl">Limite mensal</div></div>
+          <div class="credit-stat" style="flex:1;min-width:200px">
+            <div class="lbl">Uso do mês (${pct}%)</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div>
+          </div>
+          <div class="credit-stat">
+            <span class="badge ${d.suspended ? 'badge-red' : 'badge-green'}">${d.suspended ? 'SUSPENSO' : 'Ativo'}</span>
+          </div>
+        `;
+        const alertEl = document.getElementById('throttle-alert');
+        alertEl.style.display = d.suspended ? 'block' : 'none';
+      } catch(e) {
+        document.getElementById('credit-content').innerHTML = '<span class="empty">Erro ao carregar crédito.</span>';
+      }
+    }
+
+    // ── Zones ─────────────────────────────────────────────────────
+    async function loadZones() {
+      try {
+        const r = await fetch(`${BASE}/admin/zones`);
+        const d = await r.json();
+        const tbody = document.getElementById('zones-body');
+        if (!d.zones || d.zones.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhuma zona cadastrada. Crie a primeira zona acima.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = d.zones.map(z => `
+          <tr>
+            <td><strong>${z.name}</strong><br/><span style="font-size:11px;color:#999">ID: ${z.id}</span></td>
+            <td>${z.lat.toFixed(6)}</td>
+            <td>${z.lng.toFixed(6)}</td>
+            <td>${z.radius_km ?? z.radiusKm ?? 5} km</td>
+            <td>${fmt(z.last_synced_at ?? z.lastSyncedAt)}</td>
+            <td style="white-space:nowrap;display:flex;gap:6px">
+              <button class="btn-green btn-small" onclick="syncZone(${z.id}, this)">
+                Sync agora
+              </button>
+              <button class="btn-gray btn-small" onclick="deleteZone(${z.id}, this)">
+                Remover
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        document.getElementById('zones-body').innerHTML = '<tr><td colspan="6" class="empty">Erro ao carregar zonas.</td></tr>';
+      }
+    }
+
+    async function createZone(e) {
+      e.preventDefault();
+      const btn = document.getElementById('zone-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = 'Criando… <span class="spinner"></span>';
+      try {
+        const r = await fetch(`${BASE}/admin/zones`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            name: document.getElementById('z-name').value,
+            lat: parseFloat(document.getElementById('z-lat').value),
+            lng: parseFloat(document.getElementById('z-lng').value),
+            radius_km: parseFloat(document.getElementById('z-radius').value),
+          })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro desconhecido');
+        showMsg('zone-msg', `Zona "${d.zone.name}" criada com sucesso!`, true);
+        document.getElementById('zone-form').reset();
+        loadZones();
+      } catch(err) {
+        showMsg('zone-msg', err.message ?? 'Erro ao criar zona.', false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '+ Criar Zona';
+      }
+    }
+
+    async function syncZone(id, btn) {
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = 'Sincronizando… <span class="spinner" style="border-color:#fff;border-top-color:transparent"></span>';
+      try {
+        const r = await fetch(`${BASE}/admin/zones/${id}/sync`, { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        if (d.throttled) {
+          alert('⚠ Sync bloqueado: limite de crédito atingido para este mês.');
+        } else if (d.error) {
+          alert('Erro durante sync: ' + d.error);
+        } else {
+          alert(`Sync concluído! ${d.synced} lojas salvas, ${d.skipped} já atualizadas.`);
+        }
+        loadZones();
+        loadCredit();
+      } catch(err) {
+        alert('Erro: ' + (err.message ?? 'desconhecido'));
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
+    async function deleteZone(id, btn) {
+      if (!confirm('Remover esta zona? Os dados em places_cache não serão apagados.')) return;
+      btn.disabled = true;
+      try {
+        await fetch(`${BASE}/admin/zones/${id}`, { method: 'DELETE' });
+        loadZones();
+      } catch(e) {
+        alert('Erro ao remover zona.');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ── Partnerships ──────────────────────────────────────────────
+    async function loadPartnerships() {
+      try {
+        const r = await fetch(`${BASE}/admin/partnerships`);
+        const d = await r.json();
+        const tbody = document.getElementById('partnerships-body');
+        if (!d.requests || d.requests.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhum pedido de parceria recebido ainda.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = d.requests.map(p => `
+          <tr>
+            <td style="white-space:nowrap">${fmt(p.created_at ?? p.createdAt)}</td>
+            <td><strong>${p.place_name ?? p.placeName ?? '—'}</strong><br/><span style="font-size:11px;color:#999">${p.google_place_id ?? p.googlePlaceId}</span></td>
+            <td>${p.requester_name ?? p.requesterName}</td>
+            <td><a href="mailto:${p.requester_email ?? p.requesterEmail}">${p.requester_email ?? p.requesterEmail}</a></td>
+            <td style="max-width:250px;word-break:break-word">${p.message ?? '—'}</td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        document.getElementById('partnerships-body').innerHTML = '<tr><td colspan="5" class="empty">Erro ao carregar pedidos.</td></tr>';
+      }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    loadCredit();
+    loadZones();
+    loadPartnerships();
+  </script>
+</body>
+</html>

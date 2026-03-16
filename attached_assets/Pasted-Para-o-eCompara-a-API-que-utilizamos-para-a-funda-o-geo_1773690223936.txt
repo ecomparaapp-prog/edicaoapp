@@ -1,0 +1,35 @@
+Para o eCompara, a API que utilizamos para a fundação geográfica é a Google Places API (especificamente os endpoints Nearby Search e Place Details). Ela funciona como o nosso "Sementeiro" de dados para identificar onde os mercados estão.
+
+No entanto, como você bem pontuou, depender 100% de consultas externas a cada abertura de app tornaria o projeto inviável financeiramente (Burn Rate alto). Por isso, estruturamos um Plano de Ação de 3 Camadas para reduzir os custos com consultas a quase zero após a fase inicial:
+
+1. Camada de Cache Local (O "Banco Semente")
+Em vez de perguntar ao Google toda vez, o eCompara pergunta primeiro ao seu próprio banco de dados PostgreSQL/PostGIS.
+
+Ação: Ao ativar uma nova Zona de Expansão (ex: Águas Claras), o sistema realiza uma varredura única (Bulk Search) via API do Google e salva todos os mercados encontrados no seu banco de dados com o status Shadow.
+
+Economia: 10.000 usuários visualizando mercados no bairro geram zero custo de API, pois os dados vêm do seu servidor.
+
+2. Sincronização por Status (Verified vs. Shadow)
+Dividimos os estabelecimentos para priorizar dados gratuitos:
+
+Mercados Verified (Parceiros): Os dados vêm do portal do lojista ou integração direta. Custo zero de API.
+
+Mercados Shadow (Google): As informações básicas (nome, endereço) são atualizadas apenas uma vez a cada 30 ou 60 dias. Não há necessidade de consultar o Google em tempo real para saber se o mercado mudou de lugar.
+
+3. Uso Estratégico do "Crédito Gratuito"
+O Google oferece US$ 200,00 mensais em créditos.
+
+Ação: Implementaremos um limitador no backend (Throttle). Se o consumo de APIs de descoberta atingir 80% do crédito gratuito, o sistema suspende novas varreduras automáticas de "novos mercados" até o mês seguinte, mantendo apenas a operação com o banco de dados já populado.
+
+Resultado: Você opera o core do negócio dentro da faixa de isenção do Google.
+
+🚀 ATUALIZAÇÃO DO PROMPT MESTRE (V20.0 - COST OPTIMIZER)
+Este bloco consolida a inteligência de economia de escala:
+
+2.4 OTIMIZAÇÃO DE CUSTOS DE INFRAESTRUTURA
+
+Estratégia Anti-Churn de Créditos: Proibido realizar chamadas à Google Places API para estabelecimentos já existentes no DB local.
+
+Persistência Geográfica: Armazenar google_place_id como chave externa para evitar Place Details redundantes.
+
+Geofencing Server-Side: A lógica de proximidade deve ser calculada via PostGIS (ST_DWithin) no servidor eCompara, e não via API do Google no front-end.

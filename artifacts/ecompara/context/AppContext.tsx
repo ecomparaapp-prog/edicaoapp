@@ -6,6 +6,12 @@ import {
   type EanLookupResult,
   type CosmosProduct,
 } from "@/services/cosmosService";
+import {
+  fetchNearbyStores,
+  submitPartnershipClaim,
+  type NearbyStore,
+  type ClaimRequest,
+} from "@/services/storesService";
 
 export type UserRole = "customer" | "retailer" | null;
 
@@ -58,6 +64,13 @@ export interface Store {
   lat: number;
   lng: number;
   plan: "normal" | "plus";
+  googlePlaceId?: string;
+  phone?: string;
+  website?: string;
+  rating?: number;
+  isPartner?: boolean;
+  isShadow?: boolean;
+  photoUrl?: string;
 }
 
 export interface RetailerStore {
@@ -169,6 +182,9 @@ type AppContextType = {
   toggleShoppingItem: (id: string) => void;
   clearShoppingList: () => void;
   stores: Store[];
+  storesLoading: boolean;
+  loadNearbyStores: (lat: number, lng: number, radiusKm?: number) => Promise<void>;
+  submitStoreClaim: (claim: ClaimRequest) => Promise<{ ok: boolean; error?: string }>;
   banners: Banner[];
   leaderboard: GameEntry[];
   products: Product[];
@@ -197,8 +213,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
   const [activeTab, setActiveTab] = useState<"customer" | "retailer">("customer");
-  // In-memory cache of products discovered via Cosmos API (makes Cosmos primary source)
   const [cosmosCache, setCosmosCache] = useState<Record<string, Product>>({});
+  const [stores, setStores] = useState<Store[]>(MOCK_STORES);
+  const [storesLoading, setStoresLoading] = useState(false);
 
   const mockRetailerStore: RetailerStore = {
     id: "r1",
@@ -347,6 +364,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return result;
   };
 
+  const loadNearbyStores = async (lat: number, lng: number, radiusKm = 10): Promise<void> => {
+    setStoresLoading(true);
+    try {
+      const nearbyStores = await fetchNearbyStores(lat, lng, radiusKm);
+      if (nearbyStores.length > 0) {
+        const mapped: Store[] = nearbyStores.map((s: NearbyStore) => ({
+          id: s.googlePlaceId,
+          name: s.name,
+          distance: s.distanceKm,
+          address: s.address ?? "",
+          lat: s.lat,
+          lng: s.lng,
+          plan: s.isPartner ? "plus" : "normal",
+          googlePlaceId: s.googlePlaceId,
+          phone: s.phone ?? undefined,
+          website: s.website ?? undefined,
+          rating: s.rating ?? undefined,
+          isPartner: s.isPartner,
+          isShadow: s.isShadow,
+          photoUrl: s.photoUrl ?? undefined,
+        }));
+        setStores(mapped);
+      }
+    } catch {
+      // fallback stays as MOCK_STORES
+    } finally {
+      setStoresLoading(false);
+    }
+  };
+
+  const submitStoreClaim = async (claim: ClaimRequest): Promise<{ ok: boolean; error?: string }> => {
+    return submitPartnershipClaim(claim);
+  };
+
   const addManualProduct = (ean: string, name: string) => {
     const exists = MOCK_PRODUCTS.find((p) => p.ean === ean);
     if (!exists) {
@@ -383,7 +434,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         removeFromShoppingList,
         toggleShoppingItem,
         clearShoppingList,
-        stores: MOCK_STORES,
+        stores,
+        storesLoading,
+        loadNearbyStores,
+        submitStoreClaim,
         banners: MOCK_BANNERS,
         leaderboard: MOCK_GAME_LEADERBOARD,
         products: (() => {
