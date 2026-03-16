@@ -252,6 +252,7 @@ export async function syncZone(zone: SearchZone): Promise<SyncResult> {
             rating = EXCLUDED.rating,
             geom = EXCLUDED.geom,
             synced_at = NOW()
+          WHERE places_cache.status = 'shadow'
         `);
 
         synced++;

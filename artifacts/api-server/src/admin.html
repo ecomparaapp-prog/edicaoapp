@@ -84,8 +84,8 @@
         <div class="msg" id="zone-msg"></div>
         <div style="margin-top:20px; overflow-x:auto;">
           <table>
-            <thead><tr><th>Nome</th><th>Lat</th><th>Lng</th><th>Raio</th><th>Último Sync</th><th>Ações</th></tr></thead>
-            <tbody id="zones-body"><tr><td colspan="6" class="empty">Carregando…</td></tr></tbody>
+            <thead><tr><th>Nome</th><th>Lat</th><th>Lng</th><th>Raio</th><th>Status</th><th>Último Sync</th><th>Ações</th></tr></thead>
+            <tbody id="zones-body"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -155,7 +155,7 @@
         const d = await r.json();
         const tbody = document.getElementById('zones-body');
         if (!d.zones || d.zones.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhuma zona cadastrada. Crie a primeira zona acima.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="empty">Nenhuma zona cadastrada. Crie a primeira zona acima.</td></tr>';
           return;
         }
         tbody.innerHTML = d.zones.map(z => `
@@ -164,6 +164,7 @@
             <td>${z.lat.toFixed(6)}</td>
             <td>${z.lng.toFixed(6)}</td>
             <td>${z.radius_km ?? z.radiusKm ?? 5} km</td>
+            <td><span class="badge ${z.active ? 'badge-green' : 'badge-red'}">${z.active ? 'Ativa' : 'Inativa'}</span></td>
             <td>${fmt(z.last_synced_at ?? z.lastSyncedAt)}</td>
             <td style="white-space:nowrap;display:flex;gap:6px">
               <button class="btn-green btn-small" onclick="syncZone(${z.id}, this)">
@@ -176,7 +177,7 @@
           </tr>
         `).join('');
       } catch(e) {
-        document.getElementById('zones-body').innerHTML = '<tr><td colspan="6" class="empty">Erro ao carregar zonas.</td></tr>';
+        document.getElementById('zones-body').innerHTML = '<tr><td colspan="7" class="empty">Erro ao carregar zonas.</td></tr>';
       }
     }
 
