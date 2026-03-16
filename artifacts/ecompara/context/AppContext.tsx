@@ -11,6 +11,7 @@ import {
   submitPartnershipClaim,
   type NearbyStore,
   type ClaimRequest,
+  type FetchStoresResult,
 } from "@/services/storesService";
 
 export type UserRole = "customer" | "retailer" | null;
@@ -368,27 +369,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const loadNearbyStores = async (lat: number, lng: number, radiusKm = 10): Promise<void> => {
     setStoresLoading(true);
     try {
-      const nearbyStores = await fetchNearbyStores(lat, lng, radiusKm);
-      const mapped: Store[] = nearbyStores.map((s: NearbyStore) => ({
-        id: s.googlePlaceId,
-        name: s.name,
-        distance: s.distanceKm,
-        address: s.address ?? "",
-        lat: s.lat,
-        lng: s.lng,
-        plan: s.status === "verified" ? "plus" : "normal",
-        googlePlaceId: s.googlePlaceId,
-        phone: s.phone ?? undefined,
-        website: s.website ?? undefined,
-        rating: s.rating ?? undefined,
-        status: s.status,
-        isPartner: s.is_partner,
-        isShadow: s.is_shadow,
-        photoUrl: s.photoUrl ?? undefined,
-      }));
-      setStores(mapped);
+      const result: FetchStoresResult = await fetchNearbyStores(lat, lng, radiusKm);
+      if (result.success) {
+        const mapped: Store[] = result.stores.map((s: NearbyStore) => ({
+          id: s.googlePlaceId,
+          name: s.name,
+          distance: s.distanceKm,
+          address: s.address ?? "",
+          lat: s.lat,
+          lng: s.lng,
+          plan: s.status === "verified" ? "plus" : "normal",
+          googlePlaceId: s.googlePlaceId,
+          phone: s.phone ?? undefined,
+          website: s.website ?? undefined,
+          rating: s.rating ?? undefined,
+          status: s.status,
+          isPartner: s.is_partner,
+          isShadow: s.is_shadow,
+          photoUrl: s.photoUrl ?? undefined,
+        }));
+        setStores(mapped);
+      }
     } catch {
-      // fallback stays as MOCK_STORES
+      // fallback stays as MOCK_STORES on network failure
     } finally {
       setStoresLoading(false);
     }

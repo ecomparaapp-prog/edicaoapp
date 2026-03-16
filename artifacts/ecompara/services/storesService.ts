@@ -35,11 +35,16 @@ function getApiBaseUrl(): string {
   return "http://localhost:80/api";
 }
 
+export interface FetchStoresResult {
+  stores: NearbyStore[];
+  success: boolean;
+}
+
 export async function fetchNearbyStores(
   lat: number,
   lng: number,
   radiusKm = 10,
-): Promise<NearbyStore[]> {
+): Promise<FetchStoresResult> {
   const base = getApiBaseUrl();
   const url = `${base}/stores/nearby?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`;
 
@@ -49,12 +54,14 @@ export async function fetchNearbyStores(
   try {
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      return { stores: [], success: false };
+    }
     const data = await res.json() as { stores?: NearbyStore[] };
-    return data.stores ?? [];
+    return { stores: data.stores ?? [], success: true };
   } catch {
     clearTimeout(timeout);
-    return [];
+    return { stores: [], success: false };
   }
 }
 
