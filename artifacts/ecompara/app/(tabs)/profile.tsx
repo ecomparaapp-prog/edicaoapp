@@ -92,12 +92,18 @@ export default function ProfileScreen() {
         {isLoggedIn ? (
           <>
             {/* User Card */}
-            <View style={[styles.userCard, { backgroundColor: C.primary, marginHorizontal: 16, marginBottom: 20 }]}>
+            <Pressable
+              style={[styles.userCard, { backgroundColor: C.primary, marginHorizontal: 16, marginBottom: 20 }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/settings/profile-edit"); }}
+            >
               <View style={[styles.avatarLarge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
                 <Feather name="user" size={32} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.userName}>{user?.name}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={styles.userName}>{user?.name}</Text>
+                  <Feather name="edit-2" size={12} color="rgba(255,255,255,0.7)" />
+                </View>
                 <Text style={styles.userEmail}>{user?.email}</Text>
                 <View style={styles.userStats}>
                   <View style={styles.userStat}>
@@ -116,7 +122,7 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               </View>
-            </View>
+            </Pressable>
 
             {/* Menu Items */}
             <View style={{ paddingHorizontal: 16, gap: 8 }}>
