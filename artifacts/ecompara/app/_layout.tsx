@@ -30,6 +30,10 @@ function RootLayoutNav() {
       <Stack.Screen name="store/[id]" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="scanner" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="retailer-scanner" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="settings/location" options={{ presentation: "card", headerShown: false }} />
+      <Stack.Screen name="settings/privacy" options={{ presentation: "card", headerShown: false }} />
+      <Stack.Screen name="settings/notifications" options={{ presentation: "card", headerShown: false }} />
+      <Stack.Screen name="settings/help" options={{ presentation: "card", headerShown: false }} />
     </Stack>
   );
 }

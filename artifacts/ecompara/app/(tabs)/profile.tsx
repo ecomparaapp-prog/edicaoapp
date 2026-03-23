@@ -120,10 +120,10 @@ export default function ProfileScreen() {
 
             {/* Menu Items */}
             <View style={{ paddingHorizontal: 16, gap: 8 }}>
-              <MenuItem icon="map-pin" label="Localização" sub="São Paulo, SP" color={C} isDark={isDark} />
-              <MenuItem icon="shield" label="Privacidade" color={C} isDark={isDark} />
-              <MenuItem icon="bell" label="Notificações" color={C} isDark={isDark} />
-              <MenuItem icon="help-circle" label="Ajuda" color={C} isDark={isDark} />
+              <MenuItem icon="map-pin" label="Localização" sub="São Paulo, SP" color={C} isDark={isDark} onPress={() => router.push("/settings/location")} />
+              <MenuItem icon="shield" label="Privacidade" color={C} isDark={isDark} onPress={() => router.push("/settings/privacy")} />
+              <MenuItem icon="bell" label="Notificações" color={C} isDark={isDark} onPress={() => router.push("/settings/notifications")} />
+              <MenuItem icon="help-circle" label="Ajuda" color={C} isDark={isDark} onPress={() => router.push("/settings/help")} />
               <Pressable
                 style={[styles.menuItem, { backgroundColor: C.surfaceElevated, borderColor: "#CC0000" + "40" }]}
                 onPress={handleLogout}
@@ -156,9 +156,12 @@ export default function ProfileScreen() {
   );
 }
 
-function MenuItem({ icon, label, sub, color: C, isDark }: any) {
+function MenuItem({ icon, label, sub, color: C, isDark, onPress }: any) {
   return (
-    <Pressable style={[styles.menuItem, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
+    <Pressable
+      style={[styles.menuItem, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}
+      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress?.(); }}
+    >
       <View style={[styles.menuIcon, { backgroundColor: C.backgroundTertiary }]}>
         <Feather name={icon} size={16} color={C.textSecondary} />
       </View>
