@@ -1,0 +1,22 @@
+[23:06, 23/03/2026] J Rodrigues: Sugestão de Layout: Tela de Ranking (Flutter)
+Para o desenvolvedor criar uma tela que engaje, peça a ele para seguir esta estrutura:
+
+Header Dinâmico: Mostra a posição atual do usuário e quantos pontos faltam para ele subir uma posição (ex: "Você está em 4º! Só mais 150 pontos para o pódio").
+
+Lista de Top 10: Cards circular, nome do usuário, nível de status (ícone) e pontuação total da semana.
+
+Botão "Como Pontuar": Ao clicar, abre um Bottom Sheet com a tabela de pontos que você enviou na imagem, servindo de guia para o usuário saber o que fazer.
+
+Filtro por REGIAO : Botão para alternar entre o ranking de Brasília inteira e o ranking local (ex: somente Santa Maria).
+[23:06, 23/03/2026] J Rodrigues: Regra de Interface: O usuário deve ter uma tela de "Extrato de Pontos" onde ele veja exatamente qual dessas ações gerou o saldo dele.
+[23:07, 23/03/2026] J Rodrigues: NÍVEIS DE STATUS (GAMIFICAÇÃO)
+O ranking semanal deve exibir selos para intimidar a concorrência e dar autoridade aos dados:
+
+Nível 1-10 (Aprendiz): Ícone de carrinho de metal.
+
+Nível 11-30 (Fiscal): Ícone de prancheta dourada.
+
+Nível 31-50 (Mestre da Economia): Ícone de coroa coral.
+
+O "Rei/Rainha do Bairro": Título temporário para o #1 do ranking da RA (ex: Águas Claras) naquela semana.
+[23:09, 23/03/2026] J Rodrigues: REGRAS ANTI-FRAUDE (DUREZA NO RANKING)Para evitar que alguém "farme" pontos em casa ou invente preços:Trava de GPS: Ações de OCR e Check só computam pontos se a distância do usuário até o mercado for $< 200$ metros.Limite de OCR: Máximo de 15 envios por dia (evita spam de fotos sem qualidade).Penalidade de Erro: Se o usuário reportar um preço via OCR e a nota fiscal (NFC-e) de outro usuário provar que o preço está errado, o reportador original perde 100 pts. Isso garante que ninguém minta para subir no ranking.🚀 ATUALIZAÇÃO DO PROMPT MESTRE (V21.0 - RANKING LOGIC)Adicione este bloco para a IA programar a lógica de pontuação:5.2 LÓGICA DO MOTOR DE GAMIFICAÇÃO (XP ENGINE)Weekly Reset: O ranking da Arena zera todo ultimo dia do mes às 23:59.Point Validation: P…
