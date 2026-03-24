@@ -27,12 +27,10 @@ import {
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH - 32;
 
-// Product card size inside store carousel
-const PRODUCT_CARD_W = 108;
-const PRODUCT_CARD_H = 148;
-
-// Brand variant card size
-const VARIANT_CARD_W = 112;
+// 3-column grid: card width minus horizontal padding, divided by 3 cols with 2 gaps
+const GRID_PADDING = 12;
+const GRID_GAP = 8;
+const PRODUCT_CELL_W = Math.floor((CARD_WIDTH - GRID_PADDING * 2 - GRID_GAP * 2) / 3);
 
 interface Props {
   isDark: boolean;
@@ -65,182 +63,165 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
     });
   };
 
-  // ─── Store Ad Card ────────────────────────────────────────────────────────
-  const renderStoreAd = (ad: StoreAd) => (
-    <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}>
+  // ─── Store Ad — 3×2 product grid (no inner scroll, no gesture conflict) ──
+  const renderStoreAd = (ad: StoreAd) => {
+    const visible = ad.products.slice(0, 6);
+    const rows: typeof visible[] = [visible.slice(0, 3), visible.slice(3, 6)];
+    const remaining = ad.products.length - 6;
 
-      {/* Header */}
-      <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
-        <View style={styles.cardHeaderLeft}>
-          <View style={styles.adBadge}>
-            <Text style={styles.adBadgeText}>ANÚNCIO</Text>
+    return (
+      <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}>
+
+        {/* Header */}
+        <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
+          <View style={styles.headerLeft}>
+            <View style={styles.adBadge}>
+              <Text style={styles.adBadgeText}>ANÚNCIO</Text>
+            </View>
+            <Text style={styles.headerSlot}>{ad.slotLabel}</Text>
           </View>
-          <Text style={styles.cardSlotLabel}>{ad.slotLabel}</Text>
+          <View style={styles.headerRight}>
+            <Text style={styles.headerStore} numberOfLines={1}>{ad.storeName}</Text>
+            <Text style={styles.headerBairro} numberOfLines={1}>{ad.bairro}</Text>
+          </View>
         </View>
-        <View style={styles.cardHeaderRight}>
-          <Text style={styles.cardStoreName} numberOfLines={1}>{ad.storeName}</Text>
-          <Text style={styles.cardBairro} numberOfLines={1}>{ad.bairro}</Text>
-        </View>
-      </View>
 
-      {/* Inner product carousel */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.productCarouselContent}
-        decelerationRate="fast"
-        snapToInterval={PRODUCT_CARD_W + 10}
-      >
-        {ad.products.map((product) => (
+        {/* 3×2 product grid */}
+        <View style={styles.grid}>
+          {rows.map((row, rowIdx) => (
+            <View key={rowIdx} style={styles.gridRow}>
+              {row.map((p) => (
+                <Pressable
+                  key={p.ean}
+                  style={[
+                    styles.productCell,
+                    {
+                      width: PRODUCT_CELL_W,
+                      backgroundColor: isDark ? "#242424" : "#F9F9F9",
+                      borderColor: isDark ? "#333" : "#EBEBEB",
+                    },
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/product/${p.ean}`);
+                  }}
+                >
+                  <View style={[styles.emojiBox, { backgroundColor: isDark ? "#2E2E2E" : "#EFEFEF" }]}>
+                    <Text style={styles.emoji}>{p.emoji}</Text>
+                  </View>
+                  <Text style={[styles.productName, { color: C.text }]} numberOfLines={2}>
+                    {p.name}
+                  </Text>
+                  <Text style={[styles.productPrice, { color: ad.accentColor }]}>
+                    R${p.price.toFixed(2).replace(".", ",")}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ))}
+        </View>
+
+        {/* Footer */}
+        <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
+          <View style={[styles.cpcBadge, { backgroundColor: isDark ? "#2A2A2A" : "#F2F2F2" }]}>
+            <MaterialCommunityIcons name="shield-check" size={10} color={ad.accentColor} />
+            <Text style={[styles.cpcText, { color: C.textMuted }]}>Score {ad.cpcScore}</Text>
+          </View>
           <Pressable
-            key={product.ean}
-            style={[
-              styles.productCard,
-              {
-                width: PRODUCT_CARD_W,
-                height: PRODUCT_CARD_H,
-                backgroundColor: isDark ? "#242424" : "#FAFAFA",
-                borderColor: isDark ? "#333" : "#ECECEC",
-              },
-            ]}
+            style={styles.footerAction}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(`/product/${product.ean}`);
+              router.push(`/store/${ad.storeId}`);
             }}
           >
-            {/* Emoji image area */}
-            <View style={[styles.productImgBox, { backgroundColor: isDark ? "#2E2E2E" : "#F0F0F0" }]}>
-              <Text style={styles.productEmoji}>{product.emoji}</Text>
-            </View>
-
-            {/* Name */}
-            <Text
-              style={[styles.productName, { color: C.text }]}
-              numberOfLines={2}
-            >
-              {product.name}
+            <Text style={[styles.footerActionText, { color: ad.accentColor }]}>
+              {remaining > 0 ? `+${remaining} ofertas · Ver loja` : "Ver loja completa"}
             </Text>
-
-            {/* Price */}
-            <Text style={[styles.productPrice, { color: ad.accentColor }]}>
-              R${product.price.toFixed(2).replace(".", ",")}
-            </Text>
-
-            {/* CTA chip */}
-            <View style={[styles.productCta, { backgroundColor: ad.accentColor + "18" }]}>
-              <Text style={[styles.productCtaText, { color: ad.accentColor }]}>Ver preços</Text>
-            </View>
+            <Feather name="arrow-right" size={12} color={ad.accentColor} />
           </Pressable>
-        ))}
-      </ScrollView>
-
-      {/* Scroll hint arrows */}
-      <View style={[styles.scrollHint, { borderTopColor: isDark ? "#2A2A2A" : "#F0F0F0" }]}>
-        <Feather name="chevrons-right" size={13} color={C.textMuted} />
-        <Text style={[styles.scrollHintText, { color: C.textMuted }]}>Deslize para ver mais ofertas</Text>
-      </View>
-
-      {/* Footer */}
-      <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
-        <View style={[styles.cpcBadge, { backgroundColor: isDark ? "#2A2A2A" : "#F5F5F5" }]}>
-          <MaterialCommunityIcons name="shield-check" size={10} color={ad.accentColor} />
-          <Text style={[styles.cpcText, { color: C.textMuted }]}>Score {ad.cpcScore}</Text>
         </View>
-        <Pressable
-          style={styles.cardFooterAction}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push(`/store/${ad.storeId}`);
-          }}
-        >
-          <Text style={[styles.cardFooterActionText, { color: ad.accentColor }]}>Ver loja completa</Text>
-          <Feather name="arrow-right" size={12} color={ad.accentColor} />
-        </Pressable>
       </View>
-    </View>
-  );
+    );
+  };
 
-  // ─── Brand Ad Card ────────────────────────────────────────────────────────
-  const renderBrandAd = (ad: BrandAd) => (
-    <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}>
+  // ─── Brand Ad — 3×2 variant grid (no inner scroll, no gesture conflict) ──
+  const renderBrandAd = (ad: BrandAd) => {
+    const visible = ad.variants.slice(0, 6);
+    const rows: typeof visible[] = [visible.slice(0, 3), visible.slice(3, 6)];
 
-      {/* Header */}
-      <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
-        <View style={styles.cardHeaderLeft}>
-          <View style={[styles.adBadge, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
-            <Text style={styles.adBadgeText}>{ad.slotLabel}</Text>
+    return (
+      <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}>
+
+        {/* Header */}
+        <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.adBadge, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
+              <Text style={styles.adBadgeText}>{ad.slotLabel}</Text>
+            </View>
+            <Text style={styles.headerSlot}>{ad.brandName}</Text>
           </View>
-          <Text style={styles.cardSlotLabel}>{ad.brandName}</Text>
-        </View>
-        <View style={styles.cardHeaderRight}>
-          <Text style={styles.cardStoreName}>{ad.tagline}</Text>
-          <View style={styles.radiusRow}>
-            <Feather name="map-pin" size={9} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.radiusText}>Raio {ad.searchRadiusKm}km</Text>
+          <View style={styles.headerRight}>
+            <Text style={styles.headerStore}>{ad.tagline}</Text>
+            <View style={styles.radiusRow}>
+              <Feather name="map-pin" size={9} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.radiusText}>Raio {ad.searchRadiusKm}km</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Hint bar */}
-      <View style={[styles.brandHintBar, { backgroundColor: isDark ? "#1F2A3A" : "#EBF1FA" }]}>
-        <Ionicons name="location-outline" size={13} color={ad.accentColor} />
-        <Text style={[styles.brandHintText, { color: ad.accentColor }]}>
-          Toque em uma variante para ver onde encontrar perto de você
-        </Text>
-      </View>
+        {/* Hint bar */}
+        <View style={[styles.hintBar, { backgroundColor: isDark ? "#1A2233" : "#EBF1FA" }]}>
+          <Ionicons name="location-outline" size={12} color={ad.accentColor} />
+          <Text style={[styles.hintText, { color: ad.accentColor }]}>
+            Toque numa variante para ver onde encontrar perto de você
+          </Text>
+        </View>
 
-      {/* Variant carousel — larger cards */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.variantCarouselContent}
-        decelerationRate="fast"
-        snapToInterval={VARIANT_CARD_W + 10}
-      >
-        {ad.variants.map((v) => (
-          <Pressable
-            key={v.ean}
-            style={[
-              styles.variantCard,
-              {
-                width: VARIANT_CARD_W,
-                backgroundColor: isDark ? "#1E2A3D" : "#F0F5FF",
-                borderColor: ad.accentColor + "50",
-              },
-            ]}
-            onPress={() => handleBrandProductPress(ad, v)}
-          >
-            <Text style={styles.variantEmoji}>{v.emoji}</Text>
-            <Text style={[styles.variantName, { color: C.text }]} numberOfLines={2}>
-              {v.name}
-            </Text>
-            <View style={[styles.variantFindBtn, { backgroundColor: ad.accentColor }]}>
-              <Feather name="map-pin" size={10} color="#fff" />
-              <Text style={styles.variantFindText}>Onde tem?</Text>
+        {/* 3×2 variant grid */}
+        <View style={styles.grid}>
+          {rows.map((row, rowIdx) => (
+            <View key={rowIdx} style={styles.gridRow}>
+              {row.map((v) => (
+                <Pressable
+                  key={v.ean}
+                  style={[
+                    styles.variantCell,
+                    {
+                      width: PRODUCT_CELL_W,
+                      backgroundColor: isDark ? "#1E2A3D" : "#F0F5FF",
+                      borderColor: ad.accentColor + "55",
+                    },
+                  ]}
+                  onPress={() => handleBrandProductPress(ad, v)}
+                >
+                  <Text style={styles.variantEmoji}>{v.emoji}</Text>
+                  <Text style={[styles.variantName, { color: C.text }]} numberOfLines={2}>
+                    {v.name}
+                  </Text>
+                  <View style={[styles.findBtn, { backgroundColor: ad.accentColor }]}>
+                    <Feather name="map-pin" size={9} color="#fff" />
+                    <Text style={styles.findBtnText}>Onde tem?</Text>
+                  </View>
+                </Pressable>
+              ))}
             </View>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      {/* Scroll hint */}
-      <View style={[styles.scrollHint, { borderTopColor: isDark ? "#2A2A2A" : "#F0F0F0" }]}>
-        <Feather name="chevrons-right" size={13} color={C.textMuted} />
-        <Text style={[styles.scrollHintText, { color: C.textMuted }]}>Deslize para ver mais variantes</Text>
-      </View>
-
-      {/* Footer */}
-      <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
-        <View style={[styles.cpcBadge, { backgroundColor: isDark ? "#2A2A2A" : "#F5F5F5" }]}>
-          <MaterialCommunityIcons name="tag-outline" size={10} color={ad.accentColor} />
-          <Text style={[styles.cpcText, { color: C.textMuted }]}>CPC Premium · Indústria</Text>
+          ))}
         </View>
-        <View style={styles.cardFooterAction}>
-          <Text style={[styles.cardFooterActionText, { color: ad.accentColor }]}>Ver linha completa</Text>
-          <Feather name="arrow-right" size={12} color={ad.accentColor} />
+
+        {/* Footer */}
+        <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
+          <View style={[styles.cpcBadge, { backgroundColor: isDark ? "#2A2A2A" : "#F2F2F2" }]}>
+            <MaterialCommunityIcons name="tag-outline" size={10} color={ad.accentColor} />
+            <Text style={[styles.cpcText, { color: C.textMuted }]}>CPC Premium · Indústria</Text>
+          </View>
+          <View style={styles.footerAction}>
+            <Text style={[styles.footerActionText, { color: ad.accentColor }]}>Ver linha completa</Text>
+            <Feather name="arrow-right" size={12} color={ad.accentColor} />
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   // ─── Root render ──────────────────────────────────────────────────────────
   return (
@@ -265,7 +246,7 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
           }
         />
 
-        {/* Pagination dots */}
+        {/* Pagination dots with tap-to-navigate */}
         <View style={styles.dots}>
           {HOME_ADS.map((ad, i) => {
             const color =
@@ -279,7 +260,7 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
                   styles.dot,
                   {
                     backgroundColor: i === activeBanner ? color : (isDark ? "#333" : "#DDD"),
-                    width: i === activeBanner ? 18 : 6,
+                    width: i === activeBanner ? 20 : 6,
                   },
                 ]}
               />
@@ -320,7 +301,7 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
             {findSheet && findSheet.inRadius.length > 0 ? (
               <>
                 <Text style={[styles.sheetSectionLabel, { color: isDark ? "#AAA" : "#777" }]}>
-                  Disponível perto de você — ordenado pelo menor preço
+                  Disponível perto de você — do menor para o maior preço
                 </Text>
                 {findSheet.inRadius.map((store, idx) => (
                   <Pressable
@@ -332,13 +313,8 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
                       router.push(`/store/${store.storeId}`);
                     }}
                   >
-                    <View
-                      style={[
-                        styles.storeRankBadge,
-                        { backgroundColor: idx === 0 ? "#4CAF50" : isDark ? "#2A2A2A" : "#F5F5F5" },
-                      ]}
-                    >
-                      <Text style={[styles.storeRankText, { color: idx === 0 ? "#fff" : isDark ? "#AAA" : "#666" }]}>
+                    <View style={[styles.rankBadge, { backgroundColor: idx === 0 ? "#4CAF50" : isDark ? "#2A2A2A" : "#F5F5F5" }]}>
+                      <Text style={[styles.rankText, { color: idx === 0 ? "#fff" : isDark ? "#AAA" : "#666" }]}>
                         {idx === 0 ? "🏆" : `${idx + 1}º`}
                       </Text>
                     </View>
@@ -349,7 +325,7 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
                         </Text>
                         {store.isPartner && (
                           <View style={styles.partnerBadge}>
-                            <Text style={styles.partnerBadgeText}>Parceiro</Text>
+                            <Text style={styles.partnerText}>Parceiro</Text>
                           </View>
                         )}
                       </View>
@@ -379,18 +355,13 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
                 </Text>
                 <Pressable
                   style={[styles.storeRow, { borderBottomColor: isDark ? "#2A2A2A" : "#F0F0F0" }]}
-                  onPress={() => {
-                    setFindSheet(null);
-                    router.push(`/store/${findSheet.nearest!.storeId}`);
-                  }}
+                  onPress={() => { setFindSheet(null); router.push(`/store/${findSheet.nearest!.storeId}`); }}
                 >
-                  <View style={[styles.storeRankBadge, { backgroundColor: isDark ? "#2A2A2A" : "#F5F5F5" }]}>
+                  <View style={[styles.rankBadge, { backgroundColor: isDark ? "#2A2A2A" : "#F5F5F5" }]}>
                     <Feather name="map-pin" size={14} color="#CC0000" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.storeRowName, { color: isDark ? "#FFF" : "#111" }]}>
-                      {findSheet.nearest.storeName}
-                    </Text>
+                    <Text style={[styles.storeRowName, { color: isDark ? "#FFF" : "#111" }]}>{findSheet.nearest.storeName}</Text>
                     <Text style={[styles.storeRowMeta, { color: isDark ? "#888" : "#999" }]}>
                       {findSheet.nearest.distanceKm.toFixed(1)}km · {findSheet.nearest.bairro}
                     </Text>
@@ -423,22 +394,23 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
 }
 
 const styles = StyleSheet.create({
-  // ── Outer card ──────────────────────────────────────────────────────────
   card: {
     borderRadius: 16,
     borderWidth: 1,
     overflow: "hidden",
   },
+
+  // Header
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingVertical: 12,
     gap: 8,
   },
-  cardHeaderLeft: { gap: 3 },
-  cardHeaderRight: { flex: 1, alignItems: "flex-end", gap: 2 },
+  headerLeft: { gap: 3 },
+  headerRight: { flex: 1, alignItems: "flex-end", gap: 2 },
   adBadge: {
     backgroundColor: "rgba(255,255,255,0.22)",
     borderRadius: 4,
@@ -447,118 +419,98 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   adBadgeText: { color: "#fff", fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
-  cardSlotLabel: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  cardStoreName: { color: "#fff", fontSize: 11, fontWeight: "600", textAlign: "right" },
-  cardBairro: { color: "rgba(255,255,255,0.75)", fontSize: 10, textAlign: "right" },
+  headerSlot: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  headerStore: { color: "#fff", fontSize: 11, fontWeight: "600", textAlign: "right" },
+  headerBairro: { color: "rgba(255,255,255,0.75)", fontSize: 10, textAlign: "right" },
 
-  // ── Product carousel (store ad) ──────────────────────────────────────────
-  productCarouselContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 10,
+  // Grid
+  grid: {
+    paddingHorizontal: GRID_PADDING,
+    paddingVertical: GRID_PADDING,
+    gap: GRID_GAP,
   },
-  productCard: {
+  gridRow: {
+    flexDirection: "row",
+    gap: GRID_GAP,
+  },
+
+  // Product cell (store)
+  productCell: {
     borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
-    paddingHorizontal: 8,
     paddingVertical: 10,
-    gap: 6,
+    paddingHorizontal: 6,
+    gap: 5,
   },
-  productImgBox: {
-    width: 64,
-    height: 64,
+  emojiBox: {
+    width: 52,
+    height: 52,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  productEmoji: { fontSize: 34 },
+  emoji: { fontSize: 28 },
   productName: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "500",
     textAlign: "center",
-    lineHeight: 14,
+    lineHeight: 13,
   },
   productPrice: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "800",
     textAlign: "center",
   },
-  productCta: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginTop: 2,
-  },
-  productCtaText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
 
-  // ── Brand hint bar ────────────────────────────────────────────────────────
-  brandHintBar: {
+  // Hint bar (brand)
+  hintBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  brandHintText: {
-    fontSize: 10,
-    fontWeight: "500",
-    flex: 1,
-  },
+  hintText: { fontSize: 10, fontWeight: "500", flex: 1 },
 
-  // ── Variant carousel (brand ad) ───────────────────────────────────────────
-  variantCarouselContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  variantCard: {
-    borderRadius: 14,
+  // Variant cell (brand)
+  variantCell: {
+    borderRadius: 12,
     borderWidth: 1.5,
     alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    gap: 5,
   },
-  variantEmoji: { fontSize: 38 },
+  variantEmoji: { fontSize: 30 },
   variantName: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
     textAlign: "center",
-    lineHeight: 16,
+    lineHeight: 13,
   },
-  variantFindBtn: {
+  findBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 20,
     marginTop: 2,
   },
-  variantFindText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+  findBtnText: { color: "#fff", fontSize: 9, fontWeight: "700" },
 
-  // ── Scroll hint ───────────────────────────────────────────────────────────
-  scrollHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  scrollHintText: { fontSize: 10 },
+  // Radius row
+  radiusRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  radiusText: { color: "rgba(255,255,255,0.8)", fontSize: 10 },
 
-  // ── Footer ────────────────────────────────────────────────────────────────
+  // Footer
   cardFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   cpcBadge: {
@@ -570,14 +522,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   cpcText: { fontSize: 9, fontWeight: "500" },
-  cardFooterAction: { flexDirection: "row", alignItems: "center", gap: 4 },
-  cardFooterActionText: { fontSize: 11, fontWeight: "700" },
+  footerAction: { flexDirection: "row", alignItems: "center", gap: 4 },
+  footerActionText: { fontSize: 11, fontWeight: "700" },
 
-  // ── Radius row (brand header) ──────────────────────────────────────────────
-  radiusRow: { flexDirection: "row", alignItems: "center", gap: 3 },
-  radiusText: { color: "rgba(255,255,255,0.8)", fontSize: 10 },
-
-  // ── Pagination dots ───────────────────────────────────────────────────────
+  // Dots
   dots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -587,7 +535,7 @@ const styles = StyleSheet.create({
   },
   dot: { height: 6, borderRadius: 3 },
 
-  // ── "Onde Encontrar" sheet ────────────────────────────────────────────────
+  // Sheet
   sheetOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -608,11 +556,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 16,
   },
-  sheetHeaderRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
+  sheetHeaderRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
   sheetTitle: { fontSize: 16, fontWeight: "700" },
   sheetSubtitle: { fontSize: 12, marginTop: 2 },
   sheetSectionLabel: { fontSize: 11, marginBottom: 8 },
@@ -623,14 +567,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  storeRankBadge: {
+  rankBadge: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
-  storeRankText: { fontSize: 13, fontWeight: "700" },
+  rankText: { fontSize: 13, fontWeight: "700" },
   storeRowName: { fontSize: 14, fontWeight: "600" },
   storeRowMeta: { fontSize: 11 },
   storeRowPrice: { fontSize: 16, fontWeight: "800", color: "#4CAF50" },
@@ -640,7 +584,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 1,
   },
-  partnerBadgeText: { color: "#2E7D32", fontSize: 9, fontWeight: "700" },
+  partnerText: { color: "#2E7D32", fontSize: 9, fontWeight: "700" },
   rupturaBox: {
     flexDirection: "row",
     alignItems: "flex-start",
