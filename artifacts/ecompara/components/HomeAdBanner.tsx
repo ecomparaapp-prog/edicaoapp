@@ -1,7 +1,7 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -18,7 +18,6 @@ import { Colors } from "@/constants/colors";
 import {
   HOME_ADS,
   findStoresForEAN,
-  type Ad,
   type StoreAd,
   type BrandAd,
   type BrandVariant,
@@ -27,7 +26,13 @@ import {
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH - 32;
-const PRODUCT_CELL = Math.floor((CARD_WIDTH - 8) / 5);
+
+// Product card size inside store carousel
+const PRODUCT_CARD_W = 108;
+const PRODUCT_CARD_H = 148;
+
+// Brand variant card size
+const VARIANT_CARD_W = 112;
 
 interface Props {
   isDark: boolean;
@@ -60,81 +65,106 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
     });
   };
 
-  const renderStoreAd = (ad: StoreAd) => {
-    const rows = [
-      ad.products.slice(0, 5),
-      ad.products.slice(5, 10),
-      ad.products.slice(10, 15),
-    ];
-    return (
-      <Pressable
-        style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(`/store/${ad.storeId}`);
-        }}
+  // ─── Store Ad Card ────────────────────────────────────────────────────────
+  const renderStoreAd = (ad: StoreAd) => (
+    <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}>
+
+      {/* Header */}
+      <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
+        <View style={styles.cardHeaderLeft}>
+          <View style={styles.adBadge}>
+            <Text style={styles.adBadgeText}>ANÚNCIO</Text>
+          </View>
+          <Text style={styles.cardSlotLabel}>{ad.slotLabel}</Text>
+        </View>
+        <View style={styles.cardHeaderRight}>
+          <Text style={styles.cardStoreName} numberOfLines={1}>{ad.storeName}</Text>
+          <Text style={styles.cardBairro} numberOfLines={1}>{ad.bairro}</Text>
+        </View>
+      </View>
+
+      {/* Inner product carousel */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.productCarouselContent}
+        decelerationRate="fast"
+        snapToInterval={PRODUCT_CARD_W + 10}
       >
-        {/* Card Header */}
-        <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
-          <View style={styles.cardHeaderLeft}>
-            <View style={styles.adBadge}>
-              <Text style={styles.adBadgeText}>ANÚNCIO</Text>
+        {ad.products.map((product) => (
+          <Pressable
+            key={product.ean}
+            style={[
+              styles.productCard,
+              {
+                width: PRODUCT_CARD_W,
+                height: PRODUCT_CARD_H,
+                backgroundColor: isDark ? "#242424" : "#FAFAFA",
+                borderColor: isDark ? "#333" : "#ECECEC",
+              },
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/product/${product.ean}`);
+            }}
+          >
+            {/* Emoji image area */}
+            <View style={[styles.productImgBox, { backgroundColor: isDark ? "#2E2E2E" : "#F0F0F0" }]}>
+              <Text style={styles.productEmoji}>{product.emoji}</Text>
             </View>
-            <Text style={styles.cardSlotLabel}>{ad.slotLabel}</Text>
-          </View>
-          <View style={styles.cardHeaderRight}>
-            <Text style={styles.cardStoreName} numberOfLines={1}>{ad.storeName}</Text>
-            <Text style={styles.cardBairro} numberOfLines={1}>{ad.bairro}</Text>
-          </View>
-        </View>
 
-        {/* Product Grid 5×3 */}
-        <View style={styles.productGrid}>
-          {rows.map((row, rowIdx) => (
-            <View key={rowIdx} style={styles.productRow}>
-              {row.map((product) => (
-                <Pressable
-                  key={product.ean}
-                  style={[styles.productCell, { width: PRODUCT_CELL }]}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/product/${product.ean}`);
-                  }}
-                >
-                  <View style={[styles.productEmoji, { backgroundColor: isDark ? "#2A2A2A" : "#F8F8F8" }]}>
-                    <Text style={styles.productEmojiText}>{product.emoji}</Text>
-                  </View>
-                  <Text style={[styles.productShortName, { color: C.textSecondary }]} numberOfLines={2}>
-                    {product.shortName}
-                  </Text>
-                  <Text style={[styles.productPrice, { color: ad.accentColor }]}>
-                    R${product.price.toFixed(2).replace(".", ",")}
-                  </Text>
-                </Pressable>
-              ))}
+            {/* Name */}
+            <Text
+              style={[styles.productName, { color: C.text }]}
+              numberOfLines={2}
+            >
+              {product.name}
+            </Text>
+
+            {/* Price */}
+            <Text style={[styles.productPrice, { color: ad.accentColor }]}>
+              R${product.price.toFixed(2).replace(".", ",")}
+            </Text>
+
+            {/* CTA chip */}
+            <View style={[styles.productCta, { backgroundColor: ad.accentColor + "18" }]}>
+              <Text style={[styles.productCtaText, { color: ad.accentColor }]}>Ver preços</Text>
             </View>
-          ))}
-        </View>
+          </Pressable>
+        ))}
+      </ScrollView>
 
-        {/* Footer */}
-        <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
-          <View style={[styles.cpcBadge, { backgroundColor: isDark ? "#2A2A2A" : "#F5F5F5" }]}>
-            <MaterialCommunityIcons name="shield-check" size={10} color={ad.accentColor} />
-            <Text style={[styles.cpcText, { color: C.textMuted }]}>Score {ad.cpcScore}</Text>
-          </View>
-          <View style={styles.cardFooterAction}>
-            <Text style={[styles.cardFooterActionText, { color: ad.accentColor }]}>Ver todas as ofertas</Text>
-            <Feather name="arrow-right" size={12} color={ad.accentColor} />
-          </View>
-        </View>
-      </Pressable>
-    );
-  };
+      {/* Scroll hint arrows */}
+      <View style={[styles.scrollHint, { borderTopColor: isDark ? "#2A2A2A" : "#F0F0F0" }]}>
+        <Feather name="chevrons-right" size={13} color={C.textMuted} />
+        <Text style={[styles.scrollHintText, { color: C.textMuted }]}>Deslize para ver mais ofertas</Text>
+      </View>
 
+      {/* Footer */}
+      <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
+        <View style={[styles.cpcBadge, { backgroundColor: isDark ? "#2A2A2A" : "#F5F5F5" }]}>
+          <MaterialCommunityIcons name="shield-check" size={10} color={ad.accentColor} />
+          <Text style={[styles.cpcText, { color: C.textMuted }]}>Score {ad.cpcScore}</Text>
+        </View>
+        <Pressable
+          style={styles.cardFooterAction}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(`/store/${ad.storeId}`);
+          }}
+        >
+          <Text style={[styles.cardFooterActionText, { color: ad.accentColor }]}>Ver loja completa</Text>
+          <Feather name="arrow-right" size={12} color={ad.accentColor} />
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  // ─── Brand Ad Card ────────────────────────────────────────────────────────
   const renderBrandAd = (ad: BrandAd) => (
     <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}>
-      {/* Card Header */}
+
+      {/* Header */}
       <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
         <View style={styles.cardHeaderLeft}>
           <View style={[styles.adBadge, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
@@ -151,37 +181,52 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
         </View>
       </View>
 
-      {/* Brand label */}
-      <View style={[styles.brandFindRow, { backgroundColor: isDark ? "#1F2A3A" : "#EBF1FA" }]}>
+      {/* Hint bar */}
+      <View style={[styles.brandHintBar, { backgroundColor: isDark ? "#1F2A3A" : "#EBF1FA" }]}>
         <Ionicons name="location-outline" size={13} color={ad.accentColor} />
-        <Text style={[styles.brandFindText, { color: ad.accentColor }]}>
-          Toque em um produto para ver onde encontrar perto de você
+        <Text style={[styles.brandHintText, { color: ad.accentColor }]}>
+          Toque em uma variante para ver onde encontrar perto de você
         </Text>
       </View>
 
-      {/* Variant carousel */}
+      {/* Variant carousel — larger cards */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.variantList}
+        contentContainerStyle={styles.variantCarouselContent}
+        decelerationRate="fast"
+        snapToInterval={VARIANT_CARD_W + 10}
       >
         {ad.variants.map((v) => (
           <Pressable
             key={v.ean}
-            style={[styles.variantCell, { backgroundColor: isDark ? "#252D3D" : "#F0F5FF", borderColor: ad.accentColor + "40" }]}
+            style={[
+              styles.variantCard,
+              {
+                width: VARIANT_CARD_W,
+                backgroundColor: isDark ? "#1E2A3D" : "#F0F5FF",
+                borderColor: ad.accentColor + "50",
+              },
+            ]}
             onPress={() => handleBrandProductPress(ad, v)}
           >
             <Text style={styles.variantEmoji}>{v.emoji}</Text>
             <Text style={[styles.variantName, { color: C.text }]} numberOfLines={2}>
-              {v.shortName}
+              {v.name}
             </Text>
             <View style={[styles.variantFindBtn, { backgroundColor: ad.accentColor }]}>
-              <Feather name="map-pin" size={9} color="#fff" />
-              <Text style={styles.variantFindText}>Onde tem</Text>
+              <Feather name="map-pin" size={10} color="#fff" />
+              <Text style={styles.variantFindText}>Onde tem?</Text>
             </View>
           </Pressable>
         ))}
       </ScrollView>
+
+      {/* Scroll hint */}
+      <View style={[styles.scrollHint, { borderTopColor: isDark ? "#2A2A2A" : "#F0F0F0" }]}>
+        <Feather name="chevrons-right" size={13} color={C.textMuted} />
+        <Text style={[styles.scrollHintText, { color: C.textMuted }]}>Deslize para ver mais variantes</Text>
+      </View>
 
       {/* Footer */}
       <View style={[styles.cardFooter, { borderTopColor: C.border }]}>
@@ -190,13 +235,14 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
           <Text style={[styles.cpcText, { color: C.textMuted }]}>CPC Premium · Indústria</Text>
         </View>
         <View style={styles.cardFooterAction}>
-          <Text style={[styles.cardFooterActionText, { color: ad.accentColor }]}>Ver todos os produtos</Text>
+          <Text style={[styles.cardFooterActionText, { color: ad.accentColor }]}>Ver linha completa</Text>
           <Feather name="arrow-right" size={12} color={ad.accentColor} />
         </View>
       </View>
     </View>
   );
 
+  // ─── Root render ──────────────────────────────────────────────────────────
   return (
     <>
       <View style={{ marginTop: 20 }}>
@@ -214,32 +260,35 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
             );
             setActiveBanner(idx);
           }}
-          renderItem={({ item }) => {
-            if (item.type === "store") return renderStoreAd(item);
-            return renderBrandAd(item);
-          }}
+          renderItem={({ item }) =>
+            item.type === "store" ? renderStoreAd(item) : renderBrandAd(item)
+          }
         />
 
         {/* Pagination dots */}
         <View style={styles.dots}>
-          {HOME_ADS.map((ad, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                {
-                  backgroundColor: i === activeBanner
-                    ? (ad.type === "brand" ? (ad as BrandAd).accentColor : (ad as StoreAd).accentColor)
-                    : (isDark ? "#333" : "#DDD"),
-                  width: i === activeBanner ? 16 : 6,
-                },
-              ]}
-            />
-          ))}
+          {HOME_ADS.map((ad, i) => {
+            const color =
+              ad.type === "brand"
+                ? (ad as BrandAd).accentColor
+                : (ad as StoreAd).accentColor;
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: i === activeBanner ? color : (isDark ? "#333" : "#DDD"),
+                    width: i === activeBanner ? 18 : 6,
+                  },
+                ]}
+              />
+            );
+          })}
         </View>
       </View>
 
-      {/* "Onde Encontrar" bottom sheet for brand products */}
+      {/* ── "Onde Encontrar" bottom sheet ── */}
       <Modal
         visible={!!findSheet}
         transparent
@@ -248,7 +297,10 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
       >
         <Pressable style={styles.sheetOverlay} onPress={() => setFindSheet(null)}>
           <Pressable
-            style={[styles.sheetBox, { backgroundColor: isDark ? "#1A1A1A" : "#fff", paddingBottom: insets.bottom + 16 }]}
+            style={[
+              styles.sheetBox,
+              { backgroundColor: isDark ? "#1A1A1A" : "#fff", paddingBottom: insets.bottom + 16 },
+            ]}
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.sheetHandle} />
@@ -280,8 +332,13 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
                       router.push(`/store/${store.storeId}`);
                     }}
                   >
-                    <View style={[styles.storeRankBadge, { backgroundColor: idx === 0 ? "#4CAF50" : isDark ? "#2A2A2A" : "#F5F5F5" }]}>
-                      <Text style={[styles.storeRankText, { color: idx === 0 ? "#fff" : (isDark ? "#AAA" : "#666") }]}>
+                    <View
+                      style={[
+                        styles.storeRankBadge,
+                        { backgroundColor: idx === 0 ? "#4CAF50" : isDark ? "#2A2A2A" : "#F5F5F5" },
+                      ]}
+                    >
+                      <Text style={[styles.storeRankText, { color: idx === 0 ? "#fff" : isDark ? "#AAA" : "#666" }]}>
                         {idx === 0 ? "🏆" : `${idx + 1}º`}
                       </Text>
                     </View>
@@ -314,7 +371,7 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
                 <View style={[styles.rupturaBox, { backgroundColor: isDark ? "#2A1A1A" : "#FFF3F3" }]}>
                   <Ionicons name="warning-outline" size={18} color="#CC0000" />
                   <Text style={[styles.rupturaText, { color: isDark ? "#FF8888" : "#CC0000" }]}>
-                    Produto não encontrado nos mercados num raio de {findSheet.searchRadiusKm}km
+                    Produto não encontrado num raio de {findSheet.searchRadiusKm}km
                   </Text>
                 </View>
                 <Text style={[styles.sheetSectionLabel, { color: isDark ? "#AAA" : "#777", marginTop: 12 }]}>
@@ -347,7 +404,7 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
               <View style={[styles.rupturaBox, { backgroundColor: isDark ? "#2A1A1A" : "#FFF3F3" }]}>
                 <Ionicons name="warning-outline" size={18} color="#CC0000" />
                 <Text style={[styles.rupturaText, { color: isDark ? "#FF8888" : "#CC0000" }]}>
-                  Nenhum mercado com este produto foi encontrado na sua região ainda. Seja o primeiro a cadastrar!
+                  Nenhum mercado com este produto encontrado na sua região. Seja o primeiro a cadastrar!
                 </Text>
               </View>
             )}
@@ -366,8 +423,9 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
 }
 
 const styles = StyleSheet.create({
+  // ── Outer card ──────────────────────────────────────────────────────────
   card: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     overflow: "hidden",
   },
@@ -375,169 +433,151 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     gap: 8,
   },
-  cardHeaderLeft: {
-    gap: 3,
-  },
-  cardHeaderRight: {
-    flex: 1,
-    alignItems: "flex-end",
-    gap: 2,
-  },
+  cardHeaderLeft: { gap: 3 },
+  cardHeaderRight: { flex: 1, alignItems: "flex-end", gap: 2 },
   adBadge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.22)",
     borderRadius: 4,
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     alignSelf: "flex-start",
   },
-  adBadgeText: {
-    color: "#fff",
-    fontSize: 9,
-    fontWeight: "700",
-    letterSpacing: 0.5,
+  adBadgeText: { color: "#fff", fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
+  cardSlotLabel: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  cardStoreName: { color: "#fff", fontSize: 11, fontWeight: "600", textAlign: "right" },
+  cardBairro: { color: "rgba(255,255,255,0.75)", fontSize: 10, textAlign: "right" },
+
+  // ── Product carousel (store ad) ──────────────────────────────────────────
+  productCarouselContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
   },
-  cardSlotLabel: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  cardStoreName: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "600",
-    textAlign: "right",
-  },
-  cardBairro: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 10,
-    textAlign: "right",
-  },
-  productGrid: {
-    paddingHorizontal: 4,
-    paddingVertical: 6,
-    gap: 4,
-  },
-  productRow: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  productCell: {
+  productCard: {
+    borderRadius: 12,
+    borderWidth: 1,
     alignItems: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    gap: 6,
   },
-  productEmoji: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+  productImgBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  productEmojiText: {
-    fontSize: 18,
-  },
-  productShortName: {
-    fontSize: 8,
+  productEmoji: { fontSize: 34 },
+  productName: {
+    fontSize: 11,
+    fontWeight: "500",
     textAlign: "center",
-    lineHeight: 10,
+    lineHeight: 14,
   },
   productPrice: {
-    fontSize: 9,
-    fontWeight: "700",
+    fontSize: 15,
+    fontWeight: "800",
     textAlign: "center",
   },
+  productCta: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  productCtaText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
+  // ── Brand hint bar ────────────────────────────────────────────────────────
+  brandHintBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  brandHintText: {
+    fontSize: 10,
+    fontWeight: "500",
+    flex: 1,
+  },
+
+  // ── Variant carousel (brand ad) ───────────────────────────────────────────
+  variantCarouselContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  variantCard: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    gap: 8,
+  },
+  variantEmoji: { fontSize: 38 },
+  variantName: {
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
+    lineHeight: 16,
+  },
+  variantFindBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginTop: 2,
+  },
+  variantFindText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+
+  // ── Scroll hint ───────────────────────────────────────────────────────────
+  scrollHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  scrollHintText: { fontSize: 10 },
+
+  // ── Footer ────────────────────────────────────────────────────────────────
   cardFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   cpcBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
   },
-  cpcText: {
-    fontSize: 9,
-    fontWeight: "500",
-  },
-  cardFooterAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  cardFooterActionText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  brandFindRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  brandFindText: {
-    fontSize: 10,
-    fontWeight: "500",
-    flex: 1,
-  },
-  variantList: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  variantCell: {
-    width: 80,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    gap: 5,
-  },
-  variantEmoji: {
-    fontSize: 26,
-  },
-  variantName: {
-    fontSize: 9,
-    textAlign: "center",
-    lineHeight: 12,
-    fontWeight: "500",
-  },
-  variantFindBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 20,
-    marginTop: 2,
-  },
-  variantFindText: {
-    color: "#fff",
-    fontSize: 8,
-    fontWeight: "700",
-  },
-  radiusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  radiusText: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 10,
-  },
+  cpcText: { fontSize: 9, fontWeight: "500" },
+  cardFooterAction: { flexDirection: "row", alignItems: "center", gap: 4 },
+  cardFooterActionText: { fontSize: 11, fontWeight: "700" },
+
+  // ── Radius row (brand header) ──────────────────────────────────────────────
+  radiusRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  radiusText: { color: "rgba(255,255,255,0.8)", fontSize: 10 },
+
+  // ── Pagination dots ───────────────────────────────────────────────────────
   dots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -545,25 +585,23 @@ const styles = StyleSheet.create({
     marginTop: 10,
     gap: 5,
   },
-  dot: {
-    height: 6,
-    borderRadius: 3,
-  },
-  // Sheet
+  dot: { height: 6, borderRadius: 3 },
+
+  // ── "Onde Encontrar" sheet ────────────────────────────────────────────────
   sheetOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
   sheetBox: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
     paddingTop: 12,
     paddingHorizontal: 16,
     maxHeight: "80%",
   },
   sheetHandle: {
-    width: 36,
+    width: 38,
     height: 4,
     backgroundColor: "#CCC",
     borderRadius: 2,
@@ -575,59 +613,34 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 12,
   },
-  sheetTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  sheetSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  sheetSectionLabel: {
-    fontSize: 11,
-    marginBottom: 8,
-  },
+  sheetTitle: { fontSize: 16, fontWeight: "700" },
+  sheetSubtitle: { fontSize: 12, marginTop: 2 },
+  sheetSectionLabel: { fontSize: 11, marginBottom: 8 },
   storeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   storeRankBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
-  storeRankText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  storeRowName: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  storeRowMeta: {
-    fontSize: 11,
-  },
-  storeRowPrice: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#4CAF50",
-  },
+  storeRankText: { fontSize: 13, fontWeight: "700" },
+  storeRowName: { fontSize: 14, fontWeight: "600" },
+  storeRowMeta: { fontSize: 11 },
+  storeRowPrice: { fontSize: 16, fontWeight: "800", color: "#4CAF50" },
   partnerBadge: {
     backgroundColor: "#E8F5E9",
     borderRadius: 4,
     paddingHorizontal: 5,
     paddingVertical: 1,
   },
-  partnerBadgeText: {
-    color: "#2E7D32",
-    fontSize: 9,
-    fontWeight: "600",
-  },
+  partnerBadgeText: { color: "#2E7D32", fontSize: 9, fontWeight: "700" },
   rupturaBox: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -636,19 +649,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 4,
   },
-  rupturaText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
+  rupturaText: { flex: 1, fontSize: 13, lineHeight: 18 },
   sheetCloseBtn: {
     borderRadius: 12,
     padding: 14,
     alignItems: "center",
     marginTop: 16,
   },
-  sheetCloseBtnText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
+  sheetCloseBtnText: { fontSize: 15, fontWeight: "600" },
 });
