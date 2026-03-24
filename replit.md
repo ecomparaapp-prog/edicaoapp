@@ -135,6 +135,40 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `lib/db/src/schema/merchantRegistrations.ts`
+
+New table `merchant_registrations` — full merchant onboarding records:
+- Bloco A: `cnpj`, `razao_social`, `nome_fantasia`, `inscricao_estadual`
+- Bloco B: `cep`, `address`, `lat`, `lng`, `operating_hours` (JSONB with per-day open/close/closed + holidays), `phone`, `whatsapp`
+- Bloco C: `parking` (none/free/paid), `card_brands` (JSONB array), `delivery` (none/own/app), `logo_url`
+- Verification: `verification_method` (email/phone), `verification_contact`, `verification_code`, `verified_at`
+- Lifecycle: `status` (pending_verification → pending_approval → approved/rejected), `admin_note`
+
+### `artifacts/api-server/src/routes/merchants.ts`
+
+Merchant registration API:
+- `GET /api/merchants/cnpj/:cnpj` — proxies to ReceitaWS, validates CNPJ status (blocks BAIXADA/INAPTA), returns auto-fill data
+- `POST /api/merchants/register` — creates registration with generated 4-digit verification code (returned as `_devCode` in dev mode)
+- `POST /api/merchants/verify` — confirms ownership code, advances status to `pending_approval`
+- `POST /api/merchants/resend` — resends verification code
+
+### `artifacts/api-server/src/routes/admin.ts` (updated)
+
+New admin endpoints:
+- `GET /api/admin/merchant-registrations?status=` — list registrations with optional status filter
+- `POST /api/admin/merchant-registrations/:id/approve` — approve with optional note
+- `POST /api/admin/merchant-registrations/:id/reject` — reject with mandatory note
+
+### `artifacts/ecompara/app/merchant-register.tsx`
+
+4-step merchant registration wizard:
+1. **Bloco A** — CNPJ lookup (auto-fills razão social, nome fantasia, CEP, address, phone), IE
+2. **Bloco B** — CEP, address, draggable map pin (react-native-maps), per-day operating hours with Fechado toggle, phone/WhatsApp
+3. **Bloco C** — Parking (none/free/paid), card brands checkboxes, delivery type, logo image picker (expo-image-picker, 1:1 crop)
+4. **Verificação** — choose email or phone verification → submits registration → enter 4-digit code → success screen
+
+Entry point: "Este é meu negócio" button on shadow store cards (map screen), passing `googlePlaceId`, `placeName`, `placeLat`, `placeLng` as route params.
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.

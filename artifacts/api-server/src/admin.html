@@ -91,9 +91,40 @@
       </div>
     </div>
 
+    <!-- Merchant Registrations -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Cadastros de Lojistas</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="mr-filter" onchange="loadMerchantRegistrations()" style="width:auto;font-size:12px;padding:6px 10px">
+            <option value="">Todos</option>
+            <option value="pending_verification">Aguardando verificação</option>
+            <option value="pending_approval" selected>Aguardando aprovação</option>
+            <option value="approved">Aprovados</option>
+            <option value="rejected">Rejeitados</option>
+          </select>
+          <button class="btn-gray btn-small" onclick="loadMerchantRegistrations()">Atualizar</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th><th>Empresa</th><th>CNPJ</th><th>Verificação</th>
+                <th>Endereço</th><th>Status</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="mr-body"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="msg" id="mr-msg"></div>
+      </div>
+    </div>
+
     <!-- Partnership Requests -->
     <div class="card">
-      <div class="card-header"><h2>Pedidos de Parceria</h2><button class="btn-gray btn-small" onclick="loadPartnerships()">Atualizar</button></div>
+      <div class="card-header"><h2>Pedidos de Parceria (legado)</h2><button class="btn-gray btn-small" onclick="loadPartnerships()">Atualizar</button></div>
       <div class="card-body">
         <div style="overflow-x:auto;">
           <table>
@@ -272,9 +303,109 @@
       }
     }
 
+    // ── Merchant Registrations ─────────────────────────────────────
+    const STATUS_LABELS = {
+      pending_verification: ['badge-yellow', 'Aguard. verificação'],
+      pending_approval:     ['badge-yellow', 'Aguard. aprovação'],
+      approved:             ['badge-green',  'Aprovado'],
+      rejected:             ['badge-red',    'Rejeitado'],
+    };
+
+    async function loadMerchantRegistrations() {
+      const filter = document.getElementById('mr-filter').value;
+      const url = `${BASE}/admin/merchant-registrations` + (filter ? `?status=${filter}` : '');
+      try {
+        const r = await fetch(url);
+        const d = await r.json();
+        const tbody = document.getElementById('mr-body');
+        if (!d.registrations || d.registrations.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty">Nenhum cadastro encontrado.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = d.registrations.map(m => {
+          const [bClass, bLabel] = STATUS_LABELS[m.status] ?? ['badge-gray', m.status];
+          const cnpjFmt = m.cnpj ? m.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : '—';
+          const verif = m.verification_method === 'email'
+            ? `✉ ${m.verification_contact ?? ''}`
+            : `📞 ${m.verification_contact ?? ''}`;
+          const canAct = m.status === 'pending_approval';
+          return `
+            <tr id="mr-row-${m.id}">
+              <td style="white-space:nowrap;font-size:12px">${fmt(m.created_at)}</td>
+              <td>
+                <strong>${m.nome_fantasia ?? m.nomeFantasia ?? '—'}</strong><br/>
+                <span style="font-size:11px;color:#999">${m.razao_social ?? m.razaoSocial ?? ''}</span>
+              </td>
+              <td style="font-family:monospace;font-size:12px">${cnpjFmt}</td>
+              <td style="font-size:12px">${verif}${m.verified_at ? ' ✔' : ' ✘'}</td>
+              <td style="font-size:12px;max-width:180px;word-break:break-word">${m.address ?? '—'}</td>
+              <td><span class="badge ${bClass}">${bLabel}</span>
+                ${m.admin_note ? `<br/><span style="font-size:10px;color:#888">${m.admin_note}</span>` : ''}
+              </td>
+              <td style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap">
+                ${canAct ? `
+                  <button class="btn-green btn-small" onclick="approveMR(${m.id}, this)">Aprovar</button>
+                  <button class="btn-red btn-small" onclick="rejectMR(${m.id}, this)">Rejeitar</button>
+                ` : ''}
+                <button class="btn-gray btn-small" onclick="viewMRDetail(${m.id})">Detalhes</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch(e) {
+        document.getElementById('mr-body').innerHTML = '<tr><td colspan="7" class="empty">Erro ao carregar cadastros.</td></tr>';
+      }
+    }
+
+    async function approveMR(id, btn) {
+      const note = prompt('Nota de aprovação (opcional):') ?? '';
+      if (!confirm('Aprovar este cadastro de lojista?')) return;
+      btn.disabled = true;
+      try {
+        const r = await fetch(`${BASE}/admin/merchant-registrations/${id}/approve`, {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ note }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        showMsg('mr-msg', `Cadastro #${id} aprovado.`, true);
+        loadMerchantRegistrations();
+      } catch(err) {
+        showMsg('mr-msg', err.message, false);
+        btn.disabled = false;
+      }
+    }
+
+    async function rejectMR(id, btn) {
+      const note = prompt('Motivo da rejeição (obrigatório):');
+      if (!note || !note.trim()) { alert('Informe o motivo da rejeição.'); return; }
+      if (!confirm('Rejeitar este cadastro?')) return;
+      btn.disabled = true;
+      try {
+        const r = await fetch(`${BASE}/admin/merchant-registrations/${id}/reject`, {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ note }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        showMsg('mr-msg', `Cadastro #${id} rejeitado.`, true);
+        loadMerchantRegistrations();
+      } catch(err) {
+        showMsg('mr-msg', err.message, false);
+        btn.disabled = false;
+      }
+    }
+
+    function viewMRDetail(id) {
+      const row = document.getElementById(`mr-row-${id}`);
+      if (!row) return;
+      alert(`Detalhes do cadastro #${id} — veja os campos na tabela. Em breve: modal de detalhes completo.`);
+    }
+
     // ── Init ──────────────────────────────────────────────────────
     loadCredit();
     loadZones();
+    loadMerchantRegistrations();
     loadPartnerships();
   </script>
 </body>

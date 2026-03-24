@@ -3,8 +3,9 @@ import { db } from "@workspace/db";
 import {
   searchZonesTable,
   partnershipRequestsTable,
+  merchantRegistrationsTable,
 } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { syncZone, getCreditStatus } from "../services/placesSync";
 
 const adminRouter = Router();
@@ -128,6 +129,59 @@ adminRouter.get("/admin/partnerships", async (_req, res) => {
   } catch (err) {
     console.error("GET /admin/partnerships error:", err);
     res.status(500).json({ error: "Erro ao listar pedidos." });
+  }
+});
+
+// ── Merchant Registrations ────────────────────────────────────────────────────
+
+adminRouter.get("/admin/merchant-registrations", async (req, res) => {
+  const { status } = req.query as { status?: string };
+  try {
+    const rows = await db
+      .select()
+      .from(merchantRegistrationsTable)
+      .orderBy(desc(merchantRegistrationsTable.createdAt));
+
+    const filtered = status
+      ? rows.filter((r) => r.status === status)
+      : rows;
+
+    res.json({ registrations: filtered });
+  } catch (err) {
+    console.error("GET /admin/merchant-registrations error:", err);
+    res.status(500).json({ error: "Erro ao listar cadastros." });
+  }
+});
+
+adminRouter.post("/admin/merchant-registrations/:id/approve", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
+
+  try {
+    await db
+      .update(merchantRegistrationsTable)
+      .set({ status: "approved", adminNote: req.body.note ?? null, updatedAt: new Date() })
+      .where(eq(merchantRegistrationsTable.id, id));
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /admin/merchant-registrations/:id/approve error:", err);
+    res.status(500).json({ error: "Erro ao aprovar cadastro." });
+  }
+});
+
+adminRouter.post("/admin/merchant-registrations/:id/reject", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
+
+  try {
+    await db
+      .update(merchantRegistrationsTable)
+      .set({ status: "rejected", adminNote: req.body.note ?? null, updatedAt: new Date() })
+      .where(eq(merchantRegistrationsTable.id, id));
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /admin/merchant-registrations/:id/reject error:", err);
+    res.status(500).json({ error: "Erro ao rejeitar cadastro." });
   }
 });
 

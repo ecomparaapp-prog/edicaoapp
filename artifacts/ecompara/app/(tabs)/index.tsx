@@ -337,13 +337,21 @@ export default function HomeScreen() {
 
                 {isShadow && (
                   <Pressable
-                    style={styles.claimBtn}
+                    style={[styles.claimBtn, { backgroundColor: "#CC0000" }]}
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                      setClaimStore(item);
+                      router.push({
+                        pathname: "/merchant-register",
+                        params: {
+                          googlePlaceId: item.googlePlaceId ?? item.id,
+                          placeName: item.name,
+                          placeLat: String(item.lat ?? ""),
+                          placeLng: String(item.lng ?? ""),
+                        },
+                      });
                     }}
                   >
-                    <Text style={styles.claimBtnText}>Solicitar parceria</Text>
+                    <Text style={styles.claimBtnText}>Este é meu negócio</Text>
                   </Pressable>
                 )}
               </Pressable>
