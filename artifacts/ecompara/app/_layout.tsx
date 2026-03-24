@@ -6,9 +6,10 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import * as Notifications from "expo-notifications";
+import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -16,6 +17,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { configurePushHandler, setupNotificationChannel } from "@/services/geofenceService";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,6 +32,8 @@ function RootLayoutNav() {
       <Stack.Screen name="store/[id]" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="scanner" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="retailer-scanner" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="missions/[placeId]" options={{ presentation: "card", headerShown: false }} />
+      <Stack.Screen name="merchant-register" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="settings/location" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="settings/privacy" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="settings/notifications" options={{ presentation: "card", headerShown: false }} />
@@ -46,6 +50,36 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+
+  const notifListener = useRef<Notifications.EventSubscription | null>(null);
+  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+
+  useEffect(() => {
+    configurePushHandler();
+    setupNotificationChannel();
+
+    // Navigate to mission screen when user taps a notification
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as {
+          screen?: string;
+          placeId?: string;
+          placeName?: string;
+        };
+        if (data?.screen === "missions" && data?.placeId) {
+          router.push({
+            pathname: "/missions/[placeId]",
+            params: { placeId: data.placeId, placeName: data.placeName ?? "Loja", xpMultiplier: "2" },
+          });
+        }
+      },
+    );
+
+    return () => {
+      notifListener.current?.remove();
+      responseListener.current?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

@@ -1,0 +1,50 @@
+1. A Lógica do Backend (O Gatilho "Data-Gap")
+O servidor deve rodar um processo (Cron Job) que identifica produtos "Carentes de Validação" baseando-se em dois critérios:
+
+Tempo de Expiração: Preços de produtos básicos (leite, pão) com mais de 24h sem atualização.
+
+Divergência: Preços que receberam um "reporte de erro" de outro usuário, mas ainda não foram confirmados por uma nota fiscal.
+
+2. O Disparo do Alerta: Push Notification Geofencing
+Não adianta enviar o alerta para quem está em casa. O app deve disparar quando o usuário está perto ou dentro do mercado.
+
+O Fluxo:
+
+O sistema identifica que o Mercado X está com 15 preços "vencidos".
+
+Um usuário (com o app em segundo plano) entra no raio de 300 metros desse mercado.
+
+O Firebase envia um Push personalizado:
+
+"📍 Você está perto do Mercado X! Ajude a vizinhança: valide 3 preços carentes e ganhe X2 de Pontos (40 XP) agora!"
+
+3. Gamificação: A "Missão Relâmpago"
+Para garantir que o usuário clique, o app deve tratar isso como uma conquista rara:
+
+Multiplicador Temporário: "Valide agora e ganhe o dobro de pontos".
+
+Selo de Verificador: "Faltam 5 validações para você ganhar o selo de 'Fiscal de Elite' da Ceilândia".
+
+Ranking: Pontos de "Validação de Urgência" valem mais para o ranking semanal da Arena.
+
+🚀 ATUALIZAÇÃO DO PROMPT MESTRE (V27.0 - SMART NOTIFICATIONS)
+Adicione este bloco para a IA programar a inteligência de alertas:
+
+4.3 MOTOR DE NOTIFICAÇÕES DINÂMICAS (PUSH LOGIC)
+
+Trigger "Price_Need": Se product_price.updated_at > 24h E user.location < 300m de store_location -> Disparar Push Mission_Alert.
+
+Priority Scoring: Priorizar alertas para itens da "Cesta Básica" (Leite, Arroz, Feijão, Óleo).
+
+Reward Multiplier: Aplicar Double_XP para validações solicitadas via notificação ativa.
+
+Night Mode: Bloquear qualquer alerta de validação entre 22:00 e 07:00 para evitar churn de usuários.
+
+🎨 Como aparece no App (UX)
+Quando o usuário abre o app após o alerta, ele vê uma seção chamada "Missões Próximas":
+
+O mapa mostra um ícone de **Exclamação Cor de Coral (!) ** sobre o mercado.
+
+Ao clicar, abre a lista de produtos que precisam de foto ou confirmação.
+
+Ao concluir, uma animação de "Missão Cumprida" aparece com o ganho de XP dobrado.

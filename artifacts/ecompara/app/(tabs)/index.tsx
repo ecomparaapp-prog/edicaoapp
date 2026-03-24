@@ -25,6 +25,7 @@ import { Colors } from "@/constants/colors";
 import { useApp, type Store } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 import type { ClaimRequest } from "@/services/storesService";
+import { fetchNearbyMissions, type NearbyMission } from "@/services/missionService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
@@ -48,11 +49,22 @@ export default function HomeScreen() {
   const [claimMsg, setClaimMsg] = useState("");
   const [claimSending, setClaimSending] = useState(false);
 
+  const [missions, setMissions] = useState<NearbyMission[]>([]);
+  const [missionsLoading, setMissionsLoading] = useState(false);
+  const missionPlaceIdSet = React.useMemo(
+    () => new Set(missions.map((m) => m.googlePlaceId)),
+    [missions],
+  );
+
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : (insets.bottom ? insets.bottom + 60 : 80);
 
   useEffect(() => {
     loadNearbyStores(DEFAULT_LAT, DEFAULT_LNG, 10);
+    setMissionsLoading(true);
+    fetchNearbyMissions(DEFAULT_LAT, DEFAULT_LNG, 2)
+      .then(setMissions)
+      .finally(() => setMissionsLoading(false));
   }, []);
 
   const handleClaim = async () => {
@@ -218,6 +230,85 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Missões Relâmpago */}
+        {(missionsLoading || missions.length > 0) && (
+          <View style={{ marginTop: 24 }}>
+            <View style={[styles.sectionHeader, { paddingHorizontal: 16 }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View style={[styles.missionBolt, { backgroundColor: "#CC0000" }]}>
+                  <Ionicons name="flash" size={13} color="#fff" />
+                </View>
+                <Text style={[styles.sectionTitle, { color: C.text }]}>Missões Relâmpago</Text>
+              </View>
+              {missionsLoading && <ActivityIndicator size="small" color={C.primary} />}
+            </View>
+            <FlatList
+              data={missions}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(m) => m.googlePlaceId}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, gap: 12 }}
+              renderItem={({ item: m }) => (
+                <Pressable
+                  style={[styles.missionCard, {
+                    backgroundColor: C.surfaceElevated,
+                    borderColor: m.disputedCount > 0 ? "#CC000060" : "#FF980060",
+                  }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    router.push({
+                      pathname: "/missions/[placeId]",
+                      params: {
+                        placeId: m.googlePlaceId,
+                        placeName: m.name,
+                        xpMultiplier: String(m.xpMultiplier),
+                      },
+                    });
+                  }}
+                >
+                  <View style={styles.missionCardTop}>
+                    <View style={[styles.missionXpBadge, { backgroundColor: m.disputedCount > 0 ? "#CC0000" : "#FF9800" }]}>
+                      <Ionicons name="flash" size={10} color="#fff" />
+                      <Text style={styles.missionXpText}>x{m.xpMultiplier} XP</Text>
+                    </View>
+                    <Text style={[styles.missionDist, { color: C.textMuted }]}>
+                      {m.distanceM < 1000 ? `${m.distanceM}m` : `${(m.distanceM / 1000).toFixed(1)}km`}
+                    </Text>
+                  </View>
+                  <Text style={[styles.missionStoreName, { color: C.text }]} numberOfLines={2}>
+                    {m.name}
+                  </Text>
+                  <Text style={[styles.missionAddress, { color: C.textMuted }]} numberOfLines={1}>
+                    {m.address ?? ""}
+                  </Text>
+                  <View style={styles.missionStats}>
+                    {m.staleCount > 0 && (
+                      <View style={[styles.missionStat, { backgroundColor: "#FF980015" }]}>
+                        <Feather name="clock" size={10} color="#FF9800" />
+                        <Text style={[styles.missionStatText, { color: "#FF9800" }]}>
+                          {m.staleCount} {m.staleCount === 1 ? "desatualizado" : "desatualizados"}
+                        </Text>
+                      </View>
+                    )}
+                    {m.disputedCount > 0 && (
+                      <View style={[styles.missionStat, { backgroundColor: "#CC000015" }]}>
+                        <Feather name="alert-triangle" size={10} color="#CC0000" />
+                        <Text style={[styles.missionStatText, { color: "#CC0000" }]}>
+                          {m.disputedCount} {m.disputedCount === 1 ? "contestado" : "contestados"}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={[styles.missionAction, { backgroundColor: C.primary }]}>
+                    <Text style={styles.missionActionText}>Iniciar Missão</Text>
+                    <Feather name="arrow-right" size={12} color="#fff" />
+                  </View>
+                </Pressable>
+              )}
+            />
+          </View>
+        )}
+
         {/* Supermercados Próximos */}
         <View style={{ marginTop: 24, paddingHorizontal: 16 }}>
           <View style={styles.sectionHeader}>
@@ -242,12 +333,15 @@ export default function HomeScreen() {
           renderItem={({ item }) => {
             const isShadow = item.isShadow === true;
             const isVerified = item.status === "verified";
+            const hasMission = missionPlaceIdSet.has(item.googlePlaceId ?? item.id);
+            const mission = hasMission ? missions.find((m) => m.googlePlaceId === (item.googlePlaceId ?? item.id)) : null;
             return (
               <Pressable
                 style={[
                   styles.storeCard,
                   { backgroundColor: C.surfaceElevated, borderColor: C.border },
                   isVerified && { borderColor: C.primary, borderWidth: 1.5 },
+                  hasMission && !isVerified && { borderColor: "#CC000050", borderWidth: 1.5 },
                 ]}
                 onPress={() => {
                   if (isShadow) return;
@@ -257,6 +351,26 @@ export default function HomeScreen() {
               >
                 {isShadow && (
                   <View style={styles.shadowOverlay} pointerEvents="none" />
+                )}
+
+                {/* Mission coral ! badge */}
+                {hasMission && (
+                  <Pressable
+                    style={styles.missionCoralbadge}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      router.push({
+                        pathname: "/missions/[placeId]",
+                        params: {
+                          placeId: item.googlePlaceId ?? item.id,
+                          placeName: item.name,
+                          xpMultiplier: String(mission?.xpMultiplier ?? 2),
+                        },
+                      });
+                    }}
+                  >
+                    <Text style={styles.missionCoralText}>!</Text>
+                  </Pressable>
                 )}
 
                 <View
@@ -621,4 +735,47 @@ const styles = StyleSheet.create({
   modalBtnCancel: {},
   modalBtnSend: { backgroundColor: "#CC0000" },
   modalBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+
+  // Mission section styles
+  missionBolt: {
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+  },
+  missionCard: {
+    width: 200, borderRadius: 16, borderWidth: 1.5,
+    padding: 14, gap: 8,
+    elevation: 2,
+    shadowColor: "#CC0000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6,
+  },
+  missionCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  missionXpBadge: {
+    flexDirection: "row", alignItems: "center", gap: 3,
+    paddingHorizontal: 7, paddingVertical: 3, borderRadius: 20,
+  },
+  missionXpText: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#fff" },
+  missionDist: { fontSize: 10, fontFamily: "Inter_400Regular" },
+  missionStoreName: { fontSize: 14, fontFamily: "Inter_700Bold", lineHeight: 18 },
+  missionAddress: { fontSize: 10, fontFamily: "Inter_400Regular" },
+  missionStats: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+  missionStat: {
+    flexDirection: "row", alignItems: "center", gap: 3,
+    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6,
+  },
+  missionStatText: { fontSize: 10, fontFamily: "Inter_500Medium" },
+  missionAction: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4,
+    paddingVertical: 8, borderRadius: 8,
+  },
+  missionActionText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
+
+  // Coral ! badge on store cards
+  missionCoralbadge: {
+    position: "absolute", top: 8, right: 8, zIndex: 10,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: "#FF6B35",
+    alignItems: "center", justifyContent: "center",
+    elevation: 3,
+    shadowColor: "#FF6B35", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4,
+  },
+  missionCoralText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 13, lineHeight: 16 },
 });

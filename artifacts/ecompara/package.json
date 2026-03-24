@@ -57,6 +57,9 @@
   },
   "dependencies": {
     "@nkzw/create-context-hook": "^1.1.0",
+    "expo-background-fetch": "^55.0.10",
+    "expo-notifications": "^55.0.13",
+    "expo-task-manager": "^55.0.10",
     "react-native-maps": "1.18.0"
   }
 }

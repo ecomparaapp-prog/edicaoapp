@@ -169,6 +169,52 @@ New admin endpoints:
 
 Entry point: "Este é meu negócio" button on shadow store cards (map screen), passing `googlePlaceId`, `placeName`, `placeLat`, `placeLng` as route params.
 
+### `artifacts/api-server/src/routes/missions.ts`
+
+Price validation mission system backend:
+- `GET /api/prices/missions?lat=&lng=&radius_km=&limit=` — stores near user with stale (>24h) or disputed (downvotes > upvotes) prices; returns `xpMultiplier` (2.0 for disputed, 1.5 for stale), `staleCount`, `disputedCount`, `distanceM`
+- `GET /api/prices/missions/:placeId/queue` — ordered list of price reports needing validation at a store; cesta básica items sorted first; reason: `stale` | `disputed`
+- `POST /api/prices/:id/validate` — upvote/downvote a price report; `fromMission: true` flag doubles XP (20 XP vs 10 XP); marks `is_verified = true` when upvotes ≥ 3
+
+### `artifacts/ecompara/services/missionService.ts`
+
+Typed API service for missions:
+- `fetchNearbyMissions(lat, lng, radiusKm)` → `NearbyMission[]`
+- `fetchMissionQueue(placeId)` → `MissionQueueItem[]`
+- `validatePrice(reportId, vote, fromMission)` → `ValidateResult` with `xpEarned`, `justVerified`
+
+### `artifacts/ecompara/services/geofenceService.ts`
+
+Background geofencing + local push notifications:
+- `startBackgroundGeofencing()` — starts `expo-location` background updates (5min / 150m intervals)
+- `checkGeofenceAndNotify(lat, lng)` — fetches missions in 300m radius, fires local notification for closest unnotified store
+- Night mode guard: no notifications 22:00–07:00
+- 30-min cooldown per store (`lastNotifiedStore` map)
+- Android "missions" notification channel
+- Background task: `ECOMPARA_BACKGROUND_LOCATION`
+
+### `artifacts/ecompara/app/missions/[placeId].tsx`
+
+Mission detail screen — swipe-to-validate UI:
+- Loads mission queue for a store (stale + disputed prices)
+- Card-by-card swipe: ✓ Correto / ✗ Errado / Pular
+- XP popup animation (+20 XP with 2x multiplier)
+- "Missão Cumprida!" trophy celebration overlay on completion
+- `fromMission: true` on all validation API calls for 2x XP
+
+### Home screen missions features (`app/(tabs)/index.tsx`)
+
+- "Missões Relâmpago" horizontal scrollable section (after banners) with mission cards showing XP multiplier, distance, stale/disputed counts, "Iniciar Missão" CTA
+- Coral `!` badge (orange-red circle) on store cards in the stores horizontal list when that store has pending missions
+- Missions fetched on mount via `fetchNearbyMissions(DEFAULT_LAT, DEFAULT_LNG, 2)` (2km radius)
+
+### `artifacts/ecompara/app/_layout.tsx`
+
+Updated root layout:
+- Registers `missions/[placeId]` stack screen
+- Sets up notification channel + push handler on mount
+- Listens for notification taps → navigates to mission detail screen
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
