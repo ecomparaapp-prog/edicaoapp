@@ -4,6 +4,7 @@ import eanRouter from "./ean";
 import adminRouter from "./admin";
 import storesRouter from "./stores";
 import profileRouter from "./profile";
+import pricesRouter from "./prices";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(eanRouter);
 router.use(adminRouter);
 router.use(storesRouter);
 router.use(profileRouter);
+router.use(pricesRouter);
 
 export default router;

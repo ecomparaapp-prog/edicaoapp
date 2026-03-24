@@ -85,6 +85,8 @@ Database layer using Drizzle ORM with PostgreSQL + PostGIS. Exports a Drizzle cl
   - `places_cache` — Google Places results (google_place_id PK, name, address, lat, lng, phone, website, photo_url, rating, status text 'shadow'|'verified', synced_at; 30-day TTL; `geom geography(Point,4326)` generated stored column + GIST index for fast spatial queries)
   - `partnership_requests` — "Este é meu negócio" claim requests (google_place_id, requester_name, requester_email, message)
   - `api_credit_usage` — monthly Google Places API call counter with throttle state (month_key unique, calls_count, suspended_at)
+  - `price_reports` — user-submitted price observations (ean, place_id → places_cache.google_place_id, user_id, price numeric(10,2), reported_at, is_verified bool, upvotes int, downvotes int); indexes on ean, place_id, user_id, (ean,place_id)
+  - `user_profiles` — user profile data (user_id PK, nickname unique, full_name, cpf, phone, address, pix_key, full_name_locked bool, cpf_locked bool, profile_bonus_awarded bool)
 - PostGIS enabled; `geom` column with GIST index used for ST_DWithin queries in `/api/stores/nearby`
 - Note: `geom` column and `spatial_ref_sys` table are managed outside Drizzle (via raw SQL); do NOT run `drizzle-kit push` without `--force` or it will try to drop them
 - `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`)
@@ -99,11 +101,14 @@ Expo React Native mobile app (the main eCompara app).
 - **Services**:
   - `services/cosmosService.ts` — calls `/api/products/ean/:ean` and `/api/products/search?q=` with AbortController timeout
   - `services/storesService.ts` — calls `/api/stores/nearby` and `POST /api/stores/claim`
+  - `services/profileService.ts` — calls `/api/profile/:userId` (GET/PUT) and `/api/profile/check-nickname` (GET)
+  - `services/priceService.ts` — calls `POST /api/prices`, `GET /api/products/:ean/prices`, `GET /api/stores/:placeId/prices`, `POST /api/prices/:id/vote`; URL built via `getApiBaseUrl()` pattern
 - **Context** (`context/AppContext.tsx`):
   - `cosmosCache` — in-memory Cosmos product cache
   - `stores` / `storesLoading` — backend-loaded stores (fallback: MOCK_STORES)
   - `loadNearbyStores(lat, lng, radiusKm)` — fetches from backend, maps to Store[], updates state
   - `submitStoreClaim(claim)` — calls `/api/stores/claim`
+  - `submitPriceUpdate(ean, price, placeId, bonusPoints?)` — async; calls `priceService.submitPrice()`, awards points locally; returns `{ok, reportId, bonusPoints, error}`
 - **UI**:
   - Shadow stores (status='shadow'): gray overlay (0.45 opacity) + "Este é meu negócio" claim CTA button → claim modal
   - Verified stores (status='verified'): highlighted card with primary border, "Verificado" badge, clickable phone/website metadata

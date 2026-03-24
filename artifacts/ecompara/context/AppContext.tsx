@@ -13,6 +13,7 @@ import {
   type ClaimRequest,
   type FetchStoresResult,
 } from "@/services/storesService";
+import { submitPrice } from "@/services/priceService";
 
 export type UserRole = "customer" | "retailer" | null;
 
@@ -197,7 +198,7 @@ type AppContextType = {
   addManualProduct: (ean: string, name: string) => void;
   retailerStore: RetailerStore | null;
   updateRetailerProduct: (ean: string, price: number) => void;
-  submitPriceUpdate: (ean: string, price: number, storeId: string) => void;
+  submitPriceUpdate: (ean: string, price: number, placeId: string, bonusPoints?: number) => Promise<{ ok: boolean; reportId?: number; bonusPoints?: number; error?: string }>;
   userRadius: number;
   activeTab: "customer" | "retailer";
   setActiveTab: (tab: "customer" | "retailer") => void;
@@ -415,15 +416,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     submitPriceUpdate(ean, 0, "", 50);
   };
 
-  const submitPriceUpdate = (_ean: string, _price: number, _storeId: string, bonusPoints?: number) => {
-    if (user) {
-      const pts = bonusPoints ?? 10;
+  const submitPriceUpdate = async (ean: string, price: number, placeId: string, bonusPoints?: number) => {
+    if (user && ean && price > 0 && placeId) {
+      const result = await submitPrice(ean, placeId, user.id, price);
+      const pts = result.ok ? (result.bonusPoints ?? bonusPoints ?? 10) : (bonusPoints ?? 10);
       setUserState({
         ...user,
         points: user.points + pts,
         totalPriceUpdates: user.totalPriceUpdates + 1,
       });
+      return result;
     }
+    // fallback: still award points locally
+    if (user) {
+      const pts = bonusPoints ?? 10;
+      setUserState({ ...user, points: user.points + pts, totalPriceUpdates: user.totalPriceUpdates + 1 });
+    }
+    return { ok: false };
   };
 
   return (
