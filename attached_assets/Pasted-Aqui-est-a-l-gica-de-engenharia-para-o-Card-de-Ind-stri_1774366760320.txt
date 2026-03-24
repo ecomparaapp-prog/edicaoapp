@@ -1,0 +1,45 @@
+Aqui está a lógica de engenharia para o Card de Indústria (Brand Awareness + Conversão):
+
+1. A Lógica do "Card da Marca" (Brand Push)
+Diferente do card do lojista, o foco da Itambé é o Produto, não o estabelecimento.
+
+O Card na Home: Um banner de destaque (ex: "Leite Itambé - O sabor da fazenda") com o produto em evidência.
+
+O Gatilho de Clique: Ao clicar no produto da Itambé, o sistema executa um Filtro Geográfico Instantâneo.
+
+A Resposta do App:
+
+Cenário A (Tem no Raio): O app abre uma lista de "Onde encontrar perto de você", ordenada pelo menor preço entre os mercados num raio de 5km (ou o raio definido no plano da marca).
+
+Cenário B (Não tem no Raio): O app exibe: "Este produto não está disponível nos mercados vizinhos. Encontre no mercado mais próximo a [X] km de você" (direcionando para a loja mais próxima que teve esse EAN validado recentemente via NFC-e ou integração).
+
+2. A Lógica de Cobrança (CPC de Indústria)
+A Indústria tem orçamentos muito maiores que o mercadinho de bairro.
+
+CPC Premium: A Itambé paga um valor por clique para "descobrir onde tem".
+
+Data Intelligence: Além do clique, você vende para a Itambé o relatório de ruptura: "Seu leite foi buscado 5.000 vezes em Águas Claras, mas apenas 2 mercados tinham estoque". Isso é ouro para a logística deles.
+
+Prioridade de Parceiros: Se a Itambé tem uma parceria com o "Supermercado X", você pode priorizar esse mercado na lista de resultados, desde que o preço seja competitivo.
+
+3. Formato de Implantação (Brand Overlay)
+Interatividade: O card pode ser um carrossel de 15 variações do mesmo fabricante (Leite Integral, Desnatado, Zero Lactose, etc).
+
+Deep Link: O clique leva direto para a tela de "Comparação do Produto Específico" já filtrada pela localização do usuário.
+
+🚀 ATUALIZAÇÃO DO PROMPT MESTRE (V30.0 - BRAND ADS & RUPTURE LOGIC)
+Este bloco finaliza a arquitetura de monetização com a Indústria:
+
+6.3 MÓDULO DE ANÚNCIOS DE INDÚSTRIA (BRAND TO SHELF)
+
+Object: Brand_Campaign vinculada a um EAN_Prefix ou lista de EANs.
+
+Search Logic: Ao interagir com o Card da Marca, o sistema realiza um ST_Distance entre user_location e todos os stores que possuem o EAN com price_updated_at < 48h.
+
+Recommendation Engine: >     * IF count(stores_in_radius) == 0 -> Sugerir min(distance) independente do raio.
+
+IF count(stores_in_radius) > 0 -> Listar por min(price).
+
+Brand Analytics: Registrar "Buscas sem Estoque" (Ruptura) para relatórios B2B.
+
+Monetization: CPC diferenciado para Indústria + Taxa de Setup de Campanha.

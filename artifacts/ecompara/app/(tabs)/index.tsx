@@ -5,7 +5,6 @@ import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   FlatList,
   Image,
   Linking,
@@ -26,9 +25,7 @@ import { useApp, type Store } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 import type { ClaimRequest } from "@/services/storesService";
 import { fetchNearbyMissions, type NearbyMission } from "@/services/missionService";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const BANNER_WIDTH = SCREEN_WIDTH - 32;
+import HomeAdBanner from "@/components/HomeAdBanner";
 
 const DEFAULT_LAT = -15.8013;
 const DEFAULT_LNG = -47.8876;
@@ -39,7 +36,7 @@ export default function HomeScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user, isLoggedIn, stores, storesLoading, loadNearbyStores, submitStoreClaim, banners } = useApp();
+  const { user, isLoggedIn, stores, storesLoading, loadNearbyStores, submitStoreClaim } = useApp();
   const { toggleTheme } = useTheme();
   const [activeBanner, setActiveBanner] = useState(0);
 
@@ -175,60 +172,12 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
 
-        {/* Banners */}
-        <View style={{ marginTop: 20 }}>
-          <FlatList
-            data={banners}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingHorizontal: 16 }}
-            ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-            onMomentumScrollEnd={(e) => {
-              const idx = Math.round(
-                e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 12)
-              );
-              setActiveBanner(idx);
-            }}
-            renderItem={({ item }) => (
-              <Pressable
-                style={[styles.bannerCard, { backgroundColor: item.color, width: BANNER_WIDTH }]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(`/store/${item.storeId}`);
-                }}
-              >
-                <View style={styles.bannerContent}>
-                  <View style={[styles.bannerTag, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-                    <Text style={styles.bannerTagText}>ANÚNCIO</Text>
-                  </View>
-                  <Text style={styles.bannerTitle}>{item.title}</Text>
-                  <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
-                  <Text style={styles.bannerStore}>{item.storeName}</Text>
-                </View>
-                <View style={styles.bannerIcon}>
-                  <MaterialCommunityIcons
-                    name="tag-multiple"
-                    size={60}
-                    color="rgba(255,255,255,0.15)"
-                  />
-                </View>
-              </Pressable>
-            )}
-          />
-          <View style={styles.bannerDots}>
-            {banners.map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  { backgroundColor: i === activeBanner ? C.primary : C.border },
-                ]}
-              />
-            ))}
-          </View>
-        </View>
+        {/* Ad Banners */}
+        <HomeAdBanner
+          isDark={isDark}
+          activeBanner={activeBanner}
+          setActiveBanner={setActiveBanner}
+        />
 
         {/* Missões Relâmpago */}
         {(missionsLoading || missions.length > 0) && (
@@ -614,30 +563,6 @@ const styles = StyleSheet.create({
   },
   searchPlaceholder: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular" },
   barcodeBtn: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  bannerCard: {
-    borderRadius: 16,
-    padding: 20,
-    height: 140,
-    overflow: "hidden",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  bannerContent: { flex: 1 },
-  bannerTag: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginBottom: 8,
-  },
-  bannerTagText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  bannerTitle: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 22 },
-  bannerSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 4 },
-  bannerStore: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 6 },
-  bannerIcon: { marginLeft: 8 },
-  bannerDots: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
   radiusBadge: {
