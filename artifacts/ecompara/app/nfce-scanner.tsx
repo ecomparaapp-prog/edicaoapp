@@ -1,0 +1,391 @@
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useColorScheme,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { Colors } from "@/constants/colors";
+import { useApp } from "@/context/AppContext";
+
+/* ── mock NFC-e items per store CNPJ ── */
+const MOCK_NOTAS: Record<string, {
+  storeName: string; storeId: string; storeCNPJ: string;
+  items: { ean: string; name: string; qty: number; unit: string; price: number }[];
+}> = {
+  "35250300000001234560014050012345678901234567": {
+    storeName: "Tatico Supermercados", storeId: "2", storeCNPJ: "00.000.001/0001-01",
+    items: [
+      { ean: "7891000053508", name: "Leite Parmalat 1L", qty: 2, unit: "UN", price: 4.89 },
+      { ean: "7891910000197", name: "Arroz Tio João 5kg", qty: 1, unit: "UN", price: 21.90 },
+      { ean: "7894900700015", name: "Coca-Cola 2L", qty: 2, unit: "UN", price: 8.49 },
+      { ean: "7891000310755", name: "Açúcar União 1kg", qty: 1, unit: "UN", price: 4.29 },
+      { ean: "7896036090015", name: "Óleo de Soja 900ml", qty: 1, unit: "UN", price: 6.79 },
+    ],
+  },
+  "35250315000014500700014050098765432109876543": {
+    storeName: "Extra Econômico", storeId: "5", storeCNPJ: "15.000.014/0001-00",
+    items: [
+      { ean: "7891910000197", name: "Arroz Tio João 5kg", qty: 2, unit: "UN", price: 19.90 },
+      { ean: "7891000053508", name: "Leite Parmalat 1L", qty: 3, unit: "UN", price: 4.59 },
+      { ean: "7894900700015", name: "Coca-Cola 2L", qty: 1, unit: "UN", price: 7.99 },
+      { ean: "7891000310755", name: "Açúcar União 1kg", qty: 2, unit: "UN", price: 3.99 },
+      { ean: "7896036090015", name: "Óleo de Soja 900ml", qty: 2, unit: "UN", price: 5.99 },
+      { ean: "7891149100006", name: "Macarrão Penne 500g", qty: 3, unit: "UN", price: 3.49 },
+      { ean: "7891700201035", name: "Farinha de Trigo 1kg", qty: 1, unit: "UN", price: 4.19 },
+      { ean: "7896007801015", name: "Sabão em Pó 1kg", qty: 1, unit: "UN", price: 8.99 },
+      { ean: "7891150062144", name: "Biscoito Recheado 130g", qty: 4, unit: "UN", price: 2.39 },
+      { ean: "7891962047706", name: "Café Pilão 500g", qty: 1, unit: "UN", price: 12.49 },
+      { ean: "7891000100103", name: "Leite Condensado 395g", qty: 2, unit: "UN", price: 5.79 },
+      { ean: "7896036090022", name: "Vinagre de Maçã 750ml", qty: 1, unit: "UN", price: 3.29 },
+    ],
+  },
+};
+
+const SAMPLE_KEYS = [
+  "35250300000001234560014050012345678901234567",
+  "35250315000014500700014050098765432109876543",
+];
+
+export default function NFCeScannerScreen() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const C = isDark ? Colors.dark : Colors.light;
+  const insets = useSafeAreaInsets();
+  const isWeb = Platform.OS === "web";
+  const topPad = isWeb ? 67 : insets.top;
+
+  const { processNFCe, seenChNFe } = useApp();
+
+  const [chNFeInput, setChNFeInput] = useState("");
+  const [parsedNota, setParsedNota] = useState<typeof MOCK_NOTAS[string] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<{ ok: boolean; duplicate: boolean; points: number } | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const handleParse = () => {
+    const key = chNFeInput.trim().replace(/\s/g, "");
+    if (key.length !== 44) {
+      setError("Chave deve ter 44 dígitos. Verifique e tente novamente.");
+      setParsedNota(null);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setParsedNota(null);
+    setResult(null);
+    setConfirmed(false);
+    setTimeout(() => {
+      const nota = MOCK_NOTAS[key];
+      if (!nota) {
+        setError("Nota não encontrada na base da SEFAZ. Tente com os exemplos abaixo.");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } else {
+        setParsedNota(nota);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      setLoading(false);
+    }, 1200);
+  };
+
+  const handleConfirm = () => {
+    if (!parsedNota) return;
+    const key = chNFeInput.trim().replace(/\s/g, "");
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const r = processNFCe(
+      key,
+      parsedNota.storeId,
+      parsedNota.storeName,
+      parsedNota.storeCNPJ,
+      parsedNota.items.map((i) => ({ ean: i.ean, name: i.name, price: i.price }))
+    );
+    setResult(r);
+    setConfirmed(true);
+  };
+
+  const isAlreadySeen = chNFeInput.trim().length === 44 && seenChNFe.has(chNFeInput.trim());
+  const totalValue = parsedNota ? parsedNota.items.reduce((s, i) => s + i.price * i.qty, 0) : 0;
+
+  const previewPoints = parsedNota
+    ? Math.round(150 * (parsedNota.items.length > 10 ? 2 : 1))
+    : 0;
+
+  return (
+    <View style={[styles.container, { backgroundColor: C.background, paddingTop: topPad }]}>
+      {/* Header */}
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={[styles.title, { color: C.text }]}>Nota Fiscal</Text>
+          <Text style={[styles.titleSub, { color: C.textMuted }]}>Escaneie e ganhe pontos</Text>
+        </View>
+        <Pressable style={[styles.closeBtn, { backgroundColor: C.backgroundSecondary }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}>
+          <Feather name="x" size={20} color={C.text} />
+        </Pressable>
+      </View>
+
+      <ScrollView contentContainerStyle={{ gap: 16, paddingBottom: insets.bottom + 24 }} showsVerticalScrollIndicator={false}>
+        {/* How it works */}
+        <View style={[styles.infoCard, { backgroundColor: "#CC000010", marginHorizontal: 16 }]}>
+          <MaterialCommunityIcons name="receipt" size={20} color="#CC0000" />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.infoTitle, { color: C.text }]}>Como funciona</Text>
+            <Text style={[styles.infoDesc, { color: C.textMuted }]}>
+              Escaneie o QR Code da nota fiscal eletrônica. Os preços são extraídos e atualizados no mapa — você ganha 150 pts. Se a nota tiver mais de 10 itens, os pontos dobram!
+            </Text>
+          </View>
+        </View>
+
+        {/* Camera placeholder */}
+        <View style={[styles.cameraArea, { backgroundColor: "#111", borderColor: C.border, marginHorizontal: 16 }]}>
+          <View style={styles.scannerOverlay}>
+            <View style={[styles.scanCorner, styles.tlCorner]} />
+            <View style={[styles.scanCorner, styles.trCorner]} />
+            <View style={[styles.scanCorner, styles.blCorner]} />
+            <View style={[styles.scanCorner, styles.brCorner]} />
+          </View>
+          <MaterialCommunityIcons name="qrcode-scan" size={40} color="rgba(255,255,255,0.25)" />
+          <Text style={styles.cameraHint}>Câmera disponível no app instalado</Text>
+        </View>
+
+        <Text style={[styles.orText, { color: C.textMuted }]}>ou cole a chave da nota (44 dígitos)</Text>
+
+        {/* Input */}
+        <View style={{ marginHorizontal: 16, gap: 8 }}>
+          <View style={[styles.inputRow, { backgroundColor: C.backgroundSecondary }]}>
+            <MaterialCommunityIcons name="key-variant" size={18} color={C.textMuted} />
+            <TextInput
+              style={[styles.input, { color: C.text }]}
+              placeholder="Chave de acesso NFC-e (44 dígitos)"
+              placeholderTextColor={C.textMuted}
+              value={chNFeInput}
+              onChangeText={(t) => { setChNFeInput(t); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); }}
+              keyboardType="numeric"
+              maxLength={44}
+              returnKeyType="done"
+              onSubmitEditing={handleParse}
+            />
+            {chNFeInput.length > 0 && (
+              <Pressable onPress={() => { setChNFeInput(""); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); }}>
+                <Feather name="x" size={16} color={C.textMuted} />
+              </Pressable>
+            )}
+          </View>
+
+          {/* char count */}
+          <Text style={[styles.charCount, { color: chNFeInput.length === 44 ? C.success : C.textMuted }]}>
+            {chNFeInput.length}/44 dígitos{chNFeInput.length === 44 ? " ✓" : ""}
+          </Text>
+
+          {/* Sample keys */}
+          <Text style={[styles.quickLabel, { color: C.textMuted }]}>Exemplos para testar:</Text>
+          {SAMPLE_KEYS.map((key) => (
+            <Pressable
+              key={key}
+              style={[styles.sampleChip, { backgroundColor: C.backgroundSecondary, borderColor: C.border, opacity: seenChNFe.has(key) ? 0.5 : 1 }]}
+              onPress={() => { setChNFeInput(key); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); }}
+            >
+              <MaterialCommunityIcons name="file-document-outline" size={14} color={seenChNFe.has(key) ? C.textMuted : C.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sampleKey, { color: seenChNFe.has(key) ? C.textMuted : C.text }]} numberOfLines={1}>{key.slice(0, 20)}…</Text>
+                <Text style={[styles.sampleMeta, { color: C.textMuted }]}>{MOCK_NOTAS[key]?.storeName ?? "—"} · {MOCK_NOTAS[key]?.items.length ?? 0} itens</Text>
+              </View>
+              {seenChNFe.has(key) ? (
+                <View style={styles.usedBadge}><Text style={styles.usedBadgeTxt}>Usada</Text></View>
+              ) : (
+                <View style={styles.ptsBadge}><Text style={styles.ptsBadgeTxt}>+{MOCK_NOTAS[key]?.items.length > 10 ? 300 : 150} pts</Text></View>
+              )}
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Process button */}
+        {!confirmed && (
+          <Pressable
+            style={[styles.processBtn, { backgroundColor: loading ? C.textMuted : "#CC0000", marginHorizontal: 16, opacity: chNFeInput.length !== 44 ? 0.5 : 1 }]}
+            onPress={handleParse}
+            disabled={loading || chNFeInput.length !== 44}
+          >
+            {loading ? <ActivityIndicator size="small" color="#fff" /> : <MaterialCommunityIcons name="cloud-search" size={18} color="#fff" />}
+            <Text style={styles.processBtnTxt}>{loading ? "Consultando SEFAZ..." : "Consultar nota fiscal"}</Text>
+          </Pressable>
+        )}
+
+        {/* Duplicate warning */}
+        {isAlreadySeen && !parsedNota && (
+          <View style={[styles.warnCard, { marginHorizontal: 16 }]}>
+            <Feather name="alert-circle" size={16} color="#F59E0B" />
+            <Text style={[styles.warnTxt, { color: "#F59E0B" }]}>Esta nota já foi processada por outro usuário. Nenhum ponto será concedido para evitar fraude.</Text>
+          </View>
+        )}
+
+        {/* Error */}
+        {error ? (
+          <View style={[styles.errorCard, { marginHorizontal: 16 }]}>
+            <Feather name="alert-circle" size={16} color="#CC0000" />
+            <Text style={[styles.errorTxt, { color: "#CC0000" }]}>{error}</Text>
+          </View>
+        ) : null}
+
+        {/* Parsed nota items */}
+        {parsedNota && !confirmed && (
+          <View style={[styles.notaCard, { backgroundColor: C.surfaceElevated, borderColor: "#22C55E", marginHorizontal: 16 }]}>
+            <LinearGradient colors={["#22C55E15", "transparent"]} style={styles.notaHeader}>
+              <View style={styles.notaHeaderLeft}>
+                <MaterialCommunityIcons name="store-check" size={20} color="#22C55E" />
+                <View>
+                  <Text style={[styles.notaStoreName, { color: C.text }]}>{parsedNota.storeName}</Text>
+                  <Text style={[styles.notaCNPJ, { color: C.textMuted }]}>CNPJ {parsedNota.storeCNPJ}</Text>
+                </View>
+              </View>
+              <View style={{ alignItems: "flex-end" }}>
+                <Text style={[styles.notaTotal, { color: "#22C55E" }]}>R$ {totalValue.toFixed(2).replace(".", ",")}</Text>
+                <Text style={[styles.notaItemCount, { color: C.textMuted }]}>{parsedNota.items.length} itens</Text>
+              </View>
+            </LinearGradient>
+
+            {parsedNota.items.map((item, idx) => (
+              <View
+                key={item.ean}
+                style={[styles.notaItem, idx < parsedNota.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+              >
+                <View style={[styles.notaItemIcon, { backgroundColor: C.backgroundTertiary }]}>
+                  <MaterialCommunityIcons name="barcode" size={14} color={C.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.notaItemName, { color: C.text }]}>{item.name}</Text>
+                  <Text style={[styles.notaItemEan, { color: C.textMuted }]}>{item.ean} · {item.qty}{item.unit}</Text>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={[styles.notaItemPrice, { color: C.text }]}>R$ {item.price.toFixed(2).replace(".", ",")}</Text>
+                  <Text style={[styles.notaItemSub, { color: C.textMuted }]}>un</Text>
+                </View>
+              </View>
+            ))}
+
+            <View style={[styles.notaFooter, { backgroundColor: "#CC000010" }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.notaFooterLabel, { color: C.text }]}>Pontos a ganhar</Text>
+                {parsedNota.items.length > 10 && (
+                  <Text style={[styles.notaFooterBonus, { color: "#F59E0B" }]}>2x XP · mais de 10 itens!</Text>
+                )}
+              </View>
+              <Text style={styles.notaFooterPts}>+{previewPoints} pts</Text>
+            </View>
+
+            <Pressable style={styles.confirmBtn} onPress={handleConfirm}>
+              <Feather name="check" size={18} color="#fff" />
+              <Text style={styles.confirmBtnTxt}>Confirmar e ganhar {previewPoints} pts</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Result after confirmation */}
+        {confirmed && result && (
+          <View style={[styles.resultCard, { backgroundColor: C.surfaceElevated, borderColor: result.duplicate ? "#F59E0B" : "#22C55E", marginHorizontal: 16 }]}>
+            {result.duplicate ? (
+              <>
+                <Feather name="alert-circle" size={32} color="#F59E0B" />
+                <Text style={[styles.resultTitle, { color: C.text }]}>Nota já utilizada</Text>
+                <Text style={[styles.resultSub, { color: C.textMuted }]}>Esta chave NFC-e já foi processada por outro usuário. Nenhum ponto foi concedido.</Text>
+              </>
+            ) : (
+              <>
+                <LinearGradient colors={["#22C55E", "#16A34A"]} style={styles.resultIconBg}>
+                  <MaterialCommunityIcons name="trophy" size={32} color="#fff" />
+                </LinearGradient>
+                <Text style={[styles.resultTitle, { color: C.text }]}>Nota processada!</Text>
+                <Text style={[styles.resultSub, { color: C.textMuted }]}>
+                  {parsedNota?.items.length} preços atualizados em {parsedNota?.storeName}.
+                </Text>
+                <View style={[styles.resultPtsBadge, { backgroundColor: "#CC000010", borderColor: "#CC000030" }]}>
+                  <Text style={styles.resultPtsVal}>+{result.points} pts</Text>
+                  <Text style={[styles.resultPtsLabel, { color: C.textMuted }]}>creditados ao seu saldo</Text>
+                </View>
+              </>
+            )}
+            <Pressable style={[styles.doneBtn, { backgroundColor: C.backgroundTertiary }]} onPress={() => router.back()}>
+              <Text style={[styles.doneBtnTxt, { color: C.text }]}>Concluir</Text>
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, gap: 0 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingBottom: 16 },
+  title: { fontSize: 22, fontFamily: "Inter_700Bold" },
+  titleSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  infoCard: { flexDirection: "row", gap: 12, borderRadius: 14, padding: 14, alignItems: "flex-start" },
+  infoTitle: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  infoDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  cameraArea: { borderRadius: 20, height: 180, borderWidth: 1, alignItems: "center", justifyContent: "center", gap: 10 },
+  scannerOverlay: { position: "absolute", width: 160, height: 120 },
+  scanCorner: { position: "absolute", width: 24, height: 24, borderColor: "#CC0000", borderWidth: 3 },
+  tlCorner: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 6 },
+  trCorner: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 6 },
+  blCorner: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 6 },
+  brCorner: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 6 },
+  cameraHint: { color: "rgba(255,255,255,0.35)", fontSize: 12, fontFamily: "Inter_400Regular" },
+  orText: { textAlign: "center", fontSize: 12, fontFamily: "Inter_400Regular" },
+  inputRow: { flexDirection: "row", alignItems: "center", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  input: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular" },
+  charCount: { fontSize: 11, fontFamily: "Inter_500Medium", textAlign: "right" },
+  quickLabel: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 4 },
+  sampleChip: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, padding: 12, borderWidth: 1 },
+  sampleKey: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  sampleMeta: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  usedBadge: { backgroundColor: "#F59E0B20", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
+  usedBadgeTxt: { color: "#F59E0B", fontSize: 10, fontFamily: "Inter_700Bold" },
+  ptsBadge: { backgroundColor: "#CC000015", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
+  ptsBadgeTxt: { color: "#CC0000", fontSize: 10, fontFamily: "Inter_700Bold" },
+  processBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14 },
+  processBtnTxt: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  warnCard: { flexDirection: "row", gap: 8, borderRadius: 12, padding: 12, backgroundColor: "#F59E0B15", alignItems: "flex-start" },
+  warnTxt: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
+  errorCard: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, padding: 12, backgroundColor: "#CC000015" },
+  errorTxt: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
+  notaCard: { borderRadius: 16, borderWidth: 1.5, overflow: "hidden" },
+  notaHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 14 },
+  notaHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  notaStoreName: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  notaCNPJ: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 2 },
+  notaTotal: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  notaItemCount: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  notaItem: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, gap: 10 },
+  notaItemIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  notaItemName: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  notaItemEan: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 1 },
+  notaItemPrice: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  notaItemSub: { fontSize: 10, fontFamily: "Inter_400Regular" },
+  notaFooter: { flexDirection: "row", alignItems: "center", padding: 14 },
+  notaFooterLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  notaFooterBonus: { fontSize: 11, fontFamily: "Inter_700Bold", marginTop: 2 },
+  notaFooterPts: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#CC0000" },
+  confirmBtn: { backgroundColor: "#22C55E", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, marginHorizontal: 14, marginBottom: 14, borderRadius: 14 },
+  confirmBtnTxt: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
+  resultCard: { borderRadius: 16, borderWidth: 1.5, padding: 24, alignItems: "center", gap: 14 },
+  resultIconBg: { width: 68, height: 68, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  resultTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
+  resultSub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
+  resultPtsBadge: { borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, alignItems: "center", borderWidth: 1, width: "100%" },
+  resultPtsVal: { fontSize: 30, fontFamily: "Inter_700Bold", color: "#CC0000" },
+  resultPtsLabel: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  doneBtn: { width: "100%", paddingVertical: 13, borderRadius: 14, alignItems: "center" },
+  doneBtnTxt: { fontSize: 14, fontFamily: "Inter_700Bold" },
+});

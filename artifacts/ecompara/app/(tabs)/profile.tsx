@@ -50,7 +50,7 @@ export default function ProfileScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user, setUser, isLoggedIn, activeTab, setActiveTab, retailerStore, updateRetailerProduct } = useApp();
+  const { user, setUser, isLoggedIn, activeTab, setActiveTab, retailerStore, updateRetailerProduct, finalizedLists, processedNFCe } = useApp();
   const { toggleTheme } = useTheme();
 
   const [editingEan, setEditingEan] = useState<string | null>(null);
@@ -89,6 +89,8 @@ export default function ProfileScreen() {
         editingEan={editingEan} setEditingEan={setEditingEan}
         editPrice={editPrice} setEditPrice={setEditPrice}
         handleSavePrice={handleSavePrice}
+        finalizedLists={finalizedLists}
+        processedNFCe={processedNFCe}
       />
     );
   }
@@ -191,7 +193,7 @@ function MenuItem({ icon, label, sub, color: C, onPress }: any) {
   );
 }
 
-function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retailerStore, editingEan, setEditingEan, editPrice, setEditPrice, handleSavePrice }: any) {
+function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retailerStore, editingEan, setEditingEan, editPrice, setEditPrice, handleSavePrice, finalizedLists, processedNFCe }: any) {
   const [section, setSection] = useState<"dashboard" | "alertas" | "products" | "plan">("dashboard");
   const urgentCount = MOCK_ALERTS.filter((a) => a.urgent).length;
 
@@ -409,6 +411,109 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
               </View>
             ))}
           </View>
+
+          {/* ── Plus Report ── */}
+          {retailerStore?.plan === "plus" ? (
+            <View style={{ gap: 10 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={[styles.sectionLabel, { color: C.textMuted }]}>RELATÓRIO PLUS</Text>
+                <View style={[styles.plusTag, { backgroundColor: "#FFD70020" }]}>
+                  <Ionicons name="star" size={9} color="#8B6914" />
+                  <Text style={[styles.plusTagTxt, { color: "#8B6914" }]}>Exclusivo</Text>
+                </View>
+              </View>
+
+              {/* Finalized lists sub-section */}
+              <View style={[styles.reportSection, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
+                <View style={styles.reportSectionHeader}>
+                  <View style={[styles.reportIcon, { backgroundColor: "#CC000015" }]}>
+                    <MaterialCommunityIcons name="map-marker-check" size={16} color="#CC0000" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.reportSectionTitle, { color: C.text }]}>Listas Finalizadas na Loja</Text>
+                    <Text style={[styles.reportSectionSub, { color: C.textMuted }]}>Clientes que validaram presença aqui</Text>
+                  </View>
+                  <View style={[styles.reportCountBadge, { backgroundColor: "#CC000015" }]}>
+                    <Text style={[styles.reportCountVal, { color: "#CC0000" }]}>{finalizedLists?.length ?? 0}</Text>
+                  </View>
+                </View>
+                {(finalizedLists ?? []).slice(0, 3).map((fl: any) => (
+                  <View key={fl.id} style={[styles.reportRow, { borderTopColor: C.border }]}>
+                    <View style={[styles.reportRowIcon, { backgroundColor: fl.status === "full" ? "#22C55E18" : fl.status === "fraud" ? "#F59E0B18" : "#2196F318" }]}>
+                      <Feather name={fl.status === "full" ? "check-circle" : fl.status === "fraud" ? "alert-triangle" : "clock"} size={13} color={fl.status === "full" ? "#22C55E" : fl.status === "fraud" ? "#F59E0B" : "#2196F3"} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.reportRowTitle, { color: C.text }]}>{fl.checkedItems}/{fl.totalItems} itens marcados</Text>
+                      <Text style={[styles.reportRowMeta, { color: C.textMuted }]}>{Math.floor(fl.durationSeconds / 60)}min no local · {fl.timestamp}</Text>
+                    </View>
+                    <Text style={[styles.reportRowPts, { color: "#CC0000" }]}>+{fl.points} pts</Text>
+                  </View>
+                ))}
+                {(finalizedLists?.length ?? 0) === 0 && (
+                  <Text style={[styles.reportEmpty, { color: C.textMuted }]}>Nenhuma lista finalizada ainda.</Text>
+                )}
+              </View>
+
+              {/* NFCe sub-section */}
+              <View style={[styles.reportSection, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
+                <View style={styles.reportSectionHeader}>
+                  <View style={[styles.reportIcon, { backgroundColor: "#22C55E15" }]}>
+                    <MaterialCommunityIcons name="receipt" size={16} color="#22C55E" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.reportSectionTitle, { color: C.text }]}>Notas Fiscais Enviadas</Text>
+                    <Text style={[styles.reportSectionSub, { color: C.textMuted }]}>Preços atualizados via NFC-e</Text>
+                  </View>
+                  <View style={[styles.reportCountBadge, { backgroundColor: "#22C55E15" }]}>
+                    <Text style={[styles.reportCountVal, { color: "#22C55E" }]}>{(processedNFCe ?? []).filter((n: any) => !n.isDuplicate).length}</Text>
+                  </View>
+                </View>
+                {(processedNFCe ?? []).slice(0, 3).map((nf: any) => (
+                  <View key={nf.id} style={[styles.reportRow, { borderTopColor: C.border }]}>
+                    <View style={[styles.reportRowIcon, { backgroundColor: nf.isDuplicate ? "#F59E0B18" : "#22C55E18" }]}>
+                      <MaterialCommunityIcons name="qrcode" size={13} color={nf.isDuplicate ? "#F59E0B" : "#22C55E"} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.reportRowTitle, { color: C.text }]}>{nf.items.length} preços atualizados</Text>
+                      <Text style={[styles.reportRowMeta, { color: C.textMuted }]}>CNPJ {nf.storeCNPJ} · {nf.timestamp}</Text>
+                      <Text style={[styles.reportRowMeta, { color: C.textMuted }]} numberOfLines={1}>
+                        chNFe: {nf.chNFe.slice(0, 16)}…
+                      </Text>
+                    </View>
+                    <Text style={[styles.reportRowPts, { color: nf.isDuplicate ? "#F59E0B" : "#22C55E" }]}>
+                      {nf.isDuplicate ? "Dup." : `+${nf.points} pts`}
+                    </Text>
+                  </View>
+                ))}
+                {(processedNFCe?.length ?? 0) === 0 && (
+                  <Text style={[styles.reportEmpty, { color: C.textMuted }]}>Nenhuma nota processada ainda.</Text>
+                )}
+              </View>
+
+              {/* Summary stats */}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={[styles.summaryCard, { backgroundColor: C.surfaceElevated, borderColor: C.border, flex: 1 }]}>
+                  <Text style={[styles.summaryVal, { color: "#CC0000" }]}>{(finalizedLists ?? []).reduce((s: number, f: any) => s + f.checkedItems, 0)}</Text>
+                  <Text style={[styles.summaryLabel, { color: C.textMuted }]}>Itens comprados</Text>
+                </View>
+                <View style={[styles.summaryCard, { backgroundColor: C.surfaceElevated, borderColor: C.border, flex: 1 }]}>
+                  <Text style={[styles.summaryVal, { color: "#22C55E" }]}>{(processedNFCe ?? []).reduce((s: number, n: any) => s + n.items.length, 0)}</Text>
+                  <Text style={[styles.summaryLabel, { color: C.textMuted }]}>Preços via nota</Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.plusLockedCard, { backgroundColor: C.surfaceElevated, borderColor: "#FFD70050" }]}>
+              <Ionicons name="star" size={24} color="#FFD700" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.plusLockedTitle, { color: C.text }]}>Relatório Completo</Text>
+                <Text style={[styles.plusLockedSub, { color: C.textMuted }]}>Listas finalizadas e notas enviadas disponíveis no Plano Plus.</Text>
+              </View>
+              <Pressable style={styles.plusUpgradeBtn} onPress={() => setSection("plan")}>
+                <Text style={styles.plusUpgradeTxt}>Ver planos</Text>
+              </Pressable>
+            </View>
+          )}
         </ScrollView>
       )}
 
@@ -742,4 +847,28 @@ const styles = StyleSheet.create({
   featureText: { fontSize: 13 },
   planBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center", marginTop: 4 },
   planBtnText: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  // Report section
+  plusTag: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
+  plusTagTxt: { fontSize: 9, fontFamily: "Inter_700Bold" },
+  reportSection: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+  reportSectionHeader: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
+  reportIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  reportSectionTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  reportSectionSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  reportCountBadge: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  reportCountVal: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  reportRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: 1 },
+  reportRowIcon: { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  reportRowTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  reportRowMeta: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 1 },
+  reportRowPts: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  reportEmpty: { fontSize: 12, fontFamily: "Inter_400Regular", paddingHorizontal: 14, paddingBottom: 12, textAlign: "center" },
+  summaryCard: { borderRadius: 14, borderWidth: 1, padding: 14, alignItems: "center", gap: 3 },
+  summaryVal: { fontSize: 24, fontFamily: "Inter_700Bold" },
+  summaryLabel: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
+  plusLockedCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, flexDirection: "row", alignItems: "center", gap: 12 },
+  plusLockedTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  plusLockedSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  plusUpgradeBtn: { backgroundColor: "#FFD700", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
+  plusUpgradeTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#8B6914" },
 });

@@ -1,0 +1,52 @@
+1. Lógica: Finalizar Lista no Local (Geofencing + State Machine)
+A ideia não é apenas clicar em "finalizar", mas provar que o usuário percorreu o mercado.
+
+O Fluxo Técnico:
+
+Gatilho de Entrada: O app detecta via GPS que o usuário entrou no raio de 100m do mercado (Geofencing). O status da lista muda para "Em Compras".
+
+Checklist Ativo: O usuário marca os itens como "comprados". O sistema registra o timestamp de cada item.
+
+Botão de Finalizar: Ao clicar em finalizar, o backend executa o Validador de Presença:
+
+Verificação de Coordenada: O GPS atual deve estar dentro do polígono do mercado.
+
+Tempo Mínimo de Permanência: Se a lista tem 10 itens e foi finalizada em 30 segundos, o sistema suspeita de fraude e não atribui os 200 pts (ou atribui apenas 10 pts).
+
+Diferença de Localização: Se o usuário iniciou a lista em casa e finalizou no mercado, ele ganha o bônus cheio.
+
+Recompensa: Validado o GPS e o tempo, os 200 pts caem no saldo do ranking "Arena".
+
+2. Lógica: Atualizar Preços via NFC-e (Mercados Shadow)
+Esta é a "mina de ouro" do seu banco de dados. Como o mercado não é parceiro, ele não te envia o arquivo de preços (XML), então você o constrói através do consumidor.
+
+O Fluxo Técnico (OCR + Parser):
+
+Leitura do QR Code: O usuário escaneia o código da nota fiscal. O app captura a URL da SEFAZ.
+
+Web Scraping / API Fiscal: O backend acessa o portal da SEFAZ e extrai o XML da nota.
+
+Mapeamento de EAN:
+
+O sistema varre cada item da nota buscando o código GTIN/EAN.
+
+Match: O EAN 789... na nota fiscal é comparado com o produto no seu banco de dados (Cosmos).
+
+Atualização de Preço (Shadow Update):
+
+O sistema identifica o store_id (CNPJ na nota) e atualiza o preço daquele produto para aquele mercado específico.
+
+Timestamp de Validade: O preço recebe um selo: "Atualizado por nota fiscal há X minutos".
+
+Gamificação Extra: Como o mercado é "Não Participante", o usuário recebe os 150 pts de bonificação por "ajudar a mapear a zona escura".
+
+🚀 ATUALIZAÇÃO DO PROMPT MESTRE (V24.0 - VALIDATION ALGORITHMS)
+Adicione este bloco de lógica para a IA gerar o código de backend correto:
+
+3.3 ALGORITMOS DE VALIDAÇÃO DE DADOS
+
+Validator_List_Finish: Requer user_lat_lng dentro de establishment_polygon + min_duration de 5 minutos para conceder 200 pts.
+
+Shadow_Market_Updater: Ao processar NFC-e de mercados Shadow, o sistema deve realizar um upsert na tabela prices, vinculando o ean_code ao store_cnpj.
+
+NFCe_Deduplication: O sistema deve armazenar o chNFe (Chave de 44 dígitos da nota) em uma tabela de hashes para evitar que o mesmo cupom seja escaneado por múltiplos usuários para ganhar pontos.

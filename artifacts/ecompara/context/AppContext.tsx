@@ -136,6 +136,31 @@ export interface DailyMission {
   icon: string;
 }
 
+export interface FinalizedList {
+  id: string;
+  storeId: string;
+  storeName: string;
+  isPartner: boolean;
+  totalItems: number;
+  checkedItems: number;
+  durationSeconds: number;
+  points: number;
+  status: "full" | "partial" | "fraud";
+  timestamp: string;
+}
+
+export interface NFCeEntry {
+  id: string;
+  chNFe: string;
+  storeId: string;
+  storeName: string;
+  storeCNPJ: string;
+  items: { ean: string; name: string; price: number }[];
+  points: number;
+  timestamp: string;
+  isDuplicate: boolean;
+}
+
 const MOCK_STORES: Store[] = [
   { id: "1", name: "Supermercado Vivendas", distance: 0.8, address: "Av. Principal, 100", lat: -23.5505, lng: -46.6333, plan: "plus" },
   { id: "2", name: "Tatico Supermercados", distance: 1.2, address: "Rua das Flores, 250", lat: -23.5520, lng: -46.6350, plan: "normal" },
@@ -242,6 +267,11 @@ type AppContextType = {
   pointsHistory: PointsHistoryEntry[];
   dailyMissions: DailyMission[];
   streak: number;
+  finalizedLists: FinalizedList[];
+  processedNFCe: NFCeEntry[];
+  seenChNFe: Set<string>;
+  finalizeShoppingList: (storeId: string, storeName: string, isPartner: boolean, durationSeconds: number, totalItems: number, checkedItems: number) => { points: number; status: "full" | "partial" | "fraud" };
+  processNFCe: (chNFe: string, storeId: string, storeName: string, storeCNPJ: string, items: { ean: string; name: string; price: number }[]) => { ok: boolean; duplicate: boolean; points: number };
   products: Product[];
   searchProducts: (query: string) => Product[];
   searchProductsAsync: (query: string) => Promise<Product[]>;
@@ -291,6 +321,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const [retailerStore, setRetailerStore] = useState<RetailerStore | null>(mockRetailerStore);
+  const [finalizedLists, setFinalizedLists] = useState<FinalizedList[]>([
+    { id: "fl1", storeId: "1", storeName: "Supermercado Vivendas", isPartner: true, totalItems: 8, checkedItems: 8, durationSeconds: 720, points: 300, status: "full", timestamp: "Ontem, 11:32" },
+    { id: "fl2", storeId: "2", storeName: "Tatico Supermercados", isPartner: false, totalItems: 5, checkedItems: 4, durationSeconds: 380, points: 200, status: "full", timestamp: "Seg, 14:10" },
+  ]);
+  const [processedNFCe, setProcessedNFCe] = useState<NFCeEntry[]>([
+    { id: "nf1", chNFe: "35250300000001234560014050012345678901234567", storeId: "2", storeName: "Tatico Supermercados", storeCNPJ: "00.000.001/0001-01", items: [{ ean: "7891000053508", name: "Leite Parmalat 1L", price: 4.89 }, { ean: "7891910000197", name: "Arroz Tio João 5kg", price: 21.90 }, { ean: "7894900700015", name: "Coca-Cola 2L", price: 8.49 }], points: 150, timestamp: "Ontem, 15:21", isDuplicate: false },
+  ]);
+  const [seenChNFe, setSeenChNFe] = useState<Set<string>>(new Set(["35250300000001234560014050012345678901234567"]));
 
   useEffect(() => {
     loadUser();
@@ -454,6 +492,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return submitPartnershipClaim(claim);
   };
 
+  const finalizeShoppingList = (
+    storeId: string, storeName: string, isPartner: boolean,
+    durationSeconds: number, totalItems: number, checkedItems: number
+  ): { points: number; status: "full" | "partial" | "fraud" } => {
+    let points = 0;
+    let status: "full" | "partial" | "fraud";
+    if (durationSeconds < 60 && totalItems >= 5) {
+      status = "fraud";
+      points = 10;
+    } else if (durationSeconds < 300) {
+      status = "partial";
+      points = 50;
+    } else {
+      status = "full";
+      points = 200 + (isPartner ? 100 : 0);
+    }
+    const entry: FinalizedList = {
+      id: Date.now().toString(),
+      storeId, storeName, isPartner,
+      totalItems, checkedItems, durationSeconds,
+      points, status,
+      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) + " hoje",
+    };
+    setFinalizedLists((prev) => [entry, ...prev]);
+    if (user) {
+      setUserState({ ...user, points: user.points + points, totalPriceUpdates: user.totalPriceUpdates + 1 });
+    }
+    return { points, status };
+  };
+
+  const processNFCe = (
+    chNFe: string, storeId: string, storeName: string, storeCNPJ: string,
+    items: { ean: string; name: string; price: number }[]
+  ): { ok: boolean; duplicate: boolean; points: number } => {
+    if (seenChNFe.has(chNFe)) {
+      return { ok: false, duplicate: true, points: 0 };
+    }
+    const now = new Date();
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+    const basePoints = 150;
+    const multiplier = items.length > 10 ? 2 : isWeekend ? 1.2 : 1;
+    const points = Math.round(basePoints * multiplier);
+    const entry: NFCeEntry = {
+      id: Date.now().toString(),
+      chNFe, storeId, storeName, storeCNPJ, items, points,
+      timestamp: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) + " hoje",
+      isDuplicate: false,
+    };
+    setSeenChNFe((prev) => new Set([...prev, chNFe]));
+    setProcessedNFCe((prev) => [entry, ...prev]);
+    if (user) {
+      setUserState({ ...user, points: user.points + points });
+    }
+    return { ok: true, duplicate: false, points };
+  };
+
   const addManualProduct = (ean: string, name: string) => {
     const exists = MOCK_PRODUCTS.find((p) => p.ean === ean);
     if (!exists) {
@@ -507,6 +601,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         pointsHistory: MOCK_POINTS_HISTORY,
         dailyMissions: MOCK_DAILY_MISSIONS,
         streak: 5,
+        finalizedLists,
+        processedNFCe,
+        seenChNFe,
+        finalizeShoppingList,
+        processNFCe,
         products: (() => {
           const cosmosValues = Object.values(cosmosCache);
           const cosmosEans = new Set(cosmosValues.map((p) => p.ean));
