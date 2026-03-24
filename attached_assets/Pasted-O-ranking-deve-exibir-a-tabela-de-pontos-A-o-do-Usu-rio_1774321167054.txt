@@ -1,0 +1,28 @@
+O ranking deve exibir a tabela de pontos: Ação do Usuário,Pontos Base,Bônus / Multiplicador,Gatilho de Validação
+Indicar App via Link,500 pts,+200 pts se o indicado validar a 1ª nota.,Cadastro completo do indicado.
+Indicar Supermercado,1.000 pts,"Selo ""Embaixador"" no perfil.",Após mercado ser verificado/assinar.
+Cadastrar Produto (Individual),50 pts limitado a 10 por dia em mercados Shaddow, 35 pts em mercados parceiros se validado pelo mercado/usuarios
+Cadastrar Cupom (NFC-e),150 pts,2x XP se contiver > 10 itens.,Em mercados Shadow (não participantes).
+Confirmar Preço,5 pts por item,se o preço estiver desatualizado.,Validação de dados existentes.
+Finalizar Lista no Local,200 pts,+100 pts se em mercado parceiro, Check-out via GPS/Geofencing.
+Finalizar Cadastro,250 pts,"Selo ""Perfil Verificado"".",Preenchimento de KYC/Perfil.
+Favoritar Mercado,20 pts,Notificações exclusivas da loja.,Bookmark de estabelecimento.
+Combo Diário (Streak),+50 pts,Aumenta progressivamente (7 dias = 500 pts).,Login e 1 ação diária (Check/OCR). Regras de Negócio para o Desenvolvedor:
+Multiplicador de Fim de Semana: Sábados e Domingos todas as ações de "Cadastrar Cupom" valem 1.2x XP.
+Trava de Spam: Máximo de 3 "Confirmações de Preço" por hora para evitar ganho artificial de pontos.
+Exibição de Progresso: Barra de "Streak" (Fogo) na Home indicando quantos dias seguidos o usuário está ativo. Como isso aparece para o usuário (UX/UI)
+Para que o programador saiba como dar o "feedback visual" desses pontos:
+Pop-up de Sucesso: Ao favoritar um mercado, deve subir um pequeno toast ou animação: +20 XP! Você está a caminho do Top 10!.
+Tela de Missões Diárias: Uma seção onde o usuário vê:
+[ ] Favoritar 1 mercado hoje (+20 pts) - Pendente
+[ ] Confirmar 3 preços (+30 pts) - Pendente. Sugestão de Layout: Tela de Ranking (Flutter)
+Para o desenvolvedor criar uma tela que engaje, peça a ele para seguir esta estrutura:
+Header Dinâmico: Mostra a posição atual do usuário e quantos pontos faltam para ele subir uma posição (ex: "Você está em 4º! Só mais 150 pontos para o pódio").
+Lista de Top 10: Cards circular, nome do usuário, nível de status (ícone) e pontuação total da semana.
+Botão "Como Pontuar": Ao clicar, abre um Bottom Sheet com a tabela de pontos que você enviou na imagem, servindo de guia para o usuário saber o que fazer.
+Filtro por REGIAO : Botão para alternar entre o ranking de Brasília inteira e o ranking local (ex: somente Santa Maria). Regra de Interface: O usuário deve ter uma tela de "Extrato de Pontos" onde ele veja exatamente qual dessas ações gerou o saldo dele. NÍVEIS DE STATUS (GAMIFICAÇÃO)
+O ranking semanal deve exibir selos para intimidar a concorrência e dar autoridade aos dados:
+Nível 1-10 (Aprendiz): Ícone de carrinho de metal.
+Nível 11-30 (Fiscal): Ícone de prancheta dourada.
+Nível 31-50 (Mestre da Economia): Ícone de coroa coral.
+O "Rei/Rainha do Bairro": Título temporário para o #1 do ranking da RA (ex: Águas Claras) naquela semana. REGRAS ANTI-FRAUDE (DUREZA NO RANKING)Para evitar que alguém "farme" pontos em casa ou invente preços:Trava de GPS: Ações de OCR e Check só computam pontos se a distância do usuário até o mercado for $< 200$ metros.Limite de OCR: Máximo de 15 envios por dia (evita spam de fotos sem qualidade).Penalidade de Erro: Se o usuário reportar um preço via OCR e a nota fiscal (NFC-e) de outro usuário provar que o preço está errado, o reportador original perde 100 pts. Isso garante que ninguém minta para subir no ranking.🚀 ATUALIZAÇÃO DO PROMPT MESTRE (V21.0 - RANKING LOGIC)Adicione este bloco para a IA programar a lógica de pontuação:5.2 LÓGICA DO MOTOR DE GAMIFICAÇÃO (XP ENGINE)Weekly Reset: O ranking da Arena zera todo ultimo dia do mes às 23:59.Point Validation: Pontos de OCR entram como "pendentes" e tornam-se "confirmados" após validação cruzada ou decurso de 24h sem contestações.Rewards Pipeline: O Top 3 do ranking semanal recebe um multiplicador de cashback (ex: +5% de retorno) na semana seguinte.

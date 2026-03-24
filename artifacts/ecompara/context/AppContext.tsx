@@ -110,9 +110,30 @@ export interface GameEntry {
   userName: string;
   userPhoto: string;
   points: number;
+  weeklyPoints: number;
   rank: number;
+  level: number;
   priceUpdates: number;
   verifiedUpdates: number;
+  region: "brasilia" | "santa-maria";
+  title?: string;
+}
+
+export interface PointsHistoryEntry {
+  id: string;
+  action: string;
+  points: number;
+  date: string;
+  icon: string;
+  multiplier?: string;
+}
+
+export interface DailyMission {
+  id: string;
+  label: string;
+  points: number;
+  completed: boolean;
+  icon: string;
 }
 
 const MOCK_STORES: Store[] = [
@@ -131,14 +152,42 @@ const MOCK_BANNERS: Banner[] = [
 ];
 
 const MOCK_GAME_LEADERBOARD: GameEntry[] = [
-  { userId: "u1", userName: "Carlos Silva", userPhoto: "", points: 4850, rank: 1, priceUpdates: 245, verifiedUpdates: 230 },
-  { userId: "u2", userName: "Ana Souza", userPhoto: "", points: 3920, rank: 2, priceUpdates: 198, verifiedUpdates: 185 },
-  { userId: "u3", userName: "Pedro Lima", userPhoto: "", points: 3240, rank: 3, priceUpdates: 163, verifiedUpdates: 150 },
-  { userId: "u4", userName: "Maria Costa", userPhoto: "", points: 2780, rank: 4, priceUpdates: 140, verifiedUpdates: 128 },
-  { userId: "u5", userName: "João Pereira", userPhoto: "", points: 2150, rank: 5, priceUpdates: 108, verifiedUpdates: 95 },
-  { userId: "u6", userName: "Lucia Ferreira", userPhoto: "", points: 1870, rank: 6, priceUpdates: 94, verifiedUpdates: 82 },
-  { userId: "u7", userName: "Marcos Nunes", userPhoto: "", points: 1560, rank: 7, priceUpdates: 78, verifiedUpdates: 71 },
-  { userId: "u8", userName: "Clara Rocha", userPhoto: "", points: 1230, rank: 8, priceUpdates: 62, verifiedUpdates: 55 },
+  { userId: "u1", userName: "Carlos Silva", userPhoto: "", points: 14850, weeklyPoints: 4850, rank: 1, level: 42, priceUpdates: 245, verifiedUpdates: 230, region: "brasilia", title: "Rei do Bairro" },
+  { userId: "u2", userName: "Ana Souza", userPhoto: "", points: 11920, weeklyPoints: 3920, rank: 2, level: 38, priceUpdates: 198, verifiedUpdates: 185, region: "brasilia" },
+  { userId: "u3", userName: "Pedro Lima", userPhoto: "", points: 9240, weeklyPoints: 3240, rank: 3, level: 35, priceUpdates: 163, verifiedUpdates: 150, region: "brasilia" },
+  { userId: "u4", userName: "Maria Costa", userPhoto: "", points: 7780, weeklyPoints: 2780, rank: 4, level: 28, priceUpdates: 140, verifiedUpdates: 128, region: "brasilia" },
+  { userId: "u5", userName: "João Pereira", userPhoto: "", points: 6150, weeklyPoints: 2150, rank: 5, level: 22, priceUpdates: 108, verifiedUpdates: 95, region: "brasilia" },
+  { userId: "u6", userName: "Lucia Ferreira", userPhoto: "", points: 4870, weeklyPoints: 1870, rank: 6, level: 17, priceUpdates: 94, verifiedUpdates: 82, region: "brasilia" },
+  { userId: "u7", userName: "Marcos Nunes", userPhoto: "", points: 3560, weeklyPoints: 1560, rank: 7, level: 14, priceUpdates: 78, verifiedUpdates: 71, region: "brasilia" },
+  { userId: "u8", userName: "Clara Rocha", userPhoto: "", points: 2230, weeklyPoints: 1230, rank: 8, level: 9, priceUpdates: 62, verifiedUpdates: 55, region: "brasilia" },
+  { userId: "u9", userName: "Tiago Alves", userPhoto: "", points: 1580, weeklyPoints: 980, rank: 9, level: 7, priceUpdates: 48, verifiedUpdates: 40, region: "brasilia" },
+  { userId: "u10", userName: "Beatriz Melo", userPhoto: "", points: 890, weeklyPoints: 640, rank: 10, level: 4, priceUpdates: 32, verifiedUpdates: 28, region: "brasilia" },
+  { userId: "sm1", userName: "Roberto Dias", userPhoto: "", points: 8200, weeklyPoints: 2100, rank: 1, level: 31, priceUpdates: 180, verifiedUpdates: 170, region: "santa-maria", title: "Rei do Bairro" },
+  { userId: "sm2", userName: "Fernanda Gomes", userPhoto: "", points: 6100, weeklyPoints: 1850, rank: 2, level: 25, priceUpdates: 130, verifiedUpdates: 120, region: "santa-maria" },
+  { userId: "sm3", userName: "Rafael Sena", userPhoto: "", points: 4300, weeklyPoints: 1200, rank: 3, level: 19, priceUpdates: 95, verifiedUpdates: 88, region: "santa-maria" },
+  { userId: "sm4", userName: "Camila Borges", userPhoto: "", points: 3100, weeklyPoints: 870, rank: 4, level: 12, priceUpdates: 72, verifiedUpdates: 65, region: "santa-maria" },
+  { userId: "sm5", userName: "Lucas Prado", userPhoto: "", points: 1950, weeklyPoints: 520, rank: 5, level: 8, priceUpdates: 45, verifiedUpdates: 38, region: "santa-maria" },
+];
+
+const MOCK_POINTS_HISTORY: PointsHistoryEntry[] = [
+  { id: "h1", action: "Cadastrar Cupom (NFC-e)", points: 300, date: "Hoje, 14:32", icon: "file-text", multiplier: "2x XP (>10 itens)" },
+  { id: "h2", action: "Confirmar Preço", points: 15, date: "Hoje, 13:10", icon: "check-circle" },
+  { id: "h3", action: "Confirmar Preço", points: 15, date: "Hoje, 13:08", icon: "check-circle" },
+  { id: "h4", action: "Combo Diário (Streak)", points: 50, date: "Hoje, 08:00", icon: "zap" },
+  { id: "h5", action: "Cadastrar Produto (Individual)", points: 50, date: "Ontem, 17:45", icon: "package" },
+  { id: "h6", action: "Favoritar Mercado", points: 20, date: "Ontem, 16:20", icon: "heart" },
+  { id: "h7", action: "Finalizar Lista no Local", points: 300, date: "Ontem, 12:05", icon: "map-pin", multiplier: "+100 pts (parceiro)" },
+  { id: "h8", action: "Cadastrar Cupom (NFC-e)", points: 150, date: "Ontem, 10:30", icon: "file-text" },
+  { id: "h9", action: "Confirmar Preço", points: 10, date: "Seg, 19:22", icon: "check-circle" },
+  { id: "h10", action: "Finalizar Cadastro", points: 250, date: "Seg, 09:00", icon: "user-check" },
+];
+
+const MOCK_DAILY_MISSIONS: DailyMission[] = [
+  { id: "m1", label: "Favoritar 1 mercado hoje", points: 20, completed: true, icon: "heart" },
+  { id: "m2", label: "Confirmar 3 preços", points: 30, completed: false, icon: "check-circle" },
+  { id: "m3", label: "Cadastrar 1 cupom NFC-e", points: 150, completed: false, icon: "file-text" },
+  { id: "m4", label: "Buscar 1 produto", points: 10, completed: true, icon: "search" },
+  { id: "m5", label: "Login diário (Streak)", points: 50, completed: true, icon: "zap" },
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
@@ -190,6 +239,9 @@ type AppContextType = {
   submitStoreClaim: (claim: ClaimRequest) => Promise<{ ok: boolean; error?: string }>;
   banners: Banner[];
   leaderboard: GameEntry[];
+  pointsHistory: PointsHistoryEntry[];
+  dailyMissions: DailyMission[];
+  streak: number;
   products: Product[];
   searchProducts: (query: string) => Product[];
   searchProductsAsync: (query: string) => Promise<Product[]>;
@@ -452,6 +504,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         submitStoreClaim,
         banners: MOCK_BANNERS,
         leaderboard: MOCK_GAME_LEADERBOARD,
+        pointsHistory: MOCK_POINTS_HISTORY,
+        dailyMissions: MOCK_DAILY_MISSIONS,
+        streak: 5,
         products: (() => {
           const cosmosValues = Object.values(cosmosCache);
           const cosmosEans = new Set(cosmosValues.map((p) => p.ean));
