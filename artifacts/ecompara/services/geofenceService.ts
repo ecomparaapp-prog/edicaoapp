@@ -1,8 +1,15 @@
-import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { fetchNearbyMissions, type NearbyMission } from "./missionService";
+
+const isExpoGo = Constants.appOwnership === "expo";
+
+async function getNotifications() {
+  if (isExpoGo || Platform.OS === "web") return null;
+  return import("expo-notifications");
+}
 
 export const GEOFENCE_TASK = "ECOMPARA_GEOFENCE_CHECK";
 export const LOCATION_TASK = "ECOMPARA_BACKGROUND_LOCATION";
@@ -20,24 +27,28 @@ function isNightMode(): boolean {
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
-  if (Platform.OS === "web") return false;
+  const Notifications = await getNotifications();
+  if (!Notifications) return false;
   const { status } = await Notifications.requestPermissionsAsync();
   return status === "granted";
 }
 
 export async function setupNotificationChannel() {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("missions", {
-      name: "Missões Relâmpago",
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#CC0000",
-      sound: "default",
-    });
-  }
+  if (Platform.OS !== "android") return;
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
+  await Notifications.setNotificationChannelAsync("missions", {
+    name: "Missões Relâmpago",
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#CC0000",
+    sound: "default",
+  });
 }
 
 export async function configurePushHandler() {
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -83,17 +94,20 @@ export async function checkGeofenceAndNotify(
   );
 
   if (urgentMission) {
-    const notif = buildMissionNotification(urgentMission);
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: notif.title,
-        body: notif.body,
-        data: notif.data,
-        sound: "default",
-        ...(Platform.OS === "android" ? { channelId: "missions" } : {}),
-      },
-      trigger: null, // fire immediately
-    });
+    const Notifications = await getNotifications();
+    if (Notifications) {
+      const notif = buildMissionNotification(urgentMission);
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: notif.title,
+          body: notif.body,
+          data: notif.data,
+          sound: "default",
+          ...(Platform.OS === "android" ? { channelId: "missions" } : {}),
+        },
+        trigger: null,
+      });
+    }
     lastNotifiedStore[urgentMission.googlePlaceId] = now;
   }
 

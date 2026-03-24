@@ -8,7 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -18,6 +18,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { configurePushHandler, setupNotificationChannel } from "@/services/geofenceService";
+
+const isExpoGo = Constants.appOwnership === "expo";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,33 +53,34 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const notifListener = useRef<Notifications.EventSubscription | null>(null);
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+  const responseListenerRef = useRef<{ remove: () => void } | null>(null);
 
   useEffect(() => {
+    if (isExpoGo) return;
+
     configurePushHandler();
     setupNotificationChannel();
 
-    // Navigate to mission screen when user taps a notification
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const data = response.notification.request.content.data as {
-          screen?: string;
-          placeId?: string;
-          placeName?: string;
-        };
-        if (data?.screen === "missions" && data?.placeId) {
-          router.push({
-            pathname: "/missions/[placeId]",
-            params: { placeId: data.placeId, placeName: data.placeName ?? "Loja", xpMultiplier: "2" },
-          });
-        }
-      },
-    );
+    import("expo-notifications").then((Notifications) => {
+      responseListenerRef.current = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          const data = response.notification.request.content.data as {
+            screen?: string;
+            placeId?: string;
+            placeName?: string;
+          };
+          if (data?.screen === "missions" && data?.placeId) {
+            router.push({
+              pathname: "/missions/[placeId]",
+              params: { placeId: data.placeId, placeName: data.placeName ?? "Loja", xpMultiplier: "2" },
+            });
+          }
+        },
+      );
+    });
 
     return () => {
-      notifListener.current?.remove();
-      responseListener.current?.remove();
+      responseListenerRef.current?.remove();
     };
   }, []);
 
