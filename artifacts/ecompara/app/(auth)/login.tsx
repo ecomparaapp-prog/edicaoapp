@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   closeBtn: { position: "absolute", top: 60, right: 24, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", zIndex: 10 },
   content: { flex: 1, justifyContent: "center", gap: 32 },
   logoArea: { alignItems: "center", gap: 6 },
-  logoImage: { width: 220, height: 70 },
+  logoImage: { width: 260, height: 66 },
   taglineMain: { fontSize: 16, fontFamily: "Inter_600SemiBold", textAlign: "center", marginTop: 4 },
   taglineSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
   benefitsCard: { borderRadius: 18, padding: 20, gap: 14 },
