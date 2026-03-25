@@ -279,17 +279,14 @@ export default function GameScreen() {
     return (
       <Pressable
         key={id}
-        style={[
-          styles.sectionTab,
-          { backgroundColor: active ? C.primary : C.surfaceElevated, borderColor: active ? C.primary : C.border },
-        ]}
+        style={[styles.sectionTab, active && { backgroundColor: C.primary }]}
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveSection(id); }}
       >
         {iconLib === "ionicons"
-          ? <Ionicons name={iconName as any} size={22} color={active ? "#fff" : C.textSecondary} />
-          : <Feather name={iconName as any} size={22} color={active ? "#fff" : C.textSecondary} />
+          ? <Ionicons name={iconName as any} size={15} color={active ? "#fff" : C.textMuted} />
+          : <Feather name={iconName as any} size={15} color={active ? "#fff" : C.textMuted} />
         }
-        <Text style={[styles.sectionTabText, { color: active ? "#fff" : C.textSecondary }]}>{label}</Text>
+        <Text style={[styles.sectionTabText, { color: active ? "#fff" : C.textMuted }]}>{label}</Text>
       </Pressable>
     );
   };
@@ -365,16 +362,12 @@ export default function GameScreen() {
         </View>
       </LinearGradient>
 
-      {/* Section Tabs — 2×2 grid */}
-      <View style={[styles.sectionTabs, { marginHorizontal: 16, marginBottom: 16, marginTop: 14 }]}>
-        <View style={styles.sectionTabRow}>
-          {renderSectionTab("ranking", "Ranking", "trophy-outline", "ionicons")}
-          {renderSectionTab("missoes", "Missões", "target")}
-        </View>
-        <View style={styles.sectionTabRow}>
-          {renderSectionTab("extrato", "Extrato", "list")}
-          {renderSectionTab("resgatar", "Resgatar", "gift")}
-        </View>
+      {/* Section Tabs — compact pill bar */}
+      <View style={[styles.sectionTabs, { marginHorizontal: 16, marginBottom: 12, backgroundColor: isDark ? C.backgroundSecondary : "#F0F0F0" }]}>
+        {renderSectionTab("ranking", "Ranking", "trophy-outline", "ionicons")}
+        {renderSectionTab("missoes", "Missões", "target")}
+        {renderSectionTab("extrato", "Extrato", "list")}
+        {renderSectionTab("resgatar", "Resgatar", "gift")}
       </View>
 
       {/* RANKING TAB */}
@@ -560,10 +553,10 @@ const styles = StyleSheet.create({
   statNum: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
   statLabel: { color: "rgba(255,255,255,0.65)", fontSize: 10, fontFamily: "Inter_400Regular" },
   divider: { width: 1, height: 26 },
-  sectionTabs: { gap: 10 },
-  sectionTabRow: { flexDirection: "row", gap: 10 },
-  sectionTab: { flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 16, borderRadius: 14, borderWidth: 1.5 },
-  sectionTabText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  sectionTabs: { flexDirection: "row", borderRadius: 12, padding: 4, gap: 3 },
+  sectionTabRow: { flexDirection: "row", gap: 3 },
+  sectionTab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 9 },
+  sectionTabText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
   regionFilter: { flexDirection: "row", borderRadius: 10, padding: 3, gap: 3 },
   regionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 7, borderRadius: 8 },
   regionBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
