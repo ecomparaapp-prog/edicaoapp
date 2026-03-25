@@ -27,11 +27,11 @@ function adminAuth(req: Request, res: Response, next: NextFunction) {
   res.status(401).json({ error: "Não autorizado." });
 }
 
-app.get("/admin", (_req, res) => {
+app.get("/api/admin", (_req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
 });
 
-app.post("/admin/login", (req: Request, res: Response) => {
+app.post("/api/admin/login", (req: Request, res: Response) => {
   const { password } = req.body as { password?: string };
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
   if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
