@@ -18,7 +18,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import MapView, { Marker, type Region } from "react-native-maps";
+type Region = { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
@@ -680,23 +680,35 @@ function StepB({ C, isDark, cep, setCep, address, setAddress, lat, lng, setLat, 
           </View>
         </View>
         <View style={[styles.mapWrap, { borderColor: C.border }]}>
-          <MapView
-            style={styles.map}
-            initialRegion={region}
-            showsUserLocation={false}
-            scrollEnabled={true}
-          >
-            <Marker
-              coordinate={{ latitude: lat, longitude: lng }}
-              draggable
-              onDragEnd={(e) => {
-                setLat(e.nativeEvent.coordinate.latitude);
-                setLng(e.nativeEvent.coordinate.longitude);
-                setPinMoved(true);
-              }}
-              pinColor="#CC0000"
-            />
-          </MapView>
+          {Platform.OS !== "web" ? (() => {
+            const RNMaps = require("react-native-maps");
+            const MapViewComp = RNMaps.default;
+            const MarkerComp = RNMaps.Marker;
+            return (
+              <MapViewComp
+                style={styles.map}
+                initialRegion={region}
+                showsUserLocation={false}
+                scrollEnabled={true}
+              >
+                <MarkerComp
+                  coordinate={{ latitude: lat, longitude: lng }}
+                  draggable
+                  onDragEnd={(e: any) => {
+                    setLat(e.nativeEvent.coordinate.latitude);
+                    setLng(e.nativeEvent.coordinate.longitude);
+                    setPinMoved(true);
+                  }}
+                  pinColor="#CC0000"
+                />
+              </MapViewComp>
+            );
+          })() : (
+            <View style={[styles.map, { alignItems: "center", justifyContent: "center" }]}>
+              <Feather name="map" size={32} color="#CC0000" />
+              <Text style={{ color: "#888", marginTop: 8, fontSize: 13 }}>Mapa disponível no app nativo</Text>
+            </View>
+          )}
         </View>
         <Text style={[styles.mapHint, { color: C.textMuted }]}>
           Segure e arraste o pino para a entrada exata da loja.

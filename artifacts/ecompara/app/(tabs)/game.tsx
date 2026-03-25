@@ -108,7 +108,12 @@ function PointsTableSheet({ visible, onClose, C, isDark }: { visible: boolean; o
                 <View style={{ flex: 1, gap: 3 }}>
                   <Text style={[styles.tableAction, { color: C.text }]}>{row.action}</Text>
                   <Text style={[styles.tableBase, { color: C.primary }]}>{row.base}</Text>
-                  {row.bonus ? <Text style={[styles.tableBonus, { color: C.textSecondary }]}>✦ {row.bonus}</Text> : null}
+                  {row.bonus ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Feather name="star" size={10} color="#D4AF37" />
+                      <Text style={[styles.tableBonus, { color: C.textSecondary }]}>{row.bonus}</Text>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             ))}
@@ -119,29 +124,57 @@ function PointsTableSheet({ visible, onClose, C, isDark }: { visible: boolean; o
   );
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => (w[0] ?? "").toUpperCase())
+    .join("");
+}
+
 function LeaderRow({ item, index, isMe, C }: { item: GameEntry; index: number; isMe: boolean; C: typeof Colors.light }) {
   const rankColor = getRankColor(item.rank);
   const tier = getLevelTier(item.level);
+  const initials = getInitials(item.userName);
+
   return (
     <View style={[
       styles.leaderItem,
-      { backgroundColor: isMe ? C.primary + "18" : C.surfaceElevated, borderColor: isMe ? C.primary : rankColor ?? C.border, borderWidth: isMe ? 2 : rankColor ? 1.5 : 1 },
+      {
+        backgroundColor: isMe ? C.primary + "14" : C.surfaceElevated,
+        borderColor: isMe ? C.primary : rankColor ?? C.border,
+        borderWidth: isMe ? 2 : rankColor ? 1.5 : 1,
+      },
     ]}>
-      <View style={[styles.rankBadge, { backgroundColor: rankColor ?? (isMe ? C.primary : C.backgroundTertiary) }]}>
-        {rankColor
-          ? <Ionicons name="trophy" size={13} color="#000" />
-          : <Text style={[styles.rankNum, { color: isMe ? "#fff" : C.textSecondary }]}>{item.rank}</Text>
-        }
+      {/* Rank number circle */}
+      <View style={[
+        styles.rankBadge,
+        { backgroundColor: rankColor ? rankColor + "25" : C.backgroundTertiary },
+      ]}>
+        <Text style={[
+          styles.rankNum,
+          { color: rankColor ?? (isMe ? C.primary : C.textSecondary), fontSize: item.rank >= 10 ? 11 : 14 },
+        ]}>
+          {item.rank}
+        </Text>
       </View>
-      <View style={[styles.avatar, { backgroundColor: rankColor ? rankColor + "22" : C.backgroundTertiary, borderColor: rankColor ?? C.border, borderWidth: 1.5 }]}>
-        <Feather name="user" size={17} color={rankColor ?? (isMe ? C.primary : C.textMuted)} />
+
+      {/* Initials avatar */}
+      <View style={[
+        styles.avatar,
+        { backgroundColor: rankColor ? rankColor + "20" : (isMe ? C.primary + "18" : C.backgroundTertiary), borderColor: rankColor ?? (isMe ? C.primary : C.border), borderWidth: 1.5 },
+      ]}>
+        <Text style={[styles.avatarInitials, { color: rankColor ?? (isMe ? C.primary : C.textSecondary) }]}>
+          {initials}
+        </Text>
       </View>
+
       <View style={{ flex: 1, gap: 2 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
           <Text style={[styles.leaderName, { color: C.text }]} numberOfLines={1}>{item.userName}</Text>
           {item.title && (
             <View style={[styles.titleBadge, { backgroundColor: "#FFD70022", borderColor: "#FFD700" }]}>
-              <MaterialCommunityIcons name="crown" size={9} color="#FFD700" />
+              <Feather name="award" size={9} color="#D4AF37" />
               <Text style={[styles.titleText, { color: "#B8860B" }]}>{item.title}</Text>
             </View>
           )}
@@ -151,8 +184,9 @@ function LeaderRow({ item, index, isMe, C }: { item: GameEntry; index: number; i
           <Text style={[styles.leaderLevel, { color: tier.color }]}>Nv.{item.level} {tier.name}</Text>
         </View>
       </View>
+
       <View style={{ alignItems: "flex-end", gap: 1 }}>
-        <Text style={[styles.pointsNum, { color: rankColor ?? (isMe ? C.primary : C.primary) }]}>
+        <Text style={[styles.pointsNum, { color: rankColor ?? C.primary }]}>
           {item.weeklyPoints.toLocaleString("pt-BR")}
         </Text>
         <Text style={[styles.pointsLabel, { color: C.textMuted }]}>pts semana</Text>
@@ -187,7 +221,12 @@ function HistoryRow({ item, C }: { item: PointsHistoryEntry; C: typeof Colors.li
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.historyAction, { color: C.text }]}>{item.action}</Text>
-        {item.multiplier && <Text style={[styles.historyMult, { color: "#D4AF37" }]}>✦ {item.multiplier}</Text>}
+        {item.multiplier && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Feather name="star" size={10} color="#D4AF37" />
+            <Text style={[styles.historyMult, { color: "#D4AF37" }]}>{item.multiplier}</Text>
+          </View>
+        )}
         <Text style={[styles.historyDate, { color: C.textMuted }]}>{item.date}</Text>
       </View>
       <Text style={[styles.historyPts, { color: C.primary }]}>+{item.points}</Text>
@@ -272,7 +311,7 @@ export default function GameScreen() {
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: C.text }]}>Ranking</Text>
           {isInTop3
-            ? <Text style={[styles.subtitle, { color: "#D4AF37" }]}>🏆 Você está no pódio! Parabéns!</Text>
+            ? <Text style={[styles.subtitle, { color: "#D4AF37" }]}>Você está no pódio! Parabéns!</Text>
             : pointsToNextRank !== null
               ? <Text style={[styles.subtitle, { color: C.textMuted }]}>
                   Você está em #{userRank}! Só mais {pointsToNextRank.toLocaleString("pt-BR")} pts para subir
@@ -521,8 +560,9 @@ const styles = StyleSheet.create({
   regionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 7, borderRadius: 8 },
   regionBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   leaderItem: { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 12, gap: 10 },
-  rankBadge: { width: 30, height: 30, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  rankBadge: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   rankNum: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  avatarInitials: { fontSize: 15, fontFamily: "Inter_700Bold" },
   avatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   leaderName: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   leaderLevel: { fontSize: 10, fontFamily: "Inter_500Medium" },

@@ -143,7 +143,7 @@ export default function HomeScreen() {
         {/* Centered greeting */}
         {isLoggedIn && (
           <Text style={[styles.greeting, { color: C.textSecondary }]}>
-            Olá, {user?.name.split(" ")[0]} 👋
+            Olá, {user?.name.split(" ")[0]}
           </Text>
         )}
 
