@@ -6,9 +6,11 @@ import React, { useState } from "react";
 import {
   Alert,
   FlatList,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Switch,
   Text,
@@ -193,9 +195,80 @@ function MenuItem({ icon, label, sub, color: C, onPress }: any) {
   );
 }
 
+const WEEKLY_DATA = [
+  { day: "Seg", views: 5200, cliques: 320 },
+  { day: "Ter", views: 7800, cliques: 480 },
+  { day: "Qua", views: 6100, cliques: 390 },
+  { day: "Qui", views: 8900, cliques: 560 },
+  { day: "Sex", views: 11200, cliques: 720 },
+  { day: "Sáb", views: 9800, cliques: 630 },
+  { day: "Dom", views: 7400, cliques: 480 },
+];
+
+function WeeklyChart({ C }: { C: any }) {
+  const maxViews = Math.max(...WEEKLY_DATA.map((d) => d.views));
+  const maxCliques = Math.max(...WEEKLY_DATA.map((d) => d.cliques));
+  const BAR_H = 80;
+  const today = new Date().getDay();
+  const todayIdx = today === 0 ? 6 : today - 1;
+  return (
+    <View style={{ gap: 10 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", height: BAR_H + 24 }}>
+        {WEEKLY_DATA.map((d, i) => {
+          const vH = Math.round((d.views / maxViews) * BAR_H);
+          const cH = Math.round((d.cliques / maxCliques) * BAR_H);
+          const isToday = i === todayIdx;
+          return (
+            <View key={d.day} style={{ alignItems: "center", flex: 1, justifyContent: "flex-end", gap: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 2 }}>
+                <View style={{ width: 8, height: vH, borderRadius: 4, backgroundColor: isToday ? "#CC0000" : "#CC000055", minHeight: 4 }} />
+                <View style={{ width: 6, height: cH, borderRadius: 3, backgroundColor: isToday ? "#2196F3" : "#2196F355", minHeight: 3 }} />
+              </View>
+              <Text style={{ fontSize: 9, color: isToday ? C.text : C.textMuted, fontFamily: "Inter_600SemiBold" }}>{d.day.slice(0, 3)}</Text>
+            </View>
+          );
+        })}
+      </View>
+      <View style={{ flexDirection: "row", gap: 14, marginTop: 2 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: "#CC0000" }} />
+          <Text style={{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }}>Visualizações</Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: "#2196F3" }} />
+          <Text style={{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }}>Cliques</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retailerStore, editingEan, setEditingEan, editPrice, setEditPrice, handleSavePrice, finalizedLists, processedNFCe }: any) {
   const [section, setSection] = useState<"dashboard" | "alertas" | "products" | "plan">("dashboard");
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [campaignName, setCampaignName] = useState("");
+  const [campaignBudget, setCampaignBudget] = useState("500");
+  const [campaignType, setCampaignType] = useState<"banner" | "oferta" | "destaque">("banner");
   const urgentCount = MOCK_ALERTS.filter((a) => a.urgent).length;
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        title: `${retailerStore?.name || "Minha Loja"} no eCompara`,
+        message: `Confira os melhores preços em ${retailerStore?.name || "Minha Loja"}! Encontre e compare preços no app eCompara. 🛒 https://ecompara.app/store/${retailerStore?.id || "demo"}`,
+      });
+    } catch {}
+  };
+
+  const handleCreateCampaign = () => {
+    if (!campaignName.trim()) { Alert.alert("Campo obrigatório", "Informe o nome da campanha."); return; }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowCampaignModal(false);
+    setCampaignName("");
+    setCampaignBudget("500");
+    setCampaignType("banner");
+    Alert.alert("Campanha criada!", `"${campaignName}" foi criada com orçamento de R$ ${campaignBudget}.\nSua campanha entrará em revisão e será ativada em até 24h.`);
+  };
 
   const metrics = [
     { label: "Visualizações", value: "48.500", prev: "+12%", icon: "eye", trend: "up", color: "#2196F3" },
@@ -257,85 +330,155 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
         ))}
       </View>
 
-      {/* DASHBOARD */}
-      {section === "dashboard" && (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPad, gap: 14 }}>
-          {/* Health Score */}
-          <View style={[styles.healthCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.healthTitle, { color: C.text }]}>Saúde da Loja</Text>
-              <Text style={[styles.healthSub, { color: C.textMuted }]}>Baseado em preços, avaliações e atividade</Text>
-              <View style={[styles.healthBarBg, { backgroundColor: C.backgroundTertiary, marginTop: 10 }]}>
-                <View style={[styles.healthBarFill, { width: `${healthScore}%`, backgroundColor: healthScore >= 70 ? C.success : healthScore >= 40 ? "#FFC107" : C.primary }]} />
-              </View>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
-                <Text style={[{ fontSize: 10, fontFamily: "Inter_400Regular", color: C.textMuted }]}>0</Text>
-                <Text style={[{ fontSize: 11, fontFamily: "Inter_700Bold", color: healthScore >= 70 ? C.success : "#FFC107" }]}>{healthScore}/100 — Bom</Text>
-                <Text style={[{ fontSize: 10, fontFamily: "Inter_400Regular", color: C.textMuted }]}>100</Text>
-              </View>
-            </View>
-            <View style={[styles.healthScoreBig, { borderColor: healthScore >= 70 ? C.success : "#FFC107" }]}>
-              <Text style={[styles.healthScoreNum, { color: healthScore >= 70 ? C.success : "#FFC107" }]}>{healthScore}</Text>
-              <Text style={[styles.healthScorePts, { color: C.textMuted }]}>pts</Text>
-            </View>
-          </View>
+      {/* Campaign Creation Modal */}
+      <Modal visible={showCampaignModal} transparent animationType="slide" onRequestClose={() => setShowCampaignModal(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }} onPress={() => setShowCampaignModal(false)} />
+        <View style={{ backgroundColor: C.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36, gap: 14, position: "absolute", bottom: 0, left: 0, right: 0 }}>
+          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: "center", marginBottom: 4 }} />
+          <Text style={{ fontSize: 18, fontFamily: "Inter_700Bold", color: C.text }}>Nova Campanha</Text>
 
-          {/* Metrics Grid */}
-          <View style={styles.metricsGrid}>
-            {metrics.map((m) => (
-              <View key={m.label} style={[styles.metricCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                  <View style={[styles.metricIconBg, { backgroundColor: m.color + "18" }]}>
-                    <Feather name={m.icon as any} size={14} color={m.color} />
-                  </View>
-                  {m.trend === "up" && (
-                    <View style={styles.trendUp}>
-                      <Feather name="trending-up" size={10} color="#4CAF50" />
-                      <Text style={[styles.trendText, { color: "#4CAF50" }]}>{m.prev}</Text>
-                    </View>
-                  )}
-                  {m.trend === "down" && (
-                    <View style={styles.trendDown}>
-                      <Feather name="trending-down" size={10} color="#F44336" />
-                      <Text style={[styles.trendText, { color: "#F44336" }]}>{m.prev}</Text>
-                    </View>
-                  )}
-                  {m.trend === "flat" && (
-                    <Text style={[styles.trendText, { color: C.textMuted }]}>{m.prev}</Text>
-                  )}
-                </View>
-                <Text style={[styles.metricValue, { color: C.text }]}>{m.value}</Text>
-                <Text style={[styles.metricLabel, { color: C.textMuted }]}>{m.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Quick Actions */}
           <View style={{ gap: 6 }}>
-            <Text style={[styles.sectionLabel, { color: C.textMuted }]}>AÇÕES RÁPIDAS</Text>
+            <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>NOME DA CAMPANHA</Text>
+            <TextInput
+              value={campaignName}
+              onChangeText={setCampaignName}
+              placeholder="Ex: Promoção do fim de semana"
+              placeholderTextColor={C.textMuted}
+              style={{ backgroundColor: C.surfaceElevated, borderRadius: 12, padding: 14, color: C.text, fontFamily: "Inter_400Regular", fontSize: 14, borderWidth: 1, borderColor: C.border }}
+            />
+          </View>
+
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>TIPO DE CAMPANHA</Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              {[
-                { icon: "plus-circle", label: "Nova Campanha", color: C.primary },
-                { icon: "package", label: "Cadastrar Produto", color: "#2196F3" },
-                { icon: "share-2", label: "Compartilhar Loja", color: "#9C27B0" },
-              ].map((a) => (
-                <Pressable
-                  key={a.label}
-                  style={[styles.quickAction, { backgroundColor: C.surfaceElevated, borderColor: a.color + "30", borderWidth: 1 }]}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); if (a.label === "Cadastrar Produto") router.push("/retailer-scanner"); else Alert.alert("Em breve", `${a.label} estará disponível em breve.`); }}
-                >
-                  <View style={[styles.quickActionIcon, { backgroundColor: a.color + "18" }]}>
-                    <Feather name={a.icon as any} size={16} color={a.color} />
-                  </View>
-                  <Text style={[styles.quickActionLabel, { color: C.text }]}>{a.label}</Text>
+              {(["banner", "oferta", "destaque"] as const).map((t) => (
+                <Pressable key={t} onPress={() => setCampaignType(t)} style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center", backgroundColor: campaignType === t ? C.primary : C.surfaceElevated, borderWidth: 1, borderColor: campaignType === t ? C.primary : C.border }}>
+                  <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: campaignType === t ? "#fff" : C.textMuted, textTransform: "capitalize" }}>{t}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
 
-          {/* Active Campaign */}
           <View style={{ gap: 6 }}>
-            <Text style={[styles.sectionLabel, { color: C.textMuted }]}>CAMPANHA ATIVA</Text>
+            <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>ORÇAMENTO (R$)</Text>
+            <TextInput
+              value={campaignBudget}
+              onChangeText={setCampaignBudget}
+              keyboardType="numeric"
+              placeholder="500"
+              placeholderTextColor={C.textMuted}
+              style={{ backgroundColor: C.surfaceElevated, borderRadius: 12, padding: 14, color: C.text, fontFamily: "Inter_400Regular", fontSize: 14, borderWidth: 1, borderColor: C.border }}
+            />
+          </View>
+
+          <Pressable onPress={handleCreateCampaign} style={{ backgroundColor: C.primary, borderRadius: 14, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 4 }}>
+            <Feather name="zap" size={16} color="#fff" />
+            <Text style={{ color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 }}>Criar Campanha</Text>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* DASHBOARD */}
+      {section === "dashboard" && (
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPad, gap: 16 }}>
+
+          {/* Health Score Card */}
+          <LinearGradient colors={["#1a1a2e", "#16213e"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 18, padding: 16, flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: "rgba(255,255,255,0.6)", letterSpacing: 0.8 }}>SAÚDE DA LOJA</Text>
+              <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)" }}>Preços, avaliações e atividade</Text>
+              <View style={{ height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.15)", marginTop: 6 }}>
+                <View style={{ height: 6, borderRadius: 3, width: `${healthScore}%`, backgroundColor: healthScore >= 70 ? "#4CAF50" : "#FFC107" }} />
+              </View>
+              <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: healthScore >= 70 ? "#4CAF50" : "#FFC107" }}>{healthScore}/100 · {healthScore >= 70 ? "Bom" : "Regular"}</Text>
+            </View>
+            <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: healthScore >= 70 ? "#4CAF50" : "#FFC107", alignItems: "center", justifyContent: "center", marginLeft: 14 }}>
+              <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: "#fff" }}>{healthScore}</Text>
+              <Text style={{ fontSize: 9, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.6)" }}>pts</Text>
+            </View>
+          </LinearGradient>
+
+          {/* KPI Strip */}
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {metrics.map((m) => (
+              <View key={m.label} style={{ flex: 1, backgroundColor: C.surfaceElevated, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: C.border, alignItems: "center", gap: 4 }}>
+                <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: m.color + "18", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name={m.icon as any} size={13} color={m.color} />
+                </View>
+                <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: C.text }}>{m.value}</Text>
+                <Text style={{ fontSize: 9, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center" }}>{m.label}</Text>
+                {m.trend === "up" && <Text style={{ fontSize: 9, fontFamily: "Inter_600SemiBold", color: "#4CAF50" }}>{m.prev}</Text>}
+                {m.trend === "flat" && <Text style={{ fontSize: 9, fontFamily: "Inter_400Regular", color: C.textMuted }}>{m.prev}</Text>}
+              </View>
+            ))}
+          </View>
+
+          {/* Weekly Chart */}
+          <View style={{ backgroundColor: C.surfaceElevated, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: C.border, gap: 12 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: C.text }}>Tráfego Semanal</Text>
+              <View style={{ backgroundColor: C.backgroundTertiary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>Esta semana</Text>
+              </View>
+            </View>
+            <WeeklyChart C={C} />
+          </View>
+
+          {/* Quick Actions */}
+          <View style={{ gap: 10 }}>
+            <Text style={[styles.sectionLabel, { color: C.textMuted }]}>AÇÕES RÁPIDAS</Text>
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowCampaignModal(true); }}
+              style={{ backgroundColor: C.primary, borderRadius: 14, padding: 16, flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
+                <Feather name="zap" size={18} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" }}>Nova Campanha</Text>
+                <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)" }}>Crie banners e ofertas patrocinadas</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.7)" />
+            </Pressable>
+
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/retailer-scanner"); }}
+                style={{ flex: 1, backgroundColor: C.surfaceElevated, borderRadius: 14, padding: 14, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#2196F330" }}
+              >
+                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "#2196F318", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="package" size={16} color="#2196F3" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.text }}>Cadastrar Produto</Text>
+                  <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: C.textMuted }}>Scan de código de barras</Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleShare(); }}
+                style={{ flex: 1, backgroundColor: C.surfaceElevated, borderRadius: 14, padding: 14, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#9C27B030" }}
+              >
+                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "#9C27B018", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="share-2" size={16} color="#9C27B0" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.text }}>Compartilhar</Text>
+                  <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: C.textMuted }}>Divulgue sua loja</Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Active Campaign */}
+          <View style={{ gap: 10 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={[styles.sectionLabel, { color: C.textMuted }]}>CAMPANHA ATIVA</Text>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCampaignModal(true); }} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Feather name="plus" size={12} color={C.primary} />
+                <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: C.primary }}>Nova</Text>
+              </Pressable>
+            </View>
             <View style={[styles.campaignCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
               <View style={styles.campaignHeader}>
                 <View style={{ flex: 1 }}>
@@ -369,10 +512,6 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
                 </View>
               </View>
             </View>
-            <Pressable style={[styles.addCampaignBtn, { backgroundColor: C.primary }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); Alert.alert("Em breve", "Criação de campanhas estará disponível em breve!"); }}>
-              <Feather name="plus" size={16} color="#fff" />
-              <Text style={styles.addCampaignText}>Nova campanha</Text>
-            </Pressable>
           </View>
 
           {/* Top Products */}
