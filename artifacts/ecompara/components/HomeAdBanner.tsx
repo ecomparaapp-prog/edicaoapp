@@ -68,21 +68,34 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
     const visible = ad.products.slice(0, 6);
     const rows: typeof visible[] = [visible.slice(0, 3), visible.slice(3, 6)];
     const remaining = ad.products.length - 6;
+    // derive 2-letter initial for circular logo
+    const initials = ad.storeName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
     return (
       <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}>
 
         {/* Header */}
         <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
-          <View style={styles.headerLeft}>
+          {/* top micro-bar: ANÚNCIO + slot label */}
+          <View style={styles.headerTopBar}>
             <View style={styles.adBadge}>
               <Text style={styles.adBadgeText}>ANÚNCIO</Text>
             </View>
-            <Text style={styles.headerSlot}>{ad.slotLabel}</Text>
+            <Text style={styles.headerSlotSmall}>{ad.slotLabel}</Text>
           </View>
-          <View style={styles.headerRight}>
-            <Text style={styles.headerStore} numberOfLines={1}>{ad.storeName}</Text>
-            <Text style={styles.headerBairro} numberOfLines={1}>{ad.bairro}</Text>
+
+          {/* main identity row: logo + name + bairro */}
+          <View style={styles.headerIdentityRow}>
+            <View style={styles.logoCircle}>
+              <Text style={styles.logoInitial}>{initials}</Text>
+            </View>
+            <View style={styles.headerNameBlock}>
+              <Text style={styles.headerStoreName} numberOfLines={1}>{ad.storeName}</Text>
+              <View style={styles.headerMeta}>
+                <Feather name="map-pin" size={10} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.headerBairro} numberOfLines={1}>{ad.bairro}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -148,23 +161,32 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
   const renderBrandAd = (ad: BrandAd) => {
     const visible = ad.variants.slice(0, 6);
     const rows: typeof visible[] = [visible.slice(0, 3), visible.slice(3, 6)];
+    const initials = ad.brandName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
     return (
       <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: isDark ? "#1A1A1A" : "#fff", borderColor: C.border }]}>
 
         {/* Header */}
         <View style={[styles.cardHeader, { backgroundColor: ad.accentColor }]}>
-          <View style={styles.headerLeft}>
+          {/* top micro-bar */}
+          <View style={styles.headerTopBar}>
             <View style={[styles.adBadge, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
               <Text style={styles.adBadgeText}>{ad.slotLabel}</Text>
             </View>
-            <Text style={styles.headerSlot}>{ad.brandName}</Text>
+            <Text style={styles.headerSlotSmall}>{ad.tagline}</Text>
           </View>
-          <View style={styles.headerRight}>
-            <Text style={styles.headerStore}>{ad.tagline}</Text>
-            <View style={styles.radiusRow}>
-              <Feather name="map-pin" size={9} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.radiusText}>Raio {ad.searchRadiusKm}km</Text>
+
+          {/* main identity row */}
+          <View style={styles.headerIdentityRow}>
+            <View style={styles.logoCircle}>
+              <Text style={styles.logoInitial}>{initials}</Text>
+            </View>
+            <View style={styles.headerNameBlock}>
+              <Text style={styles.headerStoreName} numberOfLines={1}>{ad.brandName}</Text>
+              <View style={styles.headerMeta}>
+                <Feather name="map-pin" size={10} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.headerBairro}>Raio {ad.searchRadiusKm}km</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -402,26 +424,56 @@ const styles = StyleSheet.create({
 
   // Header
   cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 14,
+    gap: 10,
+  },
+  // top micro-bar: ANÚNCIO badge + slot label
+  headerTopBar: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
-  headerLeft: { gap: 3 },
-  headerRight: { flex: 1, alignItems: "flex-end", gap: 2 },
   adBadge: {
     backgroundColor: "rgba(255,255,255,0.22)",
     borderRadius: 4,
     paddingHorizontal: 7,
     paddingVertical: 2,
-    alignSelf: "flex-start",
   },
   adBadgeText: { color: "#fff", fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
-  headerSlot: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  headerStore: { color: "#fff", fontSize: 11, fontWeight: "600", textAlign: "right" },
-  headerBairro: { color: "rgba(255,255,255,0.75)", fontSize: 10, textAlign: "right" },
+  headerSlotSmall: { color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: "500" },
+  // identity row: circular logo + name block
+  headerIdentityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  logoCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoInitial: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  headerNameBlock: { flex: 1, gap: 3 },
+  headerStoreName: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  headerMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
+  headerBairro: { color: "rgba(255,255,255,0.8)", fontSize: 11 },
 
   // Grid
   grid: {
