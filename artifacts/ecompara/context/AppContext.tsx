@@ -302,7 +302,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [stores, setStores] = useState<Store[]>(MOCK_STORES);
   const [storesLoading, setStoresLoading] = useState(false);
 
-  const mockRetailerStore: RetailerStore = {
+  const MOCK_RETAILER_STORE: RetailerStore = {
     id: "r1",
     name: "Supermercado Demo",
     address: "Rua Principal, 123",
@@ -320,7 +320,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ],
   };
 
-  const [retailerStore, setRetailerStore] = useState<RetailerStore | null>(mockRetailerStore);
+  // retailerStore is ONLY populated when the logged-in user has role === "retailer".
+  // Customers always receive null — no retailer data is ever exposed to them.
+  const [retailerStore, setRetailerStore] = useState<RetailerStore | null>(null);
   const [finalizedLists, setFinalizedLists] = useState<FinalizedList[]>([
     { id: "fl1", storeId: "1", storeName: "Supermercado Vivendas", isPartner: true, totalItems: 8, checkedItems: 8, durationSeconds: 720, points: 300, status: "full", timestamp: "Ontem, 11:32" },
     { id: "fl2", storeId: "2", storeName: "Tatico Supermercados", isPartner: false, totalItems: 5, checkedItems: 4, durationSeconds: 380, points: 200, status: "full", timestamp: "Seg, 14:10" },
