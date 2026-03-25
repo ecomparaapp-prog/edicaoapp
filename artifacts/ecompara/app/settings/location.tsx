@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 
-const RADIUS_OPTIONS = [2, 5, 10, 20];
+const RADIUS_OPTIONS = [1, 2.5, 5];
 
 export default function LocationSettingsScreen() {
   const colorScheme = useColorScheme();

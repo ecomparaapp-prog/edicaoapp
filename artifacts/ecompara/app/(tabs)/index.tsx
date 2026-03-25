@@ -108,11 +108,6 @@ export default function HomeScreen() {
               style={styles.logoImage}
               resizeMode="contain"
             />
-            {isLoggedIn && (
-              <Text style={[styles.greeting, { color: C.textSecondary }]}>
-                Olá, {user?.name.split(" ")[0]} 👋
-              </Text>
-            )}
           </View>
           <View style={styles.headerActions}>
             <Pressable
@@ -144,6 +139,13 @@ export default function HomeScreen() {
             )}
           </View>
         </View>
+
+        {/* Centered greeting */}
+        {isLoggedIn && (
+          <Text style={[styles.greeting, { color: C.textSecondary }]}>
+            Olá, {user?.name.split(" ")[0]} 👋
+          </Text>
+        )}
 
         {/* Search Bar */}
         <Pressable
@@ -541,7 +543,7 @@ const styles = StyleSheet.create({
   },
   logoBlock: { flexDirection: "column", gap: 0, justifyContent: "center", flex: 1 },
   logoImage: { width: 210, height: 52 },
-  greeting: { fontSize: 14, fontFamily: "Inter_500Medium", marginTop: 2 },
+  greeting: { fontSize: 14, fontFamily: "Inter_500Medium", textAlign: "center", marginTop: 6, paddingHorizontal: 16 },
   headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
   iconBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   loginBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
