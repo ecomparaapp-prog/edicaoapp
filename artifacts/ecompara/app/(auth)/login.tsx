@@ -61,14 +61,19 @@ export default function LoginScreen() {
       <View style={styles.content}>
         {/* Logo */}
         <View style={styles.logoArea}>
-          <View style={[styles.logoCircle, { backgroundColor: C.primary }]}>
-            <Feather name="shopping-cart" size={36} color="#fff" />
-          </View>
-          <View style={styles.logoTextRow}>
-            <Text style={[styles.logoText, { color: C.text }]}>ecompa</Text>
-            <Text style={[styles.logoTextRed, { color: C.primary }]}>ra</Text>
-          </View>
-          <Text style={[styles.tagline, { color: C.textMuted }]}>
+          <Image
+            source={
+              isDark
+                ? require("@/assets/images/logo-light.png")
+                : require("@/assets/images/logo-dark.png")
+            }
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <Text style={[styles.taglineMain, { color: C.primary }]}>
+            O Waze dos supermercados
+          </Text>
+          <Text style={[styles.taglineSub, { color: C.textMuted }]}>
             Compare preços, economize mais
           </Text>
         </View>
@@ -119,12 +124,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 24 },
   closeBtn: { position: "absolute", top: 60, right: 24, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", zIndex: 10 },
   content: { flex: 1, justifyContent: "center", gap: 32 },
-  logoArea: { alignItems: "center", gap: 8 },
-  logoCircle: { width: 80, height: 80, borderRadius: 24, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  logoTextRow: { flexDirection: "row" },
-  logoText: { fontSize: 34, fontFamily: "Inter_700Bold" },
-  logoTextRed: { fontSize: 34, fontFamily: "Inter_700Bold" },
-  tagline: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center" },
+  logoArea: { alignItems: "center", gap: 6 },
+  logoImage: { width: 220, height: 70 },
+  taglineMain: { fontSize: 16, fontFamily: "Inter_600SemiBold", textAlign: "center", marginTop: 4 },
+  taglineSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
   benefitsCard: { borderRadius: 18, padding: 20, gap: 14 },
   benefitRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   benefitIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },

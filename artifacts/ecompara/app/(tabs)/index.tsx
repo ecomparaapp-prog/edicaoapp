@@ -100,13 +100,17 @@ export default function HomeScreen() {
         <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: C.background }]}>
           <View style={styles.logoBlock}>
             <Image
-              source={require("@/assets/images/logo-ecompara.png")}
+              source={
+                isDark
+                  ? require("@/assets/images/logo-light.png")
+                  : require("@/assets/images/logo-dark.png")
+              }
               style={styles.logoImage}
               resizeMode="contain"
             />
             {isLoggedIn && (
               <Text style={[styles.greeting, { color: C.textSecondary }]}>
-                Olá, {user?.name.split(" ")[0]}
+                Olá, {user?.name.split(" ")[0]} 👋
               </Text>
             )}
           </View>
@@ -139,14 +143,6 @@ export default function HomeScreen() {
               </Pressable>
             )}
           </View>
-        </View>
-
-        {/* Tagline */}
-        <View style={[styles.taglineRow, { marginHorizontal: 16, marginTop: 2 }]}>
-          <Feather name="navigation" size={12} color={C.primary} />
-          <Text style={[styles.tagline, { color: C.textMuted }]}>
-            O Waze dos supermercados
-          </Text>
         </View>
 
         {/* Search Bar */}
@@ -542,9 +538,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 4,
   },
-  logoBlock: { flexDirection: "row", alignItems: "center", gap: 10 },
-  logoImage: { width: 130, height: 40, borderRadius: 6 },
-  greeting: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  logoBlock: { flexDirection: "column", gap: 2, justifyContent: "center" },
+  logoImage: { width: 160, height: 50 },
+  greeting: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
   iconBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   loginBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
