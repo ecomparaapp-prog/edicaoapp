@@ -276,11 +276,11 @@ export default function StoreScreen() {
         </View>
       )}
 
-      {/* Ações principais */}
+      {/* Ações principais — uma única linha proporcional */}
       <View style={[styles.actionsBar, { backgroundColor: C.backgroundSecondary, borderBottomColor: C.border }]}>
-        {/* Cadastrar Preço */}
+        {/* Cadastrar Produto */}
         <Pressable
-          style={[styles.actionBtn, { backgroundColor: C.primary }]}
+          style={[styles.actionBtn, { backgroundColor: C.primary, flex: 1 }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push({
@@ -293,12 +293,12 @@ export default function StoreScreen() {
           }}
         >
           <MaterialIcon name="barcode-scan" color="#fff" />
-          <Text style={styles.actionBtnText}>Cadastrar Produto</Text>
+          <Text style={styles.actionBtnText} numberOfLines={1}>Cadastrar</Text>
         </Pressable>
 
         {/* Este é meu negócio */}
         <Pressable
-          style={[styles.actionBtn, { backgroundColor: "#CC0000" }]}
+          style={[styles.actionBtn, { backgroundColor: "#8B0000", flex: 1 }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push({
@@ -312,21 +312,21 @@ export default function StoreScreen() {
             });
           }}
         >
-          <Feather name="briefcase" size={14} color="#fff" />
-          <Text style={styles.actionBtnText}>Este é meu negócio</Text>
+          <Feather name="briefcase" size={13} color="#fff" />
+          <Text style={styles.actionBtnText} numberOfLines={1}>Meu Negócio</Text>
         </Pressable>
 
         {/* Sugerir Mudança (shadow apenas) */}
         {store.isShadow && (
           <Pressable
-            style={[styles.actionBtn, { backgroundColor: isDark ? "#333" : "#F5F5F5", borderWidth: 1, borderColor: C.border }]}
+            style={[styles.actionBtn, { flex: 1, backgroundColor: isDark ? "#2A2A2A" : "#EFEFEF", borderWidth: 1, borderColor: C.border }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setShowSuggestModal(true);
             }}
           >
-            <Feather name="edit-2" size={14} color={C.textSecondary} />
-            <Text style={[styles.actionBtnText, { color: C.textSecondary }]}>Sugerir Mudança</Text>
+            <Feather name="edit-2" size={13} color={C.textSecondary} />
+            <Text style={[styles.actionBtnText, { color: C.textSecondary }]} numberOfLines={1}>Sugerir</Text>
           </Pressable>
         )}
       </View>
@@ -531,7 +531,6 @@ const styles = StyleSheet.create({
   verifiedLinkText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   actionsBar: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -540,12 +539,13 @@ const styles = StyleSheet.create({
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
     borderRadius: 10,
   },
-  actionBtnText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  actionBtnText: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
   shadowNotice: {
     flexDirection: "row",
     alignItems: "flex-start",

@@ -82,7 +82,7 @@ export default function ProfileScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  if (activeTab === "retailer" && isLoggedIn) {
+  if (activeTab === "retailer" && isLoggedIn && user?.role === "retailer") {
     return (
       <RetailerPanel
         topPad={topPad} bottomPad={bottomPad} isDark={isDark} C={C}
@@ -106,7 +106,7 @@ export default function ProfileScreen() {
             <Pressable style={[styles.iconBtnSm, { backgroundColor: C.backgroundSecondary }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}>
               <Feather name={isDark ? "sun" : "moon"} size={16} color={C.text} />
             </Pressable>
-            {isLoggedIn && (
+            {isLoggedIn && user?.role === "retailer" && (
               <Pressable style={[styles.switchModeBtn, { backgroundColor: "#CC000015", borderColor: "#CC000040", borderWidth: 1 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab("retailer"); }}>
                 <Feather name="store" size={14} color={C.primary} />
                 <Text style={[styles.switchModeTxt, { color: C.primary }]}>Área Lojista</Text>
