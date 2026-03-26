@@ -22,7 +22,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
-import { useApp } from "@/context/AppContext";
+import { useApp, type User } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 
 const MOCK_ALERTS = [
@@ -57,13 +57,28 @@ export default function ProfileScreen() {
 
   const [editingEan, setEditingEan] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : 90;
 
-  const handleLogin = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push("/(auth)/login");
+  const handleLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLoginLoading(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    const mockUser: User = {
+      id: "u_local_" + Date.now(),
+      name: "João da Silva",
+      email: "joao.silva@gmail.com",
+      photo: "",
+      role: "customer",
+      points: 320,
+      rank: 12,
+      totalPriceUpdates: 16,
+    };
+    await setUser(mockUser);
+    setLoginLoading(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleLogout = () => {
@@ -169,9 +184,13 @@ export default function ProfileScreen() {
             <Text style={[styles.notLoggedSub, { color: C.textMuted }]}>
               Faça login para salvar sua lista, acompanhar o ranking e ganhar pontos
             </Text>
-            <Pressable style={[styles.googleBtn, { backgroundColor: C.primary }]} onPress={handleLogin}>
-              <Feather name="log-in" size={18} color="#fff" />
-              <Text style={styles.googleBtnText}>Entrar com Google</Text>
+            <Pressable
+              style={[styles.googleBtn, { backgroundColor: C.primary, opacity: loginLoading ? 0.75 : 1 }]}
+              onPress={handleLogin}
+              disabled={loginLoading}
+            >
+              <Feather name={loginLoading ? "loader" : "log-in"} size={18} color="#fff" />
+              <Text style={styles.googleBtnText}>{loginLoading ? "Entrando…" : "Entrar com Google"}</Text>
             </Pressable>
 
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, width: "100%", marginTop: 4 }}>
