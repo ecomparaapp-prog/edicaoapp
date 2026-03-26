@@ -16,37 +16,57 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/colors";
 import { useApp, type User } from "@/context/AppContext";
 
+type LoginMode = "customer" | "retailer";
+
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { setUser } = useApp();
-  const [loading, setLoading] = useState(false);
+  const { setUser, setActiveTab } = useApp();
+  const [loading, setLoading] = useState<LoginMode | null>(null);
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom;
 
-  const handleGoogleLogin = async () => {
+  const handleLogin = async (mode: LoginMode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setLoading(true);
+    setLoading(mode);
     await new Promise((r) => setTimeout(r, 1200));
 
-    const mockUser: User = {
-      id: "u_local_" + Date.now(),
-      name: "João da Silva",
-      email: "joao.silva@gmail.com",
-      photo: "",
-      role: "customer",
-      points: 320,
-      rank: 12,
-      totalPriceUpdates: 16,
-    };
-    await setUser(mockUser);
-    setLoading(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.dismissAll();
+    if (mode === "customer") {
+      const mockUser: User = {
+        id: "u_local_" + Date.now(),
+        name: "João da Silva",
+        email: "joao.silva@gmail.com",
+        photo: "",
+        role: "customer",
+        points: 320,
+        rank: 12,
+        totalPriceUpdates: 16,
+      };
+      await setUser(mockUser);
+      setLoading(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.dismissAll();
+    } else {
+      const mockRetailer: User = {
+        id: "r_local_" + Date.now(),
+        name: "Supermercado Demo",
+        email: "contato@supermercadodemo.com.br",
+        photo: "",
+        role: "retailer",
+        points: 0,
+        rank: 0,
+        totalPriceUpdates: 0,
+      };
+      await setUser(mockRetailer);
+      setActiveTab("retailer");
+      setLoading(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.dismissAll();
+    }
   };
 
   return (
@@ -81,7 +101,7 @@ export default function LoginScreen() {
         {/* Benefits */}
         <View style={[styles.benefitsCard, { backgroundColor: C.backgroundSecondary }]}>
           {[
-            { icon: "map-pin", text: "Encontre os melhores preços num raio de até 10km" },
+            { icon: "map-pin", text: "Encontre os melhores preços num raio de até 50km" },
             { icon: "shopping-cart", text: "Monte sua lista e compare automaticamente" },
             { icon: "award", text: "Ganhe pontos atualizando preços e troque por dinheiro real" },
           ].map((b, i) => (
@@ -96,12 +116,13 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.footer}>
+        {/* Botão cliente — Google */}
         <Pressable
           style={[styles.googleBtn, { backgroundColor: loading ? C.primary + "80" : C.primary }]}
-          onPress={handleGoogleLogin}
-          disabled={loading}
+          onPress={() => handleLogin("customer")}
+          disabled={loading !== null}
         >
-          {loading ? (
+          {loading === "customer" ? (
             <Text style={styles.googleBtnText}>Entrando...</Text>
           ) : (
             <>
@@ -112,6 +133,43 @@ export default function LoginScreen() {
             </>
           )}
         </Pressable>
+
+        {/* Divisor */}
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: C.border }]} />
+          <Text style={[styles.dividerText, { color: C.textMuted }]}>ou</Text>
+          <View style={[styles.dividerLine, { backgroundColor: C.border }]} />
+        </View>
+
+        {/* Botão lojista */}
+        <Pressable
+          style={[
+            styles.retailerBtn,
+            {
+              backgroundColor: isDark ? "#1A1A1A" : "#FFF",
+              borderColor: "#8B0000",
+              opacity: loading ? 0.6 : 1,
+            },
+          ]}
+          onPress={() => handleLogin("retailer")}
+          disabled={loading !== null}
+        >
+          {loading === "retailer" ? (
+            <Text style={[styles.retailerBtnText, { color: "#8B0000" }]}>Entrando...</Text>
+          ) : (
+            <>
+              <View style={[styles.retailerIconBg, { backgroundColor: "#8B000015" }]}>
+                <Feather name="store" size={18} color="#8B0000" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.retailerBtnText, { color: "#8B0000" }]}>Entrar como Lojista</Text>
+                <Text style={[styles.retailerBtnSub, { color: C.textMuted }]}>Área exclusiva para supermercados parceiros</Text>
+              </View>
+              <Feather name="chevron-right" size={16} color="#8B0000" />
+            </>
+          )}
+        </Pressable>
+
         <Text style={[styles.terms, { color: C.textMuted }]}>
           Ao entrar, você concorda com os Termos de Uso e Política de Privacidade do eCompara.
         </Text>
@@ -122,7 +180,11 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 24 },
-  closeBtn: { position: "absolute", top: 60, right: 24, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", zIndex: 10 },
+  closeBtn: {
+    position: "absolute", top: 60, right: 24,
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: "center", justifyContent: "center", zIndex: 10,
+  },
   content: { flex: 1, justifyContent: "center", gap: 32 },
   logoArea: { alignItems: "center", gap: 6 },
   logoImage: { width: 260, height: 66 },
@@ -132,9 +194,23 @@ const styles = StyleSheet.create({
   benefitRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   benefitIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   benefitText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
-  footer: { gap: 14, paddingBottom: 8 },
-  googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, borderRadius: 16, paddingVertical: 16 },
+  footer: { gap: 12, paddingBottom: 8 },
+  googleBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 12, borderRadius: 16, paddingVertical: 16,
+  },
   googleIconBg: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   googleBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
+  dividerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  retailerBtn: {
+    flexDirection: "row", alignItems: "center",
+    gap: 12, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16,
+    borderWidth: 1.5,
+  },
+  retailerIconBg: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  retailerBtnText: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  retailerBtnSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
   terms: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 16 },
 });
