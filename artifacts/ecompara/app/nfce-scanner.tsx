@@ -18,11 +18,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import { validateNfce, type NfceItem } from "@/services/nfceService";
 
-/* ── mock NFC-e items per store CNPJ ── */
+/* ── Fallback mock data used only when no real items come from QR scan ── */
 const MOCK_NOTAS: Record<string, {
   storeName: string; storeId: string; storeCNPJ: string;
-  items: { ean: string; name: string; qty: number; unit: string; price: number }[];
+  items: NfceItem[];
 }> = {
   "35250300000001234560014050012345678901234567": {
     storeName: "Tatico Supermercados", storeId: "2", storeCNPJ: "00.000.001/0001-01",
@@ -58,6 +59,14 @@ const SAMPLE_KEYS = [
   "35250315000014500700014050098765432109876543",
 ];
 
+interface NotaData {
+  storeName: string;
+  storeCNPJ: string;
+  storeId?: string;
+  items: NfceItem[];
+  totalValue: number;
+}
+
 export default function NFCeScannerScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -66,16 +75,17 @@ export default function NFCeScannerScreen() {
   const isWeb = Platform.OS === "web";
   const topPad = isWeb ? 67 : insets.top;
 
-  const { processNFCe, seenChNFe } = useApp();
+  const { processNFCe, seenChNFe, user } = useApp();
 
   const [chNFeInput, setChNFeInput] = useState("");
-  const [parsedNota, setParsedNota] = useState<typeof MOCK_NOTAS[string] | null>(null);
+  const [parsedNota, setParsedNota] = useState<NotaData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ ok: boolean; duplicate: boolean; points: number } | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [apiSource, setApiSource] = useState<"api" | "mock" | null>(null);
 
-  const handleParse = () => {
+  const handleParse = async () => {
     const key = chNFeInput.trim().replace(/\s/g, "");
     if (key.length !== 44) {
       setError("Chave deve ter 44 dígitos. Verifique e tente novamente.");
@@ -87,17 +97,66 @@ export default function NFCeScannerScreen() {
     setParsedNota(null);
     setResult(null);
     setConfirmed(false);
-    setTimeout(() => {
-      const nota = MOCK_NOTAS[key];
-      if (!nota) {
-        setError("Nota não encontrada na base da SEFAZ. Tente com os exemplos abaixo.");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      } else {
-        setParsedNota(nota);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
+    setApiSource(null);
+
+    // Try the real API first (validates, deduplicates, enriches via ReceitaWS)
+    const userId = user?.id ?? "anon_" + Date.now();
+    const mockData = MOCK_NOTAS[key];
+    const apiResult = await validateNfce(key, userId, mockData?.storeId, mockData?.items);
+
+    if (apiResult.ok && apiResult.customer) {
+      // API validated and processed successfully
+      const nota: NotaData = {
+        storeName: apiResult.customer.storeName,
+        storeCNPJ: apiResult.customer.cnpj,
+        items: apiResult.merchant?.items ?? mockData?.items ?? [],
+        totalValue: apiResult.customer.totalValue,
+      };
+      setParsedNota(nota);
+      setApiSource("api");
+
+      // Also update local state for immediate UI feedback (points, etc.)
+      const r = processNFCe(
+        key,
+        mockData?.storeId ?? `cnpj:${apiResult.customer.cnpj}`,
+        apiResult.customer.storeName,
+        apiResult.customer.cnpj,
+        (apiResult.merchant?.items ?? []).map((i) => ({ ean: i.ean, name: i.name, price: i.price })),
+      );
+      setResult({ ok: true, duplicate: false, points: apiResult.customer.points });
+      setConfirmed(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setLoading(false);
-    }, 1200);
+      return;
+    }
+
+    if (apiResult.duplicate) {
+      // Already processed by someone — no points, show warning
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError("Esta nota já foi processada. Nenhum ponto será concedido para evitar fraude.");
+      setResult({ ok: false, duplicate: true, points: 0 });
+      setConfirmed(true);
+      setLoading(false);
+      return;
+    }
+
+    // API error (network, no DB, etc.) — fall back to mock data for demo/testing
+    if (mockData) {
+      setParsedNota({
+        storeName: mockData.storeName,
+        storeCNPJ: mockData.storeCNPJ,
+        storeId: mockData.storeId,
+        items: mockData.items,
+        totalValue: mockData.items.reduce((s, i) => s + i.price * i.qty, 0),
+      });
+      setApiSource("mock");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      setError("Nota não encontrada. Tente com os exemplos abaixo ou verifique sua conexão.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+
+    setLoading(false);
   };
 
   const handleConfirm = () => {
@@ -106,18 +165,17 @@ export default function NFCeScannerScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const r = processNFCe(
       key,
-      parsedNota.storeId,
+      parsedNota.storeId ?? `cnpj:${parsedNota.storeCNPJ}`,
       parsedNota.storeName,
       parsedNota.storeCNPJ,
-      parsedNota.items.map((i) => ({ ean: i.ean, name: i.name, price: i.price }))
+      parsedNota.items.map((i) => ({ ean: i.ean, name: i.name, price: i.price })),
     );
     setResult(r);
     setConfirmed(true);
   };
 
   const isAlreadySeen = chNFeInput.trim().length === 44 && seenChNFe.has(chNFeInput.trim());
-  const totalValue = parsedNota ? parsedNota.items.reduce((s, i) => s + i.price * i.qty, 0) : 0;
-
+  const totalValue = parsedNota ? parsedNota.totalValue : 0;
   const previewPoints = parsedNota
     ? Math.round(150 * (parsedNota.items.length > 10 ? 2 : 1))
     : 0;
@@ -142,7 +200,7 @@ export default function NFCeScannerScreen() {
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={[styles.infoTitle, { color: C.text }]}>Como funciona</Text>
             <Text style={[styles.infoDesc, { color: C.textMuted }]}>
-              Escaneie o QR Code da nota fiscal eletrônica. Os preços são extraídos e atualizados no mapa — você ganha 150 pts. Se a nota tiver mais de 10 itens, os pontos dobram!
+              Escaneie o QR Code da nota fiscal eletrônica. Os preços são extraídos, validados e atualizados no mapa — você ganha 150 pts. Se a nota tiver mais de 10 itens, os pontos dobram!
             </Text>
           </View>
         </View>
@@ -170,14 +228,14 @@ export default function NFCeScannerScreen() {
               placeholder="Chave de acesso NFC-e (44 dígitos)"
               placeholderTextColor={C.textMuted}
               value={chNFeInput}
-              onChangeText={(t) => { setChNFeInput(t); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); }}
+              onChangeText={(t) => { setChNFeInput(t); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); setApiSource(null); }}
               keyboardType="numeric"
               maxLength={44}
               returnKeyType="done"
               onSubmitEditing={handleParse}
             />
             {chNFeInput.length > 0 && (
-              <Pressable onPress={() => { setChNFeInput(""); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); }}>
+              <Pressable onPress={() => { setChNFeInput(""); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); setApiSource(null); }}>
                 <Feather name="x" size={16} color={C.textMuted} />
               </Pressable>
             )}
@@ -194,7 +252,7 @@ export default function NFCeScannerScreen() {
             <Pressable
               key={key}
               style={[styles.sampleChip, { backgroundColor: C.backgroundSecondary, borderColor: C.border, opacity: seenChNFe.has(key) ? 0.5 : 1 }]}
-              onPress={() => { setChNFeInput(key); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); }}
+              onPress={() => { setChNFeInput(key); setParsedNota(null); setError(""); setResult(null); setConfirmed(false); setApiSource(null); }}
             >
               <MaterialCommunityIcons name="file-document-outline" size={14} color={seenChNFe.has(key) ? C.textMuted : C.primary} />
               <View style={{ flex: 1 }}>
@@ -204,7 +262,7 @@ export default function NFCeScannerScreen() {
               {seenChNFe.has(key) ? (
                 <View style={styles.usedBadge}><Text style={styles.usedBadgeTxt}>Usada</Text></View>
               ) : (
-                <View style={styles.ptsBadge}><Text style={styles.ptsBadgeTxt}>+{MOCK_NOTAS[key]?.items.length > 10 ? 300 : 150} pts</Text></View>
+                <View style={styles.ptsBadge}><Text style={styles.ptsBadgeTxt}>+{(MOCK_NOTAS[key]?.items.length ?? 0) > 10 ? 300 : 150} pts</Text></View>
               )}
             </Pressable>
           ))}
@@ -223,10 +281,10 @@ export default function NFCeScannerScreen() {
         )}
 
         {/* Duplicate warning */}
-        {isAlreadySeen && !parsedNota && (
+        {isAlreadySeen && !parsedNota && !confirmed && (
           <View style={[styles.warnCard, { marginHorizontal: 16 }]}>
             <Feather name="alert-circle" size={16} color="#F59E0B" />
-            <Text style={[styles.warnTxt, { color: "#F59E0B" }]}>Esta nota já foi processada por outro usuário. Nenhum ponto será concedido para evitar fraude.</Text>
+            <Text style={[styles.warnTxt, { color: "#F59E0B" }]}>Esta nota já foi processada. Nenhum ponto será concedido para evitar fraude.</Text>
           </View>
         )}
 
@@ -237,6 +295,16 @@ export default function NFCeScannerScreen() {
             <Text style={[styles.errorTxt, { color: "#CC0000" }]}>{error}</Text>
           </View>
         ) : null}
+
+        {/* API source badge */}
+        {apiSource && !confirmed && (
+          <View style={[styles.sourceBadge, { marginHorizontal: 16, backgroundColor: apiSource === "api" ? "#22C55E15" : "#F59E0B15" }]}>
+            <Feather name={apiSource === "api" ? "cloud" : "database"} size={12} color={apiSource === "api" ? "#22C55E" : "#F59E0B"} />
+            <Text style={[styles.sourceTxt, { color: apiSource === "api" ? "#22C55E" : "#F59E0B" }]}>
+              {apiSource === "api" ? "Validado via SEFAZ · Preços indexados" : "Modo demonstração · Dados de teste"}
+            </Text>
+          </View>
+        )}
 
         {/* Parsed nota items */}
         {parsedNota && !confirmed && (
@@ -257,7 +325,7 @@ export default function NFCeScannerScreen() {
 
             {parsedNota.items.map((item, idx) => (
               <View
-                key={item.ean}
+                key={item.ean + idx}
                 style={[styles.notaItem, idx < parsedNota.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
               >
                 <View style={[styles.notaItemIcon, { backgroundColor: C.backgroundTertiary }]}>
@@ -309,6 +377,12 @@ export default function NFCeScannerScreen() {
                 <Text style={[styles.resultSub, { color: C.textMuted }]}>
                   {parsedNota?.items.length} preços atualizados em {parsedNota?.storeName}.
                 </Text>
+                {apiSource === "api" && (
+                  <View style={[styles.sourceBadge, { backgroundColor: "#22C55E15", width: "100%" }]}>
+                    <Feather name="cloud" size={12} color="#22C55E" />
+                    <Text style={[styles.sourceTxt, { color: "#22C55E" }]}>Validado via SEFAZ · CNPJ verificado</Text>
+                  </View>
+                )}
                 <View style={[styles.resultPtsBadge, { backgroundColor: "#CC000010", borderColor: "#CC000030" }]}>
                   <Text style={styles.resultPtsVal}>+{result.points} pts</Text>
                   <Text style={[styles.resultPtsLabel, { color: C.textMuted }]}>creditados ao seu saldo</Text>
@@ -360,6 +434,8 @@ const styles = StyleSheet.create({
   warnTxt: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
   errorCard: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, padding: 12, backgroundColor: "#CC000015" },
   errorTxt: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
+  sourceBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  sourceTxt: { fontSize: 11, fontFamily: "Inter_500Medium", flex: 1 },
   notaCard: { borderRadius: 16, borderWidth: 1.5, overflow: "hidden" },
   notaHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 14 },
   notaHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },

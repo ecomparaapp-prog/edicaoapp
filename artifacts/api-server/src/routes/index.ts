@@ -7,6 +7,7 @@ import profileRouter from "./profile";
 import pricesRouter from "./prices";
 import merchantsRouter from "./merchants";
 import missionsRouter from "./missions";
+import nfceRouter from "./nfce";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(profileRouter);
 router.use(pricesRouter);
 router.use(merchantsRouter);
 router.use(missionsRouter);
+router.use(nfceRouter);
 
 export default router;
