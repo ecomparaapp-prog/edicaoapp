@@ -337,6 +337,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadShoppingList();
   }, []);
 
+  // Security gate: retailerStore is ONLY populated for users with role === "retailer".
+  // Any other role (customer, null) always gets null — no leakage of merchant data.
+  useEffect(() => {
+    if (user?.role === "retailer") {
+      setRetailerStore(MOCK_RETAILER_STORE);
+    } else {
+      setRetailerStore(null);
+    }
+  }, [user]);
+
   const loadUser = async () => {
     try {
       const stored = await AsyncStorage.getItem("@ecompara_user");

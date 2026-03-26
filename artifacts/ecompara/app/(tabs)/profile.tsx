@@ -173,6 +173,26 @@ export default function ProfileScreen() {
               <Feather name="log-in" size={18} color="#fff" />
               <Text style={styles.googleBtnText}>Entrar com Google</Text>
             </Pressable>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, width: "100%", marginTop: 4 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+              <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.textMuted }}>ou</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+            </View>
+
+            <Pressable
+              style={[styles.retailerLoginBtn, { backgroundColor: isDark ? "#1A1A1A" : "#FFF", borderColor: "#8B0000" }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/(auth)/login"); }}
+            >
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#8B000015", alignItems: "center", justifyContent: "center" }}>
+                <Feather name="store" size={17} color="#8B0000" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#8B0000" }}>Lojista · Entrar com Google</Text>
+                <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted, marginTop: 1 }}>Área exclusiva para supermercados parceiros</Text>
+              </View>
+              <Feather name="chevron-right" size={16} color="#8B0000" />
+            </Pressable>
           </View>
         )}
       </ScrollView>
@@ -883,6 +903,7 @@ const styles = StyleSheet.create({
   notLoggedSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
   googleBtn: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, marginTop: 8 },
   googleBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  retailerLoginBtn: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1.5, width: "100%" },
   // Retailer Header
   retailerHeaderGrad: { paddingHorizontal: 16, paddingBottom: 14, flexDirection: "row", alignItems: "flex-end", gap: 10 },
   retailerHeaderLabel: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontFamily: "Inter_500Medium" },
