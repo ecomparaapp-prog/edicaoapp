@@ -162,7 +162,7 @@ export default function ProfileScreen() {
             </Pressable>
 
             <View style={{ paddingHorizontal: 16, gap: 8 }}>
-              <MenuItem icon="map-pin" label="Localização" sub="Brasília, DF" color={C} onPress={() => router.push("/settings/location")} />
+              <MenuItem icon="map-pin" label="Localização" sub="Santa Maria, DF" color={C} onPress={() => router.push("/settings/location")} />
               <MenuItem icon="shield" label="Privacidade" color={C} onPress={() => router.push("/settings/privacy")} />
               <MenuItem icon="bell" label="Notificações" color={C} onPress={() => router.push("/settings/notifications")} />
               <MenuItem icon="help-circle" label="Ajuda" color={C} onPress={() => router.push("/settings/help")} />

@@ -29,7 +29,7 @@ export default function LocationSettingsScreen() {
 
   const [gpsEnabled, setGpsEnabled] = useState(true);
   const [selectedRadius, setSelectedRadius] = useState(5);
-  const [city, setCity] = useState("São Paulo, SP");
+  const [city, setCity] = useState("Santa Maria, DF");
   const [loading, setLoading] = useState(false);
 
   const topPad = isWeb ? 67 : insets.top;

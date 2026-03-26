@@ -124,10 +124,10 @@ export default function MerchantRegisterScreen() {
   const [cep, setCep] = useState("");
   const [address, setAddress] = useState("");
   const [lat, setLat] = useState<number>(
-    placeLat ? parseFloat(placeLat) : -15.7942,
+    placeLat ? parseFloat(placeLat) : -15.8634,
   );
   const [lng, setLng] = useState<number>(
-    placeLng ? parseFloat(placeLng) : -47.8825,
+    placeLng ? parseFloat(placeLng) : -47.9968,
   );
   const [pinMoved, setPinMoved] = useState(false);
   const [hours, setHours] = useState<OperatingHours>(DEFAULT_HOURS);

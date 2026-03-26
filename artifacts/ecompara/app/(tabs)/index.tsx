@@ -27,8 +27,8 @@ import type { ClaimRequest } from "@/services/storesService";
 import { fetchNearbyMissions, type NearbyMission } from "@/services/missionService";
 import HomeAdBanner from "@/components/HomeAdBanner";
 
-const DEFAULT_LAT = -16.0188;
-const DEFAULT_LNG = -48.0258;
+const DEFAULT_LAT = -15.8634;
+const DEFAULT_LNG = -47.9968;
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();

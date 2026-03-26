@@ -162,18 +162,18 @@ export interface NFCeEntry {
 }
 
 const MOCK_STORES: Store[] = [
-  { id: "1", name: "Supermercado Vivendas", distance: 0.8, address: "Av. Principal, 100", lat: -23.5505, lng: -46.6333, plan: "plus" },
-  { id: "2", name: "Tatico Supermercados", distance: 1.2, address: "Rua das Flores, 250", lat: -23.5520, lng: -46.6350, plan: "normal" },
-  { id: "3", name: "Ultrabox", distance: 1.9, address: "Rua Comercial, 450", lat: -23.5480, lng: -46.6280, plan: "plus" },
-  { id: "4", name: "Superbom", distance: 2.4, address: "Av. do Comércio, 800", lat: -23.5550, lng: -46.6400, plan: "normal" },
-  { id: "5", name: "Extra Econômico", distance: 3.1, address: "Av. Principal, 1200", lat: -23.5460, lng: -46.6260, plan: "plus" },
-  { id: "6", name: "Ponto Alto", distance: 4.2, address: "Rua do Mercado, 300", lat: -23.5490, lng: -46.6310, plan: "normal" },
+  { id: "1", name: "Tatico Supermercados", distance: 0.6, address: "QR 205 Conj 1 Lote 1, Santa Maria", lat: -15.8620, lng: -47.9975, plan: "plus" },
+  { id: "2", name: "Comper Supermercado", distance: 1.1, address: "EQN 205/206, Santa Maria", lat: -15.8645, lng: -47.9955, plan: "normal" },
+  { id: "3", name: "Supermercado São Paulo", distance: 1.7, address: "QR 307 Conj A, Santa Maria", lat: -15.8660, lng: -47.9940, plan: "plus" },
+  { id: "4", name: "Atacadão Santa Maria", distance: 2.3, address: "DF-001 Km 12, Santa Maria", lat: -15.8610, lng: -47.9930, plan: "normal" },
+  { id: "5", name: "Baratão Supermercados", distance: 3.0, address: "QR 102 Conj B, Santa Maria", lat: -15.8680, lng: -47.9985, plan: "normal" },
+  { id: "6", name: "Assaí Atacadista", distance: 3.8, address: "BR-040, Santa Maria Norte", lat: -15.8590, lng: -47.9920, plan: "plus" },
 ];
 
 const MOCK_BANNERS: Banner[] = [
-  { id: "b1", storeId: "4", storeName: "Superbom", title: "Segunda e Terça", subtitle: "Filé Mignon com até 40% off!", color: "#CC0000" },
-  { id: "b2", storeId: "1", storeName: "Vivendas", title: "Final de Semana", subtitle: "Frutas e Verduras Frescas", color: "#1B5E20" },
-  { id: "b3", storeId: "3", storeName: "Ultrabox", title: "Promoção Especial", subtitle: "Produtos de limpeza -30%", color: "#0D47A1" },
+  { id: "b1", storeId: "4", storeName: "Atacadão Santa Maria", title: "Segunda e Terça", subtitle: "Filé Mignon com até 40% off!", color: "#CC0000" },
+  { id: "b2", storeId: "1", storeName: "Tatico Supermercados", title: "Final de Semana", subtitle: "Frutas e Verduras Frescas", color: "#1B5E20" },
+  { id: "b3", storeId: "6", storeName: "Assaí Atacadista", title: "Promoção Especial", subtitle: "Produtos de limpeza -30%", color: "#0D47A1" },
 ];
 
 const MOCK_GAME_LEADERBOARD: GameEntry[] = [
@@ -217,35 +217,35 @@ const MOCK_DAILY_MISSIONS: DailyMission[] = [
 
 export const MOCK_PRODUCTS: Product[] = [
   { ean: "7891000053508", name: "Leite Integral Parmalat 1L", brand: "Parmalat", category: "Laticínios", prices: [
-    { storeId: "1", storeName: "Vivendas", price: 5.49, distance: 0.8, updatedAt: "2025-03-13", lat: -23.5505, lng: -46.6333 },
-    { storeId: "2", storeName: "Tatico", price: 5.29, distance: 1.2, updatedAt: "2025-03-13", lat: -23.5520, lng: -46.6350 },
-    { storeId: "3", storeName: "Ultrabox", price: 4.99, distance: 1.9, updatedAt: "2025-03-12", lat: -23.5480, lng: -46.6280 },
-    { storeId: "4", storeName: "Superbom", price: 5.19, distance: 2.4, updatedAt: "2025-03-13", lat: -23.5550, lng: -46.6400 },
+    { storeId: "1", storeName: "Tatico", price: 5.49, distance: 0.6, updatedAt: "2026-03-25", lat: -15.8620, lng: -47.9975 },
+    { storeId: "2", storeName: "Comper", price: 5.29, distance: 1.1, updatedAt: "2026-03-25", lat: -15.8645, lng: -47.9955 },
+    { storeId: "3", storeName: "Sup. São Paulo", price: 4.99, distance: 1.7, updatedAt: "2026-03-24", lat: -15.8660, lng: -47.9940 },
+    { storeId: "4", storeName: "Atacadão", price: 4.79, distance: 2.3, updatedAt: "2026-03-25", lat: -15.8610, lng: -47.9930 },
   ]},
   { ean: "7891910000197", name: "Arroz Tio João 5kg", brand: "Tio João", category: "Grãos", prices: [
-    { storeId: "1", storeName: "Vivendas", price: 24.90, distance: 0.8, updatedAt: "2025-03-13", lat: -23.5505, lng: -46.6333 },
-    { storeId: "2", storeName: "Tatico", price: 22.99, distance: 1.2, updatedAt: "2025-03-11", lat: -23.5520, lng: -46.6350 },
-    { storeId: "4", storeName: "Superbom", price: 23.50, distance: 2.4, updatedAt: "2025-03-13", lat: -23.5550, lng: -46.6400 },
+    { storeId: "1", storeName: "Tatico", price: 24.90, distance: 0.6, updatedAt: "2026-03-25", lat: -15.8620, lng: -47.9975 },
+    { storeId: "2", storeName: "Comper", price: 22.99, distance: 1.1, updatedAt: "2026-03-23", lat: -15.8645, lng: -47.9955 },
+    { storeId: "6", storeName: "Assaí", price: 21.50, distance: 3.8, updatedAt: "2026-03-25", lat: -15.8590, lng: -47.9920 },
   ]},
   { ean: "7896045104482", name: "Feijão Carioca Camil 1kg", brand: "Camil", category: "Grãos", prices: [
-    { storeId: "1", storeName: "Vivendas", price: 8.99, distance: 0.8, updatedAt: "2025-03-13", lat: -23.5505, lng: -46.6333 },
-    { storeId: "3", storeName: "Ultrabox", price: 7.89, distance: 1.9, updatedAt: "2025-03-12", lat: -23.5480, lng: -46.6280 },
-    { storeId: "4", storeName: "Superbom", price: 8.49, distance: 2.4, updatedAt: "2025-03-13", lat: -23.5550, lng: -46.6400 },
+    { storeId: "1", storeName: "Tatico", price: 8.99, distance: 0.6, updatedAt: "2026-03-25", lat: -15.8620, lng: -47.9975 },
+    { storeId: "3", storeName: "Sup. São Paulo", price: 7.89, distance: 1.7, updatedAt: "2026-03-24", lat: -15.8660, lng: -47.9940 },
+    { storeId: "4", storeName: "Atacadão", price: 7.49, distance: 2.3, updatedAt: "2026-03-25", lat: -15.8610, lng: -47.9930 },
   ]},
   { ean: "7891000310755", name: "Açúcar Cristal União 1kg", brand: "União", category: "Condimentos", prices: [
-    { storeId: "2", storeName: "Tatico", price: 4.89, distance: 1.2, updatedAt: "2025-03-13", lat: -23.5520, lng: -46.6350 },
-    { storeId: "3", storeName: "Ultrabox", price: 4.49, distance: 1.9, updatedAt: "2025-03-13", lat: -23.5480, lng: -46.6280 },
-    { storeId: "4", storeName: "Superbom", price: 4.79, distance: 2.4, updatedAt: "2025-03-13", lat: -23.5550, lng: -46.6400 },
+    { storeId: "2", storeName: "Comper", price: 4.89, distance: 1.1, updatedAt: "2026-03-25", lat: -15.8645, lng: -47.9955 },
+    { storeId: "3", storeName: "Sup. São Paulo", price: 4.49, distance: 1.7, updatedAt: "2026-03-25", lat: -15.8660, lng: -47.9940 },
+    { storeId: "6", storeName: "Assaí", price: 3.99, distance: 3.8, updatedAt: "2026-03-25", lat: -15.8590, lng: -47.9920 },
   ]},
   { ean: "7894900700015", name: "Coca-Cola 2L", brand: "Coca-Cola", category: "Bebidas", prices: [
-    { storeId: "1", storeName: "Vivendas", price: 9.99, distance: 0.8, updatedAt: "2025-03-13", lat: -23.5505, lng: -46.6333 },
-    { storeId: "2", storeName: "Tatico", price: 8.79, distance: 1.2, updatedAt: "2025-03-12", lat: -23.5520, lng: -46.6350 },
-    { storeId: "5", storeName: "Extra Econômico", price: 8.49, distance: 3.1, updatedAt: "2025-03-13", lat: -23.5460, lng: -46.6260 },
+    { storeId: "1", storeName: "Tatico", price: 9.99, distance: 0.6, updatedAt: "2026-03-25", lat: -15.8620, lng: -47.9975 },
+    { storeId: "2", storeName: "Comper", price: 8.79, distance: 1.1, updatedAt: "2026-03-24", lat: -15.8645, lng: -47.9955 },
+    { storeId: "5", storeName: "Baratão", price: 8.49, distance: 3.0, updatedAt: "2026-03-25", lat: -15.8680, lng: -47.9985 },
   ]},
   { ean: "7896004804009", name: "Óleo Soja Liza 900ml", brand: "Liza", category: "Óleos", prices: [
-    { storeId: "1", storeName: "Vivendas", price: 7.49, distance: 0.8, updatedAt: "2025-03-13", lat: -23.5505, lng: -46.6333 },
-    { storeId: "3", storeName: "Ultrabox", price: 6.99, distance: 1.9, updatedAt: "2025-03-13", lat: -23.5480, lng: -46.6280 },
-    { storeId: "4", storeName: "Superbom", price: 7.19, distance: 2.4, updatedAt: "2025-03-13", lat: -23.5550, lng: -46.6400 },
+    { storeId: "1", storeName: "Tatico", price: 7.49, distance: 0.6, updatedAt: "2026-03-25", lat: -15.8620, lng: -47.9975 },
+    { storeId: "3", storeName: "Sup. São Paulo", price: 6.99, distance: 1.7, updatedAt: "2026-03-25", lat: -15.8660, lng: -47.9940 },
+    { storeId: "6", storeName: "Assaí", price: 6.49, distance: 3.8, updatedAt: "2026-03-25", lat: -15.8590, lng: -47.9920 },
   ]},
 ];
 
