@@ -27,8 +27,8 @@ import type { ClaimRequest } from "@/services/storesService";
 import { fetchNearbyMissions, type NearbyMission } from "@/services/missionService";
 import HomeAdBanner from "@/components/HomeAdBanner";
 
-const DEFAULT_LAT = -15.8013;
-const DEFAULT_LNG = -47.8876;
+const DEFAULT_LAT = -16.0188;
+const DEFAULT_LNG = -48.0258;
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -57,7 +57,7 @@ export default function HomeScreen() {
   const bottomPad = isWeb ? 84 : (insets.bottom ? insets.bottom + 60 : 80);
 
   useEffect(() => {
-    loadNearbyStores(DEFAULT_LAT, DEFAULT_LNG, 10);
+    loadNearbyStores(DEFAULT_LAT, DEFAULT_LNG, 50);
     setMissionsLoading(true);
     fetchNearbyMissions(DEFAULT_LAT, DEFAULT_LNG, 2)
       .then(setMissions)
@@ -264,7 +264,7 @@ export default function HomeScreen() {
               {storesLoading && <ActivityIndicator size="small" color={C.primary} />}
               <View style={[styles.radiusBadge, { backgroundColor: C.backgroundSecondary }]}>
                 <Feather name="map-pin" size={11} color={C.primary} />
-                <Text style={[styles.radiusText, { color: C.primary }]}>10km</Text>
+                <Text style={[styles.radiusText, { color: C.primary }]}>50km</Text>
               </View>
             </View>
           </View>
