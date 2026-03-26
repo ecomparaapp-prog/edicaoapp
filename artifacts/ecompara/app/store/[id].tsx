@@ -1,27 +1,57 @@
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
   Linking,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
   SectionList,
   StyleSheet,
   Text,
+  TextInput,
   ToastAndroid,
   View,
   useColorScheme,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp, type Product } from "@/context/AppContext";
 
+const FAVORITES_KEY = "@ecompara_favorite_stores";
+
 type SectionData = { title: string; data: (Product & { storePrice: number })[] };
 
+function getApiBase(): string {
+  if (Platform.OS === "web") return "/api";
+  const Constants = require("expo-constants").default;
+  const domain = Constants.expoConfig?.extra?.domain ?? process.env.EXPO_PUBLIC_DOMAIN ?? "";
+  if (domain) return `https://${domain}/api`;
+  return "http://localhost:80/api";
+}
+
 export default function StoreScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    name?: string;
+    address?: string;
+    lat?: string;
+    lng?: string;
+    distance?: string;
+    rating?: string;
+    photoUrl?: string;
+    status?: string;
+    phone?: string;
+    website?: string;
+  }>();
+
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const C = isDark ? Colors.dark : Colors.light;
@@ -29,19 +59,109 @@ export default function StoreScreen() {
   const isWeb = Platform.OS === "web";
   const { stores, products, addToShoppingList, shoppingList } = useApp();
 
-  const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
-
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : (insets.bottom ? insets.bottom + 60 : 80);
 
-  const store = stores.find((s) => s.id === id);
+  const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [suggestName, setSuggestName] = useState("");
+  const [suggestNote, setSuggestNote] = useState("");
+  const [suggestSending, setSuggestSending] = useState(false);
+
+  const storeFromCtx = stores.find((s) => s.id === params.id || s.googlePlaceId === params.id);
+
+  const store = useMemo(() => ({
+    id: params.id,
+    googlePlaceId: params.id,
+    name: storeFromCtx?.name ?? params.name ?? "",
+    address: storeFromCtx?.address ?? params.address ?? "",
+    lat: storeFromCtx?.lat ?? parseFloat(params.lat ?? "0"),
+    lng: storeFromCtx?.lng ?? parseFloat(params.lng ?? "0"),
+    distance: storeFromCtx?.distance ?? parseFloat(params.distance ?? "0"),
+    rating: storeFromCtx?.rating ?? (params.rating ? parseFloat(params.rating) : undefined),
+    photoUrl: storeFromCtx?.photoUrl ?? (params.photoUrl || undefined),
+    status: (storeFromCtx?.status ?? params.status ?? "shadow") as "shadow" | "verified",
+    phone: storeFromCtx?.phone ?? (params.phone || undefined),
+    website: storeFromCtx?.website ?? (params.website || undefined),
+    isShadow: (storeFromCtx?.status ?? params.status) === "shadow",
+    isVerified: (storeFromCtx?.status ?? params.status) === "verified",
+    plan: storeFromCtx?.plan ?? "normal",
+  }), [params, storeFromCtx]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(FAVORITES_KEY).then((raw) => {
+      const favs: string[] = raw ? JSON.parse(raw) : [];
+      setIsFavorite(favs.includes(store.id));
+    });
+    if (store.name) setSuggestName(store.name);
+  }, [store.id, store.name]);
+
+  const toggleFavorite = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const raw = await AsyncStorage.getItem(FAVORITES_KEY);
+    const favs: string[] = raw ? JSON.parse(raw) : [];
+    let next: string[];
+    if (isFavorite) {
+      next = favs.filter((f) => f !== store.id);
+    } else {
+      next = [...favs, store.id];
+    }
+    await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+    setIsFavorite(!isFavorite);
+
+    try {
+      fetch(`${getApiBase()}/stores/favorite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          google_place_id: store.id,
+          action: isFavorite ? "remove" : "add",
+        }),
+      }).catch(() => {});
+    } catch {}
+
+    if (Platform.OS === "android") {
+      ToastAndroid.show(
+        isFavorite ? "Removido dos favoritos" : "Adicionado aos favoritos!",
+        ToastAndroid.SHORT,
+      );
+    }
+  }, [isFavorite, store.id]);
+
+  const handleSuggestChange = async () => {
+    if (!suggestName.trim()) {
+      Alert.alert("Atenção", "Preencha ao menos o nome sugerido.");
+      return;
+    }
+    setSuggestSending(true);
+    try {
+      await fetch(`${getApiBase()}/stores/suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          google_place_id: store.id,
+          original_name: store.name,
+          suggested_name: suggestName.trim(),
+          note: suggestNote.trim(),
+        }),
+      });
+    } catch {}
+    setSuggestSending(false);
+    setShowSuggestModal(false);
+    if (Platform.OS === "android") {
+      ToastAndroid.show("Sugestão enviada! Obrigado.", ToastAndroid.SHORT);
+    } else {
+      Alert.alert("Obrigado!", "Sua sugestão foi enviada para revisão.");
+    }
+  };
 
   const sections: SectionData[] = useMemo(() => {
     const storeProducts = products
-      .filter((p) => p.prices.some((pr) => pr.storeId === id))
+      .filter((p) => p.prices.some((pr) => pr.storeId === store.id))
       .map((p) => ({
         ...p,
-        storePrice: p.prices.find((pr) => pr.storeId === id)!.price,
+        storePrice: p.prices.find((pr) => pr.storeId === store.id)!.price,
       }));
 
     const grouped: Record<string, typeof storeProducts> = {};
@@ -53,9 +173,7 @@ export default function StoreScreen() {
     return Object.entries(grouped)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([title, data]) => ({ title, data }));
-  }, [id, products]);
-
-  const totalProducts = sections.reduce((sum, s) => sum + s.data.length, 0);
+  }, [store.id, products]);
 
   const handleAddToList = (product: Product & { storePrice: number }) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -65,7 +183,7 @@ export default function StoreScreen() {
       quantity: 1,
       checked: false,
       bestPrice: product.storePrice,
-      bestStore: store?.name,
+      bestStore: store.name,
     });
     setAddedItems((prev) => new Set(prev).add(product.ean));
     if (Platform.OS === "android") {
@@ -73,24 +191,14 @@ export default function StoreScreen() {
     }
   };
 
-  if (!store) {
-    return (
-      <View style={[styles.container, { backgroundColor: C.background, justifyContent: "center", alignItems: "center" }]}>
-        <Text style={[styles.emptyTitle, { color: C.text }]}>Supermercado não encontrado</Text>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: C.primary }]}>
-          <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold" }}>Voltar</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
+
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: C.background, borderBottomColor: C.border }]}>
         <Pressable
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          style={[styles.backBtnIcon, { backgroundColor: C.backgroundSecondary }]}
+          style={[styles.iconBtn, { backgroundColor: C.backgroundSecondary }]}
           hitSlop={8}
         >
           <Feather name="arrow-left" size={20} color={C.text} />
@@ -98,46 +206,69 @@ export default function StoreScreen() {
 
         <View style={styles.headerCenter}>
           <View style={[styles.storeLogo, { backgroundColor: isDark ? C.backgroundTertiary : "#F0F0F0" }]}>
-            <Feather name="shopping-bag" size={22} color={C.primary} />
+            {store.photoUrl ? (
+              <Image source={{ uri: store.photoUrl }} style={{ width: 44, height: 44, borderRadius: 12 }} resizeMode="cover" />
+            ) : (
+              <Feather name="shopping-bag" size={22} color={store.isShadow ? C.textMuted : C.primary} />
+            )}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.storeName, { color: C.text }]} numberOfLines={1}>{store.name}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={[styles.storeName, { color: C.text }]} numberOfLines={1}>{store.name}</Text>
+              {store.isShadow && (
+                <View style={[styles.shadowBadge, { backgroundColor: C.backgroundSecondary }]}>
+                  <Text style={[styles.shadowBadgeText, { color: C.textMuted }]}>Não verificado</Text>
+                </View>
+              )}
+              {store.isVerified && (
+                <View style={[styles.verifiedBadge, { backgroundColor: "#E8F5E9" }]}>
+                  <Feather name="check-circle" size={9} color="#2E7D32" />
+                  <Text style={[styles.verifiedBadgeText, { color: "#2E7D32" }]}>Verificado</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.storeMeta}>
               <Feather name="map-pin" size={11} color={C.textMuted} />
-              <Text style={[styles.storeMetaTxt, { color: C.textMuted }]}>{store.distance}km · {store.address}</Text>
+              <Text style={[styles.storeMetaTxt, { color: C.textMuted }]} numberOfLines={1}>
+                {store.distance > 0 ? `${store.distance}km · ` : ""}{store.address || "Endereço não disponível"}
+              </Text>
             </View>
+            {store.rating != null && store.rating > 0 && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 }}>
+                <Ionicons name="star" size={10} color="#F9A825" />
+                <Text style={{ fontSize: 11, color: C.textMuted, fontFamily: "Inter_400Regular" }}>
+                  {store.rating.toFixed(1)}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {store.plan === "plus" && (
-          <View style={[styles.planBadge, { backgroundColor: C.primary }]}>
-            <Text style={styles.planBadgeText}>PLUS</Text>
-          </View>
-        )}
+        {/* Favoritar */}
+        <Pressable
+          onPress={toggleFavorite}
+          style={[styles.iconBtn, { backgroundColor: isFavorite ? "#FFF3E0" : C.backgroundSecondary }]}
+          hitSlop={8}
+        >
+          <Ionicons
+            name={isFavorite ? "heart" : "heart-outline"}
+            size={20}
+            color={isFavorite ? "#E53935" : C.textMuted}
+          />
+        </Pressable>
       </View>
 
-      {store.status === "verified" && (store.phone || store.website) && (
+      {/* Contatos (verificado) */}
+      {store.isVerified && (store.phone || store.website) && (
         <View style={[styles.verifiedBar, { backgroundColor: C.backgroundSecondary, borderBottomColor: C.border }]}>
-          <View style={[styles.verifiedTag, { backgroundColor: "#E8F5E9" }]}>
-            <Feather name="check-circle" size={10} color="#2E7D32" />
-            <Text style={{ color: "#2E7D32", fontSize: 10, fontFamily: "Inter_700Bold" }}>Verificado</Text>
-          </View>
           {store.phone && (
-            <Pressable
-              style={styles.verifiedLink}
-              onPress={() => Linking.openURL(`tel:${store.phone}`)}
-              hitSlop={4}
-            >
+            <Pressable style={styles.verifiedLink} onPress={() => Linking.openURL(`tel:${store.phone}`)}>
               <Feather name="phone" size={12} color={C.primary} />
               <Text style={[styles.verifiedLinkText, { color: C.primary }]}>{store.phone}</Text>
             </Pressable>
           )}
           {store.website && (
-            <Pressable
-              style={styles.verifiedLink}
-              onPress={() => Linking.openURL(store.website!)}
-              hitSlop={4}
-            >
+            <Pressable style={styles.verifiedLink} onPress={() => Linking.openURL(store.website!)}>
               <Feather name="globe" size={12} color={C.primary} />
               <Text style={[styles.verifiedLinkText, { color: C.primary }]}>Visitar site</Text>
             </Pressable>
@@ -145,29 +276,92 @@ export default function StoreScreen() {
         </View>
       )}
 
-      {/* Subtitle bar */}
-      <View style={[styles.subtitleBar, { backgroundColor: C.backgroundSecondary }]}>
-        <Text style={[styles.subtitleTxt, { color: C.textSecondary }]}>
-          {totalProducts} produto{totalProducts !== 1 ? "s" : ""} disponíveis
-        </Text>
+      {/* Ações principais */}
+      <View style={[styles.actionsBar, { backgroundColor: C.backgroundSecondary, borderBottomColor: C.border }]}>
+        {/* Cadastrar Preço */}
         <Pressable
-          style={styles.listShortcut}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(tabs)/list"); }}
+          style={[styles.actionBtn, { backgroundColor: C.primary }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push({
+              pathname: "/scanner",
+              params: {
+                preselectedPlaceId: store.id,
+                preselectedPlaceName: store.name,
+              },
+            });
+          }}
         >
-          <Feather name="shopping-cart" size={13} color={C.primary} />
-          <Text style={[styles.listShortcutTxt, { color: C.primary }]}>
-            Ver lista ({shoppingList.length})
-          </Text>
+          <MaterialIcon name="barcode-scan" color="#fff" />
+          <Text style={styles.actionBtnText}>Cadastrar Produto</Text>
         </Pressable>
+
+        {/* Este é meu negócio */}
+        <Pressable
+          style={[styles.actionBtn, { backgroundColor: "#CC0000" }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push({
+              pathname: "/merchant-register",
+              params: {
+                googlePlaceId: store.id,
+                placeName: store.name,
+                placeLat: String(store.lat),
+                placeLng: String(store.lng),
+              },
+            });
+          }}
+        >
+          <Feather name="briefcase" size={14} color="#fff" />
+          <Text style={styles.actionBtnText}>Este é meu negócio</Text>
+        </Pressable>
+
+        {/* Sugerir Mudança (shadow apenas) */}
+        {store.isShadow && (
+          <Pressable
+            style={[styles.actionBtn, { backgroundColor: isDark ? "#333" : "#F5F5F5", borderWidth: 1, borderColor: C.border }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowSuggestModal(true);
+            }}
+          >
+            <Feather name="edit-2" size={14} color={C.textSecondary} />
+            <Text style={[styles.actionBtnText, { color: C.textSecondary }]}>Sugerir Mudança</Text>
+          </Pressable>
+        )}
       </View>
 
+      {/* Aviso shadow */}
+      {store.isShadow && (
+        <View style={[styles.shadowNotice, { backgroundColor: isDark ? "#1A1A1A" : "#FFF8E1", borderColor: "#FFE082" }]}>
+          <Feather name="info" size={14} color="#F9A825" />
+          <Text style={[styles.shadowNoticeText, { color: isDark ? "#FFE082" : "#795548" }]}>
+            Este supermercado ainda não está verificado. Os dados podem estar incompletos. Ajude-nos cadastrando preços ou sugerindo correções!
+          </Text>
+        </View>
+      )}
+
+      {/* Lista de produtos */}
       {sections.length === 0 ? (
         <View style={styles.empty}>
           <Feather name="package" size={48} color={C.textMuted} />
           <Text style={[styles.emptyTitle, { color: C.text }]}>Nenhum produto cadastrado</Text>
           <Text style={[styles.emptySub, { color: C.textMuted }]}>
-            Este supermercado ainda não cadastrou seus produtos
+            Seja o primeiro a cadastrar preços neste supermercado!
           </Text>
+          <Pressable
+            style={[styles.emptyAction, { backgroundColor: C.primary }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push({
+                pathname: "/scanner",
+                params: { preselectedPlaceId: store.id, preselectedPlaceName: store.name },
+              });
+            }}
+          >
+            <Feather name="plus-circle" size={16} color="#fff" />
+            <Text style={styles.emptyActionText}>Cadastrar primeiro produto</Text>
+          </Pressable>
         </View>
       ) : (
         <SectionList
@@ -175,6 +369,20 @@ export default function StoreScreen() {
           keyExtractor={(item) => item.ean}
           contentContainerStyle={{ paddingBottom: bottomPad, paddingTop: 8 }}
           stickySectionHeadersEnabled
+          ListHeaderComponent={
+            <View style={[styles.subtitleBar, { borderBottomColor: C.border }]}>
+              <Text style={[styles.subtitleTxt, { color: C.textSecondary }]}>
+                {sections.reduce((s, sec) => s + sec.data.length, 0)} produto(s) disponíveis
+              </Text>
+              <Pressable
+                style={styles.listShortcut}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(tabs)/list"); }}
+              >
+                <Feather name="shopping-cart" size={13} color={C.primary} />
+                <Text style={[styles.listShortcutTxt, { color: C.primary }]}>Ver lista ({shoppingList.length})</Text>
+              </Pressable>
+            </View>
+          }
           renderSectionHeader={({ section: { title } }) => (
             <View style={[styles.sectionHeader, { backgroundColor: C.background, borderBottomColor: C.border }]}>
               <View style={[styles.categoryDot, { backgroundColor: C.primary }]} />
@@ -182,9 +390,7 @@ export default function StoreScreen() {
             </View>
           )}
           renderItem={({ item }) => {
-            const alreadyAdded = addedItems.has(item.ean) ||
-              shoppingList.some((i) => i.eanCode === item.ean);
-
+            const alreadyAdded = addedItems.has(item.ean) || shoppingList.some((i) => i.eanCode === item.ean);
             return (
               <Pressable
                 style={[styles.productRow, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}
@@ -203,22 +409,12 @@ export default function StoreScreen() {
                     R$ {item.storePrice.toFixed(2).replace(".", ",")}
                   </Text>
                   <Pressable
-                    style={[
-                      styles.addBtn,
-                      alreadyAdded
-                        ? { backgroundColor: C.success }
-                        : { backgroundColor: C.primary },
-                    ]}
-                    onPress={(e) => {
-                      e.stopPropagation?.();
-                      if (!alreadyAdded) handleAddToList(item);
-                    }}
+                    style={[styles.addBtn, alreadyAdded ? { backgroundColor: C.success } : { backgroundColor: C.primary }]}
+                    onPress={(e) => { e.stopPropagation?.(); if (!alreadyAdded) handleAddToList(item); }}
                     hitSlop={4}
                   >
                     <Feather name={alreadyAdded ? "check" : "plus"} size={14} color="#fff" />
-                    <Text style={styles.addBtnTxt}>
-                      {alreadyAdded ? "Na lista" : "Adicionar"}
-                    </Text>
+                    <Text style={styles.addBtnTxt}>{alreadyAdded ? "Na lista" : "Adicionar"}</Text>
                   </Pressable>
                 </View>
               </Pressable>
@@ -226,8 +422,57 @@ export default function StoreScreen() {
           }}
         />
       )}
+
+      {/* Modal — Sugerir Mudança */}
+      <Modal visible={showSuggestModal} transparent animationType="slide" onRequestClose={() => setShowSuggestModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={() => setShowSuggestModal(false)}>
+            <Pressable style={[styles.modalBox, { backgroundColor: C.background, borderColor: C.border }]} onPress={() => {}}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: C.text }]}>Sugerir Mudança</Text>
+                <Pressable onPress={() => setShowSuggestModal(false)} hitSlop={8}>
+                  <Feather name="x" size={20} color={C.textMuted} />
+                </Pressable>
+              </View>
+
+              <Text style={[styles.modalLabel, { color: C.textSecondary }]}>Nome correto do estabelecimento</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: C.backgroundSecondary, color: C.text, borderColor: C.border }]}
+                value={suggestName}
+                onChangeText={setSuggestName}
+                placeholder="Ex: Supermercado Bom Preço"
+                placeholderTextColor={C.textMuted}
+              />
+
+              <Text style={[styles.modalLabel, { color: C.textSecondary, marginTop: 12 }]}>Observação (opcional)</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalTextArea, { backgroundColor: C.backgroundSecondary, color: C.text, borderColor: C.border }]}
+                value={suggestNote}
+                onChangeText={setSuggestNote}
+                placeholder="Ex: Endereço errado, nome desatualizado..."
+                placeholderTextColor={C.textMuted}
+                multiline
+                numberOfLines={3}
+              />
+
+              <Pressable
+                style={[styles.modalSubmit, { backgroundColor: C.primary, opacity: suggestSending ? 0.6 : 1 }]}
+                onPress={handleSuggestChange}
+                disabled={suggestSending}
+              >
+                <Text style={styles.modalSubmitText}>{suggestSending ? "Enviando..." : "Enviar Sugestão"}</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
+}
+
+function MaterialIcon({ name, color }: { name: string; color: string }) {
+  const { MaterialCommunityIcons } = require("@expo/vector-icons");
+  return <MaterialCommunityIcons name={name} size={14} color={color} />;
 }
 
 const styles = StyleSheet.create({
@@ -240,18 +485,12 @@ const styles = StyleSheet.create({
     gap: 10,
     borderBottomWidth: 1,
   },
-  backBtnIcon: {
+  iconBtn: {
     width: 38,
     height: 38,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-  },
-  backBtn: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
   },
   headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
   storeLogo: {
@@ -260,18 +499,71 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
-  storeName: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  storeName: { fontSize: 15, fontFamily: "Inter_700Bold" },
   storeMeta: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 },
   storeMetaTxt: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  planBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 7 },
-  planBadgeText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold" },
+  shadowBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  shadowBadgeText: { fontSize: 9, fontFamily: "Inter_600SemiBold" },
+  verifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  verifiedBadgeText: { fontSize: 9, fontFamily: "Inter_700Bold" },
+  verifiedBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 16,
+    borderBottomWidth: 1,
+  },
+  verifiedLink: { flexDirection: "row", alignItems: "center", gap: 4 },
+  verifiedLinkText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  actionsBar: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  actionBtnText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  shadowNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  shadowNoticeText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
   subtitleBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
+    borderBottomWidth: 1,
   },
   subtitleTxt: { fontSize: 12, fontFamily: "Inter_400Regular" },
   listShortcut: { flexDirection: "row", alignItems: "center", gap: 4 },
@@ -297,11 +589,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   productIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 44, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center",
   },
   productInfo: { flex: 1 },
   productName: { fontSize: 13, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
@@ -318,25 +606,51 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   addBtnTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  verifiedBar: {
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 60, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold", textAlign: "center" },
+  emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  emptyAction: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 12,
-    borderBottomWidth: 1,
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 8,
   },
-  verifiedTag: {
-    flexDirection: "row",
+  emptyActionText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  backBtn: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  planBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 7 },
+  planBadgeText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalBox: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+  },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  modalLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", marginBottom: 6 },
+  modalInput: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
+  modalTextArea: { height: 80, textAlignVertical: "top", paddingTop: 11 },
+  modalSubmit: {
+    marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
   },
-  verifiedLink: { flexDirection: "row", alignItems: "center", gap: 4 },
-  verifiedLinkText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
-  emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
-  emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 40 },
+  modalSubmitText: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
 });

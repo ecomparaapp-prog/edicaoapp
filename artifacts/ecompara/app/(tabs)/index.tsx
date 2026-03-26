@@ -291,9 +291,23 @@ export default function HomeScreen() {
                   hasMission && !isVerified && { borderColor: "#CC000050", borderWidth: 1.5 },
                 ]}
                 onPress={() => {
-                  if (isShadow) return;
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(`/store/${item.id}`);
+                  router.push({
+                    pathname: "/store/[id]",
+                    params: {
+                      id: item.googlePlaceId ?? item.id,
+                      name: item.name,
+                      address: item.address ?? "",
+                      lat: String(item.lat ?? ""),
+                      lng: String(item.lng ?? ""),
+                      distance: String(item.distance ?? ""),
+                      rating: String(item.rating ?? ""),
+                      photoUrl: item.photoUrl ?? "",
+                      status: item.status ?? "shadow",
+                      phone: item.phone ?? "",
+                      website: item.website ?? "",
+                    },
+                  });
                 }}
               >
                 {isShadow && (

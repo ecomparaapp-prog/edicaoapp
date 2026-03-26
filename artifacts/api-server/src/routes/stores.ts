@@ -114,4 +114,51 @@ storesRouter.post("/stores/claim", async (req, res) => {
   }
 });
 
+storesRouter.post("/stores/favorite", async (req, res) => {
+  const { google_place_id, action } = req.body as { google_place_id?: string; action?: string };
+  if (!google_place_id) {
+    res.status(400).json({ error: "google_place_id obrigatório." });
+    return;
+  }
+  try {
+    if (action === "add") {
+      await db.execute(sql`
+        UPDATE places_cache SET favorites_count = COALESCE(favorites_count, 0) + 1
+        WHERE google_place_id = ${google_place_id}
+      `);
+    } else if (action === "remove") {
+      await db.execute(sql`
+        UPDATE places_cache SET favorites_count = GREATEST(COALESCE(favorites_count, 0) - 1, 0)
+        WHERE google_place_id = ${google_place_id}
+      `);
+    }
+  } catch {
+    // coluna pode não existir ainda — ignorar silenciosamente
+  }
+  res.json({ ok: true });
+});
+
+storesRouter.post("/stores/suggest", async (req, res) => {
+  const { google_place_id, original_name, suggested_name, note } = req.body as {
+    google_place_id?: string;
+    original_name?: string;
+    suggested_name?: string;
+    note?: string;
+  };
+  if (!google_place_id || !suggested_name) {
+    res.status(400).json({ error: "google_place_id e suggested_name obrigatórios." });
+    return;
+  }
+  try {
+    await db.execute(sql`
+      INSERT INTO store_suggestions (google_place_id, original_name, suggested_name, note, created_at)
+      VALUES (${google_place_id}, ${original_name ?? ""}, ${suggested_name}, ${note ?? ""}, NOW())
+    `);
+  } catch {
+    // tabela pode não existir ainda — apenas loga
+    console.log(`[StoreSuggest] ${google_place_id}: "${original_name}" → "${suggested_name}" (${note})`);
+  }
+  res.json({ ok: true });
+});
+
 export default storesRouter;
