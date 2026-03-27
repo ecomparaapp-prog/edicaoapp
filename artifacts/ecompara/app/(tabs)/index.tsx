@@ -170,26 +170,6 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
 
-        {/* Quick Actions */}
-        <View style={[styles.quickActions, { marginHorizontal: 16, marginTop: 14 }]}>
-          <Pressable
-            style={[styles.qaRegister, { backgroundColor: C.primary }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push("/register-price");
-            }}
-          >
-            <MaterialCommunityIcons name="barcode-scan" size={22} color="#fff" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.qaRegisterTitle}>Cadastrar no Mercado</Text>
-              <Text style={styles.qaRegisterSub}>Escaneie e ganhe pontos</Text>
-            </View>
-            <View style={[styles.qaPoints, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-              <Text style={styles.qaPointsText}>+30 pts</Text>
-            </View>
-          </Pressable>
-        </View>
-
         {/* Ad Banners */}
         <HomeAdBanner
           isDark={isDark}

@@ -1,5 +1,5 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { Image } from "expo-image";
@@ -44,9 +44,30 @@ export default function RegisterPriceScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const { user } = useApp();
+  const params = useLocalSearchParams<{ preselectedPlaceId?: string; preselectedPlaceName?: string }>();
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
+
+  // When coming from a store profile, the store is already chosen
+  const preselectedStore: NearbyStore | null = params.preselectedPlaceId
+    ? {
+        googlePlaceId: params.preselectedPlaceId,
+        name: params.preselectedPlaceName ?? "Mercado",
+        address: null,
+        lat: 0,
+        lng: 0,
+        phone: null,
+        website: null,
+        photoUrl: null,
+        rating: null,
+        status: "shadow" as const,
+        is_partner: false,
+        is_shadow: true,
+        distanceKm: 0,
+        syncedAt: new Date().toISOString(),
+      }
+    : null;
 
   // Step state
   const [step, setStep] = useState<Step>("ean");
@@ -131,8 +152,13 @@ export default function RegisterPriceScreen() {
     }
     setPriceError("");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    loadNearbyStores();
-    setStep("store");
+    if (preselectedStore) {
+      setSelectedStore(preselectedStore);
+      setStep("confirm");
+    } else {
+      loadNearbyStores();
+      setStep("store");
+    }
   };
 
   // ─── Location + stores ───────────────────────────────────────────────────

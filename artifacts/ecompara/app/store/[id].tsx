@@ -284,7 +284,7 @@ export default function StoreScreen() {
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push({
-              pathname: "/scanner",
+              pathname: "/register-price",
               params: {
                 preselectedPlaceId: store.id,
                 preselectedPlaceName: store.name,
@@ -293,7 +293,7 @@ export default function StoreScreen() {
           }}
         >
           <MaterialIcon name="barcode-scan" color="#fff" />
-          <Text style={styles.actionBtnText} numberOfLines={1}>Cadastrar</Text>
+          <Text style={styles.actionBtnText} numberOfLines={1}>Cadastrar no Mercado</Text>
         </Pressable>
 
         {/* Este é meu negócio */}
@@ -354,7 +354,7 @@ export default function StoreScreen() {
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               router.push({
-                pathname: "/scanner",
+                pathname: "/register-price",
                 params: { preselectedPlaceId: store.id, preselectedPlaceName: store.name },
               });
             }}
