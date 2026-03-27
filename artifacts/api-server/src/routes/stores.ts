@@ -8,6 +8,116 @@ import { sql } from "drizzle-orm";
 
 const storesRouter = Router();
 
+interface GooglePlace {
+  id: string;
+  displayName?: { text?: string };
+  formattedAddress?: string;
+  location?: { latitude?: number; longitude?: number };
+  nationalPhoneNumber?: string;
+  websiteUri?: string;
+  rating?: number;
+  photos?: { name?: string }[];
+}
+
+async function syncGooglePlaces(lat: number, lng: number, radiusM: number) {
+  const apiKey = process.env.GOOGLE_PLACES_KEY;
+  if (!apiKey) {
+    console.warn("[Places] GOOGLE_PLACES_KEY not set, skipping sync.");
+    return;
+  }
+
+  const body = {
+    includedTypes: ["supermarket", "grocery_store", "hypermarket"],
+    maxResultCount: 20,
+    locationRestriction: {
+      circle: {
+        center: { latitude: lat, longitude: lng },
+        radius: Math.min(radiusM, 50000),
+      },
+    },
+  };
+
+  const fieldMask = [
+    "places.id",
+    "places.displayName",
+    "places.formattedAddress",
+    "places.location",
+    "places.nationalPhoneNumber",
+    "places.websiteUri",
+    "places.rating",
+    "places.photos",
+  ].join(",");
+
+  try {
+    const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": fieldMask,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[Places] Google API error:", res.status, errText);
+      return;
+    }
+
+    const data = await res.json() as { places?: GooglePlace[] };
+    const places = data.places ?? [];
+    console.log(`[Places] Syncing ${places.length} places near (${lat},${lng})`);
+
+    for (const p of places) {
+      const placeLat = p.location?.latitude;
+      const placeLng = p.location?.longitude;
+      if (!p.id || placeLat == null || placeLng == null) continue;
+
+      const name = p.displayName?.text ?? "Supermercado";
+      const photoRef = p.photos?.[0]?.name;
+      const photoUrl = photoRef
+        ? `https://places.googleapis.com/v1/${photoRef}/media?maxWidthPx=400&key=${apiKey}`
+        : null;
+
+      await db.execute(sql`
+        INSERT INTO places_cache
+          (google_place_id, name, address, lat, lng, phone, website, photo_url, rating, status, is_shadow, is_partner, synced_at, geom)
+        VALUES (
+          ${p.id},
+          ${name},
+          ${p.formattedAddress ?? null},
+          ${placeLat},
+          ${placeLng},
+          ${p.nationalPhoneNumber ?? null},
+          ${p.websiteUri ?? null},
+          ${photoUrl},
+          ${p.rating ?? null},
+          'shadow',
+          true,
+          false,
+          NOW(),
+          ST_SetSRID(ST_MakePoint(${placeLng}, ${placeLat}), 4326)
+        )
+        ON CONFLICT (google_place_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          address = EXCLUDED.address,
+          lat = EXCLUDED.lat,
+          lng = EXCLUDED.lng,
+          phone = EXCLUDED.phone,
+          website = EXCLUDED.website,
+          photo_url = EXCLUDED.photo_url,
+          rating = EXCLUDED.rating,
+          synced_at = NOW(),
+          geom = EXCLUDED.geom
+      `);
+    }
+  } catch (err) {
+    console.error("[Places] Sync error:", err);
+  }
+}
+
 storesRouter.get("/stores/nearby", async (req, res) => {
   const lat = parseFloat(req.query.lat as string);
   const lng = parseFloat(req.query.lng as string);
@@ -25,7 +135,7 @@ storesRouter.get("/stores/nearby", async (req, res) => {
 
   const radiusM = radiusKm * 1000;
 
-  try {
+  const queryAndReturn = async () => {
     const rows = await db
       .select({
         googlePlaceId: placesCacheTable.googlePlaceId,
@@ -55,28 +165,49 @@ storesRouter.get("/stores/nearby", async (req, res) => {
       .orderBy(sql`distance_m ASC`)
       .limit(50);
 
-    const stores = rows.map((r) => ({
+    return rows.map((r) => ({
       googlePlaceId: r.googlePlaceId,
       name: r.name,
       address: r.address,
-      lat: r.lat,
-      lng: r.lng,
+      lat: r.lat != null ? Number(r.lat) : null,
+      lng: r.lng != null ? Number(r.lng) : null,
       phone: r.phone,
       website: r.website,
       photoUrl: r.photoUrl,
-      rating: r.rating,
+      rating: r.rating != null ? Number(r.rating) : null,
       status: r.status,
       is_partner: r.status === "verified",
       is_shadow: r.status === "shadow",
-      distanceKm: Math.round((r.distanceM / 1000) * 10) / 10,
+      distanceKm: Math.round(((r.distanceM as number) / 1000) * 10) / 10,
       syncedAt: r.syncedAt,
     }));
+  };
+
+  try {
+    let stores = await queryAndReturn();
+
+    if (stores.length === 0) {
+      console.log(`[Places] Cache miss for (${lat},${lng}) r=${radiusKm}km — calling Google Places...`);
+      await syncGooglePlaces(lat, lng, radiusM);
+      stores = await queryAndReturn();
+    }
 
     res.json({ stores });
   } catch (err) {
     console.error("GET /stores/nearby error:", err);
     res.status(500).json({ error: "Erro ao buscar lojas próximas." });
   }
+});
+
+storesRouter.post("/stores/sync", async (req, res) => {
+  const { lat, lng, radius_km } = req.body as { lat?: number; lng?: number; radius_km?: number };
+  if (!lat || !lng) {
+    res.status(400).json({ error: "lat e lng obrigatórios." });
+    return;
+  }
+  const radiusM = (radius_km ?? 10) * 1000;
+  await syncGooglePlaces(lat, lng, radiusM);
+  res.json({ ok: true });
 });
 
 storesRouter.post("/stores/claim", async (req, res) => {
@@ -155,7 +286,6 @@ storesRouter.post("/stores/suggest", async (req, res) => {
       VALUES (${google_place_id}, ${original_name ?? ""}, ${suggested_name}, ${note ?? ""}, NOW())
     `);
   } catch {
-    // tabela pode não existir ainda — apenas loga
     console.log(`[StoreSuggest] ${google_place_id}: "${original_name}" → "${suggested_name}" (${note})`);
   }
   res.json({ ok: true });

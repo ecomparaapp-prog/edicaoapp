@@ -473,14 +473,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setStoresLoading(true);
     try {
       const result: FetchStoresResult = await fetchNearbyStores(lat, lng, radiusKm);
-      if (result.success) {
+      if (result.success && result.stores.length > 0) {
         const mapped: Store[] = result.stores.map((s: NearbyStore) => ({
           id: s.googlePlaceId,
           name: s.name,
           distance: s.distanceKm,
           address: s.address ?? "",
-          lat: s.lat,
-          lng: s.lng,
+          lat: Number(s.lat),
+          lng: Number(s.lng),
           plan: s.status === "verified" ? "plus" : "normal",
           googlePlaceId: s.googlePlaceId,
           phone: s.phone ?? undefined,
@@ -493,6 +493,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
         setStores(mapped);
       }
+      // If success but 0 results (cache miss + Places API call in progress on server),
+      // keep MOCK_STORES so the user always sees something.
     } catch {
       // fallback stays as MOCK_STORES on network failure
     } finally {
