@@ -1,3 +1,4 @@
+export * from "./appConfig";
 export * from "./eanCache";
 export * from "./searchZones";
 export * from "./placesCache";

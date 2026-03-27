@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { eanCacheTable } from "@workspace/db/schema";
 import { and, eq, ilike, ne, or, sql } from "drizzle-orm";
+import { getConfig } from "../services/configService";
 
 interface CosmosResponse {
   description?: string;
@@ -65,7 +66,7 @@ eanRouter.get("/products/ean/:ean", async (req, res) => {
       ? cached[0]
       : null;
 
-    const token = process.env.COSMOS_TOKEN;
+    const token = await getConfig("COSMOS_TOKEN");
     if (!token) {
       if (staleEntry) {
         res.json({

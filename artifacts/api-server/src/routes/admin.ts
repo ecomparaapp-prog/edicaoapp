@@ -7,6 +7,13 @@ import {
 } from "@workspace/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { syncZone, getCreditStatus } from "../services/placesSync";
+import {
+  getAllConfigStatus,
+  setConfig,
+  deleteConfig,
+  CONFIGURABLE_KEYS,
+  type ConfigKey,
+} from "../services/configService";
 
 const adminRouter = Router();
 
@@ -182,6 +189,53 @@ adminRouter.post("/admin/merchant-registrations/:id/reject", async (req, res) =>
   } catch (err) {
     console.error("POST /admin/merchant-registrations/:id/reject error:", err);
     res.status(500).json({ error: "Erro ao rejeitar cadastro." });
+  }
+});
+
+// ── App Config / Secrets ─────────────────────────────────────────────────────
+
+adminRouter.get("/admin/config", async (_req, res) => {
+  try {
+    const configs = await getAllConfigStatus();
+    res.json({ configs });
+  } catch (err) {
+    console.error("GET /admin/config error:", err);
+    res.status(500).json({ error: "Erro ao obter configurações." });
+  }
+});
+
+adminRouter.put("/admin/config/:key", async (req, res) => {
+  const key = req.params.key as ConfigKey;
+  if (!(CONFIGURABLE_KEYS as readonly string[]).includes(key)) {
+    res.status(400).json({ error: "Chave de configuração inválida." });
+    return;
+  }
+  const { value } = req.body as { value?: string };
+  if (!value || !value.trim()) {
+    res.status(400).json({ error: "Valor não pode ser vazio." });
+    return;
+  }
+  try {
+    await setConfig(key, value.trim());
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(`PUT /admin/config/${key} error:`, err);
+    res.status(500).json({ error: "Erro ao salvar configuração." });
+  }
+});
+
+adminRouter.delete("/admin/config/:key", async (req, res) => {
+  const key = req.params.key as ConfigKey;
+  if (!(CONFIGURABLE_KEYS as readonly string[]).includes(key)) {
+    res.status(400).json({ error: "Chave de configuração inválida." });
+    return;
+  }
+  try {
+    await deleteConfig(key);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(`DELETE /admin/config/${key} error:`, err);
+    res.status(500).json({ error: "Erro ao remover configuração do banco." });
   }
 });
 

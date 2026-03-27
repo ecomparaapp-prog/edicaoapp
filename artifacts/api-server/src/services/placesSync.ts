@@ -6,6 +6,7 @@ import {
   type SearchZone,
 } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { getConfig } from "./configService";
 
 // Places API (New) endpoints
 const PLACES_NEW_BASE = "https://places.googleapis.com/v1";
@@ -168,7 +169,7 @@ export interface SyncResult {
 }
 
 export async function syncZone(zone: SearchZone): Promise<SyncResult> {
-  const apiKey = process.env.GOOGLE_PLACES_KEY;
+  const apiKey = await getConfig("GOOGLE_PLACES_KEY");
   if (!apiKey) {
     return { synced: 0, skipped: 0, throttled: false, error: "GOOGLE_PLACES_KEY não configurada." };
   }

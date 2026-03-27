@@ -95,6 +95,20 @@
     .credit-stat .val { font-size: 28px; font-weight: 700; line-height: 1; }
     .credit-stat .lbl { font-size: 12px; color: #888; }
     .alert-banner { background: #fff3cd; border-left: 4px solid #e65100; padding: 10px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #7c4700; display: none; margin-top: 12px; }
+    .config-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; }
+    .config-row:last-child { border-bottom: none; }
+    .config-meta { flex: 1; min-width: 220px; }
+    .config-meta strong { font-size: 13px; display: block; }
+    .config-meta small { font-size: 12px; color: #888; display: block; margin-top: 2px; }
+    .config-value { font-size: 12px; font-family: monospace; background: #f4f4f8; border-radius: 6px; padding: 4px 10px; color: #444; }
+    .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; align-items:center; justify-content:center; }
+    .modal-backdrop.open { display:flex; }
+    .modal { background:#fff; border-radius:14px; padding:28px 28px 24px; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,.22); display:flex; flex-direction:column; gap:16px; }
+    .modal h3 { font-size:16px; font-weight:700; }
+    .modal p { font-size:13px; color:#666; }
+    .modal input { border:1.5px solid #ddd; border-radius:8px; padding:10px 12px; font-size:14px; outline:none; font-family:monospace; }
+    .modal input:focus { border-color:#CC0000; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
   </style>
 </head>
 <body>
@@ -115,6 +129,19 @@
     </div>
   </div>
 
+  <!-- ── Config Edit Modal ── -->
+  <div class="modal-backdrop" id="config-modal" onclick="closeConfigModal(event)">
+    <div class="modal">
+      <h3 id="modal-title">Editar Secret</h3>
+      <p id="modal-desc"></p>
+      <input type="text" id="modal-input" placeholder="Novo valor…" autocomplete="off" spellcheck="false" />
+      <div class="modal-actions">
+        <button class="btn-gray" onclick="closeConfigModal()">Cancelar</button>
+        <button class="btn-red" id="modal-save-btn" onclick="saveConfig()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Admin App ── -->
   <div id="app-screen">
     <header>
@@ -126,6 +153,18 @@
     </header>
 
     <div class="container">
+
+      <!-- Secrets / Config -->
+      <div class="card">
+        <div class="card-header">
+          <h2>🔑 Configurações &amp; Secrets</h2>
+          <button class="btn-gray btn-small" onclick="loadConfig()">Atualizar</button>
+        </div>
+        <div class="card-body">
+          <div id="config-list"><span class="empty">Carregando…</span></div>
+          <div class="msg" id="config-msg"></div>
+        </div>
+      </div>
 
       <!-- Credit Status -->
       <div class="card" id="credit-card">
@@ -222,7 +261,7 @@
     function showApp() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
-      loadCredit(); loadZones(); loadMerchantRegistrations(); loadPartnerships();
+      loadConfig(); loadCredit(); loadZones(); loadMerchantRegistrations(); loadPartnerships();
     }
 
     function showLogin() {
@@ -519,6 +558,112 @@
 
     function viewMRDetail(id) {
       alert(`Detalhes do cadastro #${id} — veja os campos na tabela.`);
+    }
+
+    // ── Config / Secrets ─────────────────────────────────────────
+    let _currentConfigKey = null;
+
+    const SOURCE_LABEL = {
+      database: '<span class="badge badge-green">banco de dados</span>',
+      env:      '<span class="badge badge-yellow">variável de ambiente</span>',
+      not_set:  '<span class="badge badge-red">não configurado</span>',
+    };
+
+    async function loadConfig() {
+      document.getElementById('config-list').innerHTML = '<span class="empty">Carregando…</span>';
+      try {
+        const r = await apiFetch(`${BASE}/admin/config`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        const configs = d.configs;
+        if (!configs || configs.length === 0) {
+          document.getElementById('config-list').innerHTML = '<span class="empty">Nenhuma configuração disponível.</span>';
+          return;
+        }
+        document.getElementById('config-list').innerHTML = configs.map(c => `
+          <div class="config-row">
+            <div class="config-meta">
+              <strong>${c.label}</strong>
+              <small>${c.description}</small>
+            </div>
+            ${c.isSet
+              ? `<span class="config-value">${c.value ?? '••••••••'}</span>${SOURCE_LABEL[c.source]}`
+              : SOURCE_LABEL['not_set']
+            }
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn-gray btn-small" onclick="openConfigModal('${c.key}','${c.label}','${c.description}')">
+                ${c.isSet ? 'Alterar' : 'Definir'}
+              </button>
+              ${c.source === 'database'
+                ? `<button class="btn-gray btn-small" onclick="resetConfig('${c.key}', this)" title="Remover valor do banco e usar variável de ambiente">↩ Reverter</button>`
+                : ''
+              }
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {
+        document.getElementById('config-list').innerHTML = '<span class="empty">Erro ao carregar configurações.</span>';
+      }
+    }
+
+    function openConfigModal(key, label, desc) {
+      _currentConfigKey = key;
+      document.getElementById('modal-title').textContent = `Editar: ${label}`;
+      document.getElementById('modal-desc').textContent = desc;
+      document.getElementById('modal-input').value = '';
+      document.getElementById('config-modal').classList.add('open');
+      setTimeout(() => document.getElementById('modal-input').focus(), 50);
+    }
+
+    function closeConfigModal(e) {
+      if (e && e.target !== document.getElementById('config-modal')) return;
+      document.getElementById('config-modal').classList.remove('open');
+      _currentConfigKey = null;
+    }
+
+    document.getElementById('modal-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveConfig();
+      if (e.key === 'Escape') closeConfigModal();
+    });
+
+    async function saveConfig() {
+      const key = _currentConfigKey;
+      const value = document.getElementById('modal-input').value.trim();
+      if (!key || !value) return;
+      const btn = document.getElementById('modal-save-btn');
+      btn.disabled = true;
+      btn.textContent = 'Salvando…';
+      try {
+        const r = await apiFetch(`${BASE}/admin/config/${key}`, {
+          method: 'PUT',
+          body: JSON.stringify({ value }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        document.getElementById('config-modal').classList.remove('open');
+        showMsg('config-msg', 'Configuração salva com sucesso!', true);
+        loadConfig();
+      } catch(err) {
+        showMsg('config-msg', err.message ?? 'Erro ao salvar.', false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Salvar';
+      }
+    }
+
+    async function resetConfig(key, btn) {
+      if (!confirm('Remover o valor do banco de dados? O sistema voltará a usar a variável de ambiente.')) return;
+      btn.disabled = true;
+      try {
+        const r = await apiFetch(`${BASE}/admin/config/${key}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        showMsg('config-msg', 'Valor removido do banco. Usando variável de ambiente.', true);
+        loadConfig();
+      } catch(err) {
+        showMsg('config-msg', err.message ?? 'Erro ao reverter.', false);
+        btn.disabled = false;
+      }
     }
 
     // ── Init ──────────────────────────────────────────────────────
