@@ -111,6 +111,7 @@ export default function ShoppingListScreen() {
   const [shopStartTime, setShopStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showStoreSheet, setShowStoreSheet] = useState(false);
+  const [showScanSheet, setShowScanSheet] = useState(false);
   const [completionResult, setCompletionResult] = useState<{ points: number; status: "full" | "partial" | "fraud" } | null>(null);
 
   const topPad = isWeb ? 67 : insets.top;
@@ -202,16 +203,11 @@ export default function ShoppingListScreen() {
         </View>
         <View style={styles.headerActions}>
           <Pressable
-            style={[styles.headerBtn, { backgroundColor: "#CC000015" }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/nfce-scanner"); }}
+            style={[styles.scanBtn, { backgroundColor: C.primary }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowScanSheet(true); }}
           >
-            <MaterialCommunityIcons name="receipt" size={18} color="#CC0000" />
-          </Pressable>
-          <Pressable
-            style={[styles.headerBtn, { backgroundColor: C.backgroundSecondary }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/scanner"); }}
-          >
-            <MaterialCommunityIcons name="barcode-scan" size={18} color={C.text} />
+            <MaterialCommunityIcons name="barcode-scan" size={16} color="#fff" />
+            <Text style={styles.scanBtnTxt}>Escanear</Text>
           </Pressable>
           {shoppingList.length > 0 && (
             <Pressable style={[styles.headerBtn, { backgroundColor: C.backgroundSecondary }]} onPress={handleClear}>
@@ -400,6 +396,69 @@ export default function ShoppingListScreen() {
         </View>
       </Modal>
 
+      {/* Scan Picker Sheet */}
+      <Modal visible={showScanSheet} transparent animationType="slide" onRequestClose={() => setShowScanSheet(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setShowScanSheet(false)} />
+        <View style={[styles.sheet, { backgroundColor: C.backgroundSecondary, paddingBottom: insets.bottom + 24 }]}>
+          <View style={styles.sheetHandle} />
+          <Text style={[styles.sheetTitle, { color: C.text }]}>O que deseja escanear?</Text>
+          <Text style={[styles.sheetSub, { color: C.textMuted }]}>Escolha a opção correta para cada situação</Text>
+
+          <View style={styles.scanOptions}>
+            {/* Produto */}
+            <Pressable
+              style={[styles.scanOption, { backgroundColor: isDark ? C.backgroundTertiary : "#F8F8F8", borderColor: isDark ? C.border : "#E5E5E5" }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setShowScanSheet(false);
+                router.push("/scanner");
+              }}
+            >
+              <View style={[styles.scanOptionIcon, { backgroundColor: "#CC000018" }]}>
+                <MaterialCommunityIcons name="barcode-scan" size={28} color="#CC0000" />
+              </View>
+              <View style={styles.scanOptionBody}>
+                <View style={styles.scanOptionWhen}>
+                  <Feather name="shopping-cart" size={10} color="#CC0000" />
+                  <Text style={[styles.scanOptionWhenTxt, { color: "#CC0000" }]}>ANTES das compras</Text>
+                </View>
+                <Text style={[styles.scanOptionTitle, { color: C.text }]}>Produto</Text>
+                <Text style={[styles.scanOptionDesc, { color: C.textMuted }]}>Escaneie o código de barras para buscar preços e adicionar à sua lista</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} style={{ marginTop: 4 }} />
+            </Pressable>
+
+            {/* Cupom Fiscal */}
+            <Pressable
+              style={[styles.scanOption, { backgroundColor: isDark ? C.backgroundTertiary : "#F8F8F8", borderColor: isDark ? C.border : "#E5E5E5" }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setShowScanSheet(false);
+                router.push("/nfce-scanner");
+              }}
+            >
+              <View style={[styles.scanOptionIcon, { backgroundColor: "#1B5E2018" }]}>
+                <MaterialCommunityIcons name="receipt-text-outline" size={28} color="#1B5E20" />
+              </View>
+              <View style={styles.scanOptionBody}>
+                <View style={styles.scanOptionWhen}>
+                  <Feather name="check-circle" size={10} color="#1B5E20" />
+                  <Text style={[styles.scanOptionWhenTxt, { color: "#1B5E20" }]}>APÓS as compras</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={[styles.scanOptionTitle, { color: C.text }]}>Cupom Fiscal (NF-e)</Text>
+                  <View style={styles.ptsBadge}>
+                    <Text style={styles.ptsBadgeTxt}>+150 pts</Text>
+                  </View>
+                </View>
+                <Text style={[styles.scanOptionDesc, { color: C.textMuted }]}>Escaneie o QR Code da nota fiscal e ganhe pontos automaticamente</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} style={{ marginTop: 4 }} />
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       {/* Completion Result Modal */}
       <Modal visible={completionResult !== null} transparent animationType="fade" onRequestClose={handleResetShop}>
         <View style={styles.resultBackdrop}>
@@ -534,8 +593,21 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12 },
   title: { fontSize: 22, fontFamily: "Inter_700Bold" },
   subtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
-  headerActions: { flexDirection: "row", gap: 8 },
+  headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
   headerBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  scanBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12 },
+  scanBtnTxt: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
+  /* scan picker sheet */
+  scanOptions: { gap: 10, marginTop: 4 },
+  scanOption: { flexDirection: "row", alignItems: "flex-start", gap: 14, borderRadius: 18, padding: 16, borderWidth: 1.5 },
+  scanOptionIcon: { width: 54, height: 54, borderRadius: 16, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  scanOptionBody: { flex: 1, gap: 3 },
+  scanOptionWhen: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 1 },
+  scanOptionWhenTxt: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  scanOptionTitle: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  scanOptionDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17, marginTop: 1 },
+  ptsBadge: { backgroundColor: "#1B5E2018", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
+  ptsBadgeTxt: { color: "#1B5E20", fontSize: 10, fontFamily: "Inter_700Bold" },
   addRow: { flexDirection: "row", alignItems: "center", borderRadius: 14, paddingLeft: 12, paddingRight: 10, paddingVertical: 11, gap: 10, borderWidth: 1.5 },
   addInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   suggestions: { borderRadius: 14, borderWidth: 1, marginTop: 4, overflow: "hidden" },
