@@ -29,7 +29,7 @@ export default function SearchScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { searchProducts, searchProductsAsync, addToShoppingList, stores } = useApp();
+  const { searchProducts, searchProductsAsync, addToShoppingList, shoppingList, removeFromShoppingList, updateShoppingItemQuantity, stores } = useApp();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>(() => searchProducts(""));
   const [storeResults, setStoreResults] = useState<Store[]>([]);
@@ -104,10 +104,12 @@ export default function SearchScreen() {
     const best = getBestPrice(item);
     const max = getMaxPrice(item);
     const savings = best && max ? ((max.price - best.price) / max.price * 100).toFixed(0) : null;
+    const listItem = shoppingList.find((i) => i.eanCode === item.ean);
+    const inList = !!listItem;
 
     return (
       <Pressable
-        style={[styles.productCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}
+        style={[styles.productCard, { backgroundColor: C.surfaceElevated, borderColor: inList ? C.success : C.border }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push({ pathname: "/product/[ean]", params: { ean: item.ean } });
@@ -140,12 +142,35 @@ export default function SearchScreen() {
             {item.prices.length} mercado{item.prices.length !== 1 ? "s" : ""}
           </Text>
         </View>
-        <Pressable
-          style={[styles.addBtn, { backgroundColor: C.primary }]}
-          onPress={() => handleAddToList(item)}
-        >
-          <Feather name="plus" size={18} color="#fff" />
-        </Pressable>
+        {inList ? (
+          <View style={styles.stepperCol}>
+            <View style={[styles.stepper, { backgroundColor: C.success + "18", borderColor: C.success + "60" }]}>
+              <Pressable
+                style={[styles.stepperBtn, { backgroundColor: C.success }]}
+                onPress={(e) => { e.stopPropagation?.(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateShoppingItemQuantity(listItem.id, listItem.quantity - 1); }}
+                hitSlop={6}
+              >
+                <Feather name="minus" size={13} color="#fff" />
+              </Pressable>
+              <Text style={[styles.stepperQty, { color: C.success }]}>{listItem.quantity}</Text>
+              <Pressable
+                style={[styles.stepperBtn, { backgroundColor: C.success }]}
+                onPress={(e) => { e.stopPropagation?.(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateShoppingItemQuantity(listItem.id, listItem.quantity + 1); }}
+                hitSlop={6}
+              >
+                <Feather name="plus" size={13} color="#fff" />
+              </Pressable>
+            </View>
+            <Text style={[styles.inListLabel, { color: C.success }]}>Na lista</Text>
+          </View>
+        ) : (
+          <Pressable
+            style={[styles.addBtn, { backgroundColor: C.primary }]}
+            onPress={(e) => { e.stopPropagation?.(); handleAddToList(item); }}
+          >
+            <Feather name="plus" size={18} color="#fff" />
+          </Pressable>
+        )}
       </Pressable>
     );
   };
@@ -405,6 +430,11 @@ const styles = StyleSheet.create({
   savingsText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
   storeCount: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 2 },
   addBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  stepperCol: { alignItems: "center", gap: 4 },
+  stepper: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, overflow: "hidden" },
+  stepperBtn: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  stepperQty: { width: 28, textAlign: "center", fontSize: 13, fontFamily: "Inter_700Bold" },
+  inListLabel: { fontSize: 9, fontFamily: "Inter_600SemiBold", letterSpacing: 0.3 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 32 },
   emptyText: { fontSize: 15, fontFamily: "Inter_400Regular" },
   emptyHint: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, gap: 12 },

@@ -257,6 +257,7 @@ type AppContextType = {
   addToShoppingList: (item: Omit<ShoppingItem, "id">) => void;
   removeFromShoppingList: (id: string) => void;
   toggleShoppingItem: (id: string) => void;
+  updateShoppingItemQuantity: (id: string, quantity: number) => void;
   clearShoppingList: () => void;
   stores: Store[];
   storesLoading: boolean;
@@ -390,6 +391,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const updated = shoppingList.map((i) => (i.id === id ? { ...i, checked: !i.checked } : i));
     setShoppingList(updated);
     await AsyncStorage.setItem("@ecompara_shopping_list", JSON.stringify(updated));
+  };
+
+  const updateShoppingItemQuantity = async (id: string, quantity: number) => {
+    if (quantity <= 0) {
+      const updated = shoppingList.filter((i) => i.id !== id);
+      setShoppingList(updated);
+      await AsyncStorage.setItem("@ecompara_shopping_list", JSON.stringify(updated));
+    } else {
+      const updated = shoppingList.map((i) => (i.id === id ? { ...i, quantity } : i));
+      setShoppingList(updated);
+      await AsyncStorage.setItem("@ecompara_shopping_list", JSON.stringify(updated));
+    }
   };
 
   const clearShoppingList = async () => {
@@ -605,6 +618,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addToShoppingList,
         removeFromShoppingList,
         toggleShoppingItem,
+        updateShoppingItemQuantity,
         clearShoppingList,
         stores,
         storesLoading,

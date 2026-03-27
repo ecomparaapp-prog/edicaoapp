@@ -98,7 +98,7 @@ export default function ShoppingListScreen() {
   const {
     shoppingList, toggleShoppingItem, removeFromShoppingList, clearShoppingList,
     addToShoppingList, searchProducts, searchProductsAsync, products, stores,
-    finalizeShoppingList,
+    finalizeShoppingList, updateShoppingItemQuantity,
   } = useApp();
 
   const [query, setQuery] = useState("");
@@ -301,7 +301,7 @@ export default function ShoppingListScreen() {
         ) : (
           <View style={{ paddingHorizontal: 16, gap: 8, paddingTop: 4 }}>
             {listData.map((item) => (
-              <ItemRow key={item.id} item={item} C={C} onToggle={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleShoppingItem(item.id); }} onRemove={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); removeFromShoppingList(item.id); }} />
+              <ItemRow key={item.id} item={item} C={C} onToggle={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleShoppingItem(item.id); }} onRemove={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); removeFromShoppingList(item.id); }} onQuantityChange={(qty) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateShoppingItemQuantity(item.id, qty); }} />
             ))}
           </View>
         )}
@@ -513,7 +513,14 @@ export default function ShoppingListScreen() {
 
 type ThemeColors = typeof Colors.light;
 
-function ItemRow({ item, C, onToggle, onRemove }: { item: ShoppingItem; C: ThemeColors; onToggle: () => void; onRemove: () => void }) {
+function ItemRow({ item, C, onToggle, onRemove, onQuantityChange }: {
+  item: ShoppingItem;
+  C: ThemeColors;
+  onToggle: () => void;
+  onRemove: () => void;
+  onQuantityChange: (qty: number) => void;
+}) {
+  const total = item.bestPrice != null ? item.bestPrice * item.quantity : null;
   return (
     <Pressable
       style={[styles.item, { backgroundColor: C.surfaceElevated, borderColor: item.checked ? C.success : C.border, opacity: item.checked ? 0.65 : 1 }]}
@@ -531,10 +538,34 @@ function ItemRow({ item, C, onToggle, onRemove }: { item: ShoppingItem; C: Theme
             {item.bestStore ? <Text style={[styles.itemStore, { color: C.textMuted }]}>· {item.bestStore}</Text> : null}
           </View>
         )}
+        {total != null && item.quantity > 1 && (
+          <Text style={[styles.itemTotal, { color: C.textSecondary }]}>
+            Total: R$ {total.toFixed(2).replace(".", ",")}
+          </Text>
+        )}
       </View>
-      <Pressable onPress={onRemove} style={styles.removeBtn} hitSlop={8}>
-        <Feather name="trash-2" size={15} color={C.textMuted} />
-      </Pressable>
+      <View style={styles.itemActions}>
+        <View style={[styles.qtyRow, { backgroundColor: C.backgroundSecondary, borderColor: C.border }]}>
+          <Pressable
+            onPress={(e) => { e.stopPropagation?.(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onQuantityChange(item.quantity - 1); }}
+            style={styles.qtyBtn}
+            hitSlop={6}
+          >
+            <Feather name="minus" size={13} color={item.quantity <= 1 ? C.textMuted : C.primary} />
+          </Pressable>
+          <Text style={[styles.qtyNum, { color: C.text }]}>{item.quantity}</Text>
+          <Pressable
+            onPress={(e) => { e.stopPropagation?.(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onQuantityChange(item.quantity + 1); }}
+            style={styles.qtyBtn}
+            hitSlop={6}
+          >
+            <Feather name="plus" size={13} color={C.primary} />
+          </Pressable>
+        </View>
+        <Pressable onPress={onRemove} style={styles.removeBtn} hitSlop={8}>
+          <Feather name="trash-2" size={14} color={C.textMuted} />
+        </Pressable>
+      </View>
     </Pressable>
   );
 }
@@ -629,6 +660,11 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 },
   itemPrice: { fontSize: 13, fontFamily: "Inter_700Bold" },
   itemStore: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  itemTotal: { fontSize: 11, fontFamily: "Inter_600SemiBold", marginTop: 2 },
+  itemActions: { alignItems: "center", gap: 6 },
+  qtyRow: { flexDirection: "row", alignItems: "center", borderRadius: 9, borderWidth: 1, overflow: "hidden" },
+  qtyBtn: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  qtyNum: { width: 28, textAlign: "center", fontSize: 13, fontFamily: "Inter_700Bold" },
   removeBtn: { padding: 4 },
   /* shopping */
   shoppingBanner: { marginHorizontal: 16, marginBottom: 10, borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center" },

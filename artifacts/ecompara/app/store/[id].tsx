@@ -57,7 +57,7 @@ export default function StoreScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { stores, products, addToShoppingList, shoppingList } = useApp();
+  const { stores, products, addToShoppingList, shoppingList, updateShoppingItemQuantity } = useApp();
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : (insets.bottom ? insets.bottom + 60 : 80);
@@ -413,10 +413,11 @@ export default function StoreScreen() {
             </View>
           )}
           renderItem={({ item }) => {
-            const alreadyAdded = addedItems.has(item.ean) || shoppingList.some((i) => i.eanCode === item.ean);
+            const listItem = shoppingList.find((i) => i.eanCode === item.ean);
+            const alreadyAdded = addedItems.has(item.ean) || !!listItem;
             return (
               <Pressable
-                style={[styles.productRow, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}
+                style={[styles.productRow, { backgroundColor: C.surfaceElevated, borderColor: alreadyAdded ? C.success : C.border }]}
                 onPress={() => router.push(`/product/${item.ean}`)}
               >
                 <View style={[styles.productIcon, { backgroundColor: isDark ? C.backgroundTertiary : "#F5F5F5" }]}>
@@ -431,14 +432,37 @@ export default function StoreScreen() {
                   <Text style={[styles.productPrice, { color: C.primary }]}>
                     R$ {item.storePrice.toFixed(2).replace(".", ",")}
                   </Text>
-                  <Pressable
-                    style={[styles.addBtn, alreadyAdded ? { backgroundColor: C.success } : { backgroundColor: C.primary }]}
-                    onPress={(e) => { e.stopPropagation?.(); if (!alreadyAdded) handleAddToList(item); }}
-                    hitSlop={4}
-                  >
-                    <Feather name={alreadyAdded ? "check" : "plus"} size={14} color="#fff" />
-                    <Text style={styles.addBtnTxt}>{alreadyAdded ? "Na lista" : "Adicionar"}</Text>
-                  </Pressable>
+                  {listItem ? (
+                    <View style={styles.stepperCol}>
+                      <View style={[styles.stepper, { backgroundColor: C.success + "18", borderColor: C.success + "60" }]}>
+                        <Pressable
+                          style={[styles.stepperBtn, { backgroundColor: C.success }]}
+                          onPress={(e) => { e.stopPropagation?.(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateShoppingItemQuantity(listItem.id, listItem.quantity - 1); }}
+                          hitSlop={6}
+                        >
+                          <Feather name="minus" size={12} color="#fff" />
+                        </Pressable>
+                        <Text style={[styles.stepperQty, { color: C.success }]}>{listItem.quantity}</Text>
+                        <Pressable
+                          style={[styles.stepperBtn, { backgroundColor: C.success }]}
+                          onPress={(e) => { e.stopPropagation?.(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateShoppingItemQuantity(listItem.id, listItem.quantity + 1); }}
+                          hitSlop={6}
+                        >
+                          <Feather name="plus" size={12} color="#fff" />
+                        </Pressable>
+                      </View>
+                      <Text style={[styles.inListLabel, { color: C.success }]}>Na lista</Text>
+                    </View>
+                  ) : (
+                    <Pressable
+                      style={[styles.addBtn, { backgroundColor: C.primary }]}
+                      onPress={(e) => { e.stopPropagation?.(); handleAddToList(item); }}
+                      hitSlop={4}
+                    >
+                      <Feather name="plus" size={14} color="#fff" />
+                      <Text style={styles.addBtnTxt}>Adicionar</Text>
+                    </Pressable>
+                  )}
                 </View>
               </Pressable>
             );
@@ -629,6 +653,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   addBtnTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  stepperCol: { alignItems: "center", gap: 3 },
+  stepper: { flexDirection: "row", alignItems: "center", borderRadius: 8, borderWidth: 1, overflow: "hidden" },
+  stepperBtn: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
+  stepperQty: { width: 26, textAlign: "center", fontSize: 13, fontFamily: "Inter_700Bold" },
+  inListLabel: { fontSize: 9, fontFamily: "Inter_600SemiBold", letterSpacing: 0.3 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 60, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold", textAlign: "center" },
   emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
