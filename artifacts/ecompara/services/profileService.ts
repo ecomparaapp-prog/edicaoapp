@@ -1,6 +1,6 @@
-const BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "http://localhost:8080/api";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const BASE = getApiBaseUrl();
 
 export interface UserProfile {
   userId: string;

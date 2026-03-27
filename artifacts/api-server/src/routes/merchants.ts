@@ -2,7 +2,6 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { merchantRegistrationsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import crypto from "crypto";
 
 const merchantsRouter = Router();
 

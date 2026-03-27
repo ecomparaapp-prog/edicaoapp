@@ -7,20 +7,20 @@ WebBrowser.maybeCompleteAuthSession();
 // ─────────────────────────────────────────────────────────────────────────────
 // Google OAuth for Expo Go
 //
-// To activate Google login, add these secrets in Replit:
-//   EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID  — Android OAuth Client ID (from Google Cloud Console)
-//   EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS      — iOS OAuth Client ID
-//   EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB      — Web OAuth Client ID
+// To activate Google login:
+//   1. Install the dependency: pnpm --filter @workspace/ecompara add expo-auth-session expo-crypto
+//   2. Add these secrets in Replit:
+//        EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID  — Android OAuth Client ID
+//        EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS      — iOS OAuth Client ID
+//        EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB      — Web OAuth Client ID
+//   3. Replace handleLogin in (auth)/login.tsx with:
+//        const { promptAsync } = useGoogleSignIn("customer", async (result) => {
+//          if (result.ok && result.user) { await setUser({ ...result.user, role: "customer", ... }); }
+//        });
+//        <Button onPress={() => promptAsync?.()} title="Continuar com Google" />
 //
-// In Google Cloud Console:
-//   1. Create a project at https://console.cloud.google.com
-//   2. Enable "Google Sign-In" (Identity → OAuth consent screen)
-//   3. Create OAuth 2.0 credentials for Android, iOS, and Web
-//   4. For Expo Go, use the package name: host.exp.exponent
-//      and SHA-1 fingerprint from: expo fetch:android:hashes
-//
-// Once the env vars are set, replace the mock login in (auth)/login.tsx
-// with: const result = await signInWithGoogle("customer") or ("retailer")
+// IMPORTANT: useGoogleSignIn is a React hook — it MUST be called at the top
+// level of a component, never inside a callback or async function.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GOOGLE_CLIENT_IDS = {
@@ -49,66 +49,97 @@ export interface GoogleAuthResult {
 }
 
 /**
- * Sign in with Google using the Expo auth proxy.
- * Works in Expo Go without a standalone build.
+ * React hook for Google Sign-In using expo-auth-session.
  *
- * @param role   "customer" | "retailer" — determines which scope/redirect is used
+ * Must be called at the top level of a React component (not inside a callback
+ * or async function). Returns null when Google is not configured or the
+ * expo-auth-session package is not installed.
+ *
+ * @param role       "customer" | "retailer"
+ * @param onResult   Called with the auth result after the sign-in flow completes
+ *
+ * @example
+ *   const auth = useGoogleSignIn("customer", (r) => r.ok && setUser(r.user!));
+ *   <Pressable onPress={() => auth?.promptAsync()}>Login</Pressable>
  */
-export async function signInWithGoogle(role: "customer" | "retailer"): Promise<GoogleAuthResult> {
-  if (!isGoogleAuthConfigured()) {
-    return {
-      ok: false,
-      error: "Google OAuth não configurado. Adicione os Client IDs nas variáveis de ambiente.",
-    };
-  }
+export function useGoogleSignIn(
+  role: "customer" | "retailer",
+  onResult: (result: GoogleAuthResult) => void,
+): { promptAsync: () => void; loading: boolean } | null {
+  if (!isGoogleAuthConfigured()) return null;
 
-  // Dynamic import to avoid crashing when expo-auth-session is not installed
+  // expo-auth-session must be installed for this hook to work.
+  // Returning null here avoids a crash when the package is absent.
   try {
-    const AuthSession = await import("expo-auth-session");
-    const Google = await import("expo-auth-session/providers/google");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Google = require("expo-auth-session/providers/google") as {
+      useAuthRequest: (config: {
+        androidClientId: string;
+        iosClientId: string;
+        webClientId: string;
+      }) => [unknown, { type?: string; authentication?: { accessToken: string } } | null, () => Promise<{ type?: string; authentication?: { accessToken: string } | null }>];
+    };
 
-    const [_request, response, promptAsync] = Google.useAuthRequest({
+    const { useEffect, useState } = require("react") as typeof import("react");
+
+    const [_request, response, promptAsyncInternal] = Google.useAuthRequest({
       androidClientId: GOOGLE_CLIENT_IDS.android,
       iosClientId: GOOGLE_CLIENT_IDS.ios,
       webClientId: GOOGLE_CLIENT_IDS.web,
     });
 
-    const result = await promptAsync();
+    const [loading, setLoading] = useState(false);
 
-    if (result?.type === "success" && result.authentication?.accessToken) {
-      const userRes = await fetch("https://www.googleapis.com/userinfo/v2/me", {
-        headers: { Authorization: `Bearer ${result.authentication.accessToken}` },
-      });
+    useEffect(() => {
+      if (!response) return;
 
-      if (!userRes.ok) {
-        return { ok: false, error: "Falha ao obter dados do Google." };
-      }
+      const handleResponse = async () => {
+        setLoading(true);
+        try {
+          if (response.type === "success" && response.authentication?.accessToken) {
+            const userRes = await fetch("https://www.googleapis.com/userinfo/v2/me", {
+              headers: { Authorization: `Bearer ${response.authentication.accessToken}` },
+            });
 
-      const data = await userRes.json() as {
-        id: string;
-        email: string;
-        name: string;
-        picture?: string;
+            if (!userRes.ok) {
+              onResult({ ok: false, error: "Falha ao obter dados do Google." });
+              return;
+            }
+
+            const data = await userRes.json() as {
+              id: string;
+              email: string;
+              name: string;
+              picture?: string;
+            };
+
+            onResult({
+              ok: true,
+              user: {
+                id: `g_${data.id}`,
+                email: data.email,
+                name: data.name,
+                photo: data.picture ?? null,
+              },
+            });
+          } else if (response.type === "cancel" || response.type === "dismiss") {
+            onResult({ ok: false, error: "Login cancelado." });
+          } else {
+            onResult({ ok: false, error: "Falha no login com Google." });
+          }
+        } finally {
+          setLoading(false);
+        }
       };
 
-      return {
-        ok: true,
-        user: {
-          id: `g_${data.id}`,
-          email: data.email,
-          name: data.name,
-          photo: data.picture ?? null,
-        },
-      };
-    }
+      void handleResponse();
+    }, [response]);
 
-    if (result?.type === "cancel" || result?.type === "dismiss") {
-      return { ok: false, error: "Login cancelado." };
-    }
-
-    return { ok: false, error: "Falha no login com Google." };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro desconhecido";
-    return { ok: false, error: `Erro ao iniciar Google Auth: ${message}` };
+    return {
+      promptAsync: () => { void promptAsyncInternal(); },
+      loading,
+    };
+  } catch {
+    return null;
   }
 }

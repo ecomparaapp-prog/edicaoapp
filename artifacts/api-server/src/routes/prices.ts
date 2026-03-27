@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { priceReportsTable } from "@workspace/db/schema";
-import { placesCacheTable } from "@workspace/db/schema";
+import { priceReportsTable, placesCacheTable } from "@workspace/db/schema";
 import { eq, sql, and, desc } from "drizzle-orm";
 
 const pricesRouter = Router();

@@ -1,5 +1,4 @@
-import { Platform } from "react-native";
-import Constants from "expo-constants";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export interface NearbyStore {
   googlePlaceId: string;
@@ -24,15 +23,6 @@ export interface ClaimRequest {
   requesterName: string;
   requesterEmail: string;
   message?: string;
-}
-
-function getApiBaseUrl(): string {
-  const domain =
-    Constants.expoConfig?.extra?.domain ?? process.env.EXPO_PUBLIC_DOMAIN ?? "";
-
-  if (Platform.OS === "web") return "/api";
-  if (domain) return `https://${domain}/api`;
-  return "http://localhost:80/api";
 }
 
 export interface FetchStoresResult {

@@ -57,7 +57,7 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing; serves admin panel at `GET /admin`; routes at `/api`
+- App setup: `src/app.ts` — CORS restricted to `*.replit.dev`, `*.repl.co`, `*.replit.app`, localhost; JSON/urlencoded parsing; admin login returns SHA-256 hash of ADMIN_PASSWORD (not the raw password) as bearer token; routes at `/api`
 - Routes:
   - `src/routes/health.ts` — `GET /api/health`
   - `src/routes/ean.ts` — `GET /api/products/ean/:ean`, `GET /api/products/search?q=` — Cosmos API proxy with cache-aside pattern (negative cache sentinel `__not_found__`)
@@ -98,11 +98,13 @@ Production migrations are handled by Replit when publishing. In development, use
 
 Expo React Native mobile app (the main eCompara app).
 
+- **Shared utility**: `lib/apiBaseUrl.ts` — single `getApiBaseUrl()` implementation used by all service files (avoids duplication; handles web vs. native + `EXPO_PUBLIC_DOMAIN` vs. localhost)
 - **Services**:
   - `services/cosmosService.ts` — calls `/api/products/ean/:ean` and `/api/products/search?q=` with AbortController timeout
   - `services/storesService.ts` — calls `/api/stores/nearby` and `POST /api/stores/claim`
   - `services/profileService.ts` — calls `/api/profile/:userId` (GET/PUT) and `/api/profile/check-nickname` (GET)
-  - `services/priceService.ts` — calls `POST /api/prices`, `GET /api/products/:ean/prices`, `GET /api/stores/:placeId/prices`, `POST /api/prices/:id/vote`; URL built via `getApiBaseUrl()` pattern
+  - `services/priceService.ts` — calls `POST /api/prices`, `GET /api/products/:ean/prices`, `GET /api/stores/:placeId/prices`, `POST /api/prices/:id/vote`; URL built via `getApiBaseUrl()` from shared lib
+  - `services/authService.ts` — Google OAuth stub; exports `useGoogleSignIn` hook (must be called at component top-level) and `isGoogleAuthConfigured()`; requires `expo-auth-session` package + Google Client ID env vars to activate
 - **Context** (`context/AppContext.tsx`):
   - `cosmosCache` — in-memory Cosmos product cache
   - `stores` / `storesLoading` — backend-loaded stores (fallback: MOCK_STORES)

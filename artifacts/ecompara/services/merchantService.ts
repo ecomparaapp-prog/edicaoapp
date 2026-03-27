@@ -1,13 +1,4 @@
-import { Platform } from "react-native";
-import Constants from "expo-constants";
-
-function getApiBaseUrl(): string {
-  const domain =
-    Constants.expoConfig?.extra?.domain ?? process.env.EXPO_PUBLIC_DOMAIN ?? "";
-  if (Platform.OS === "web") return "/api";
-  if (domain) return `https://${domain}/api`;
-  return "http://localhost:80/api";
-}
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export interface CnpjLookupResult {
   cnpj: string;

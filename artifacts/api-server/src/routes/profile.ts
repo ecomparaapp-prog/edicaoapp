@@ -1,8 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { userProfilesTable } from "@workspace/db/schema";
-import { eq, and, ne } from "drizzle-orm";
-import { sql } from "drizzle-orm";
+import { eq, and, ne, sql } from "drizzle-orm";
 
 const profileRouter = Router();
 
