@@ -378,38 +378,40 @@ export default function GameScreen() {
           renderItem={({ item, index }) => <LeaderRow item={item} index={index} isMe={item.rank === userRank} C={C} />}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomPad, gap: 8 }}
           ListHeaderComponent={() => (
-            <>
-              {/* Region Filter */}
-              <View style={[styles.regionFilter, { backgroundColor: C.backgroundSecondary, marginBottom: 12 }]}>
-                <Pressable
-                  style={[styles.regionBtn, regionFilter === "brasilia" && { backgroundColor: C.primary }]}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRegionFilter("brasilia"); }}
-                >
-                  <Feather name="globe" size={12} color={regionFilter === "brasilia" ? "#fff" : C.textSecondary} />
-                  <Text style={[styles.regionBtnText, { color: regionFilter === "brasilia" ? "#fff" : C.textSecondary }]}>Brasília</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.regionBtn, regionFilter === "santa-maria" && { backgroundColor: C.primary }]}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRegionFilter("santa-maria"); }}
-                >
-                  <Feather name="map-pin" size={12} color={regionFilter === "santa-maria" ? "#fff" : C.textSecondary} />
-                  <Text style={[styles.regionBtnText, { color: regionFilter === "santa-maria" ? "#fff" : C.textSecondary }]}>Santa Maria (RA)</Text>
-                </Pressable>
-              </View>
-              {/* Legend */}
-              <View style={{ flexDirection: "row", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+            /* Region Filter */
+            <View style={[styles.regionFilter, { backgroundColor: C.backgroundSecondary, marginBottom: 12 }]}>
+              <Pressable
+                style={[styles.regionBtn, regionFilter === "brasilia" && { backgroundColor: C.primary }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRegionFilter("brasilia"); }}
+              >
+                <Feather name="globe" size={12} color={regionFilter === "brasilia" ? "#fff" : C.textSecondary} />
+                <Text style={[styles.regionBtnText, { color: regionFilter === "brasilia" ? "#fff" : C.textSecondary }]}>Brasília</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.regionBtn, regionFilter === "santa-maria" && { backgroundColor: C.primary }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRegionFilter("santa-maria"); }}
+              >
+                <Feather name="map-pin" size={12} color={regionFilter === "santa-maria" ? "#fff" : C.textSecondary} />
+                <Text style={[styles.regionBtnText, { color: regionFilter === "santa-maria" ? "#fff" : C.textSecondary }]}>Santa Maria (RA)</Text>
+              </Pressable>
+            </View>
+          )}
+          ListFooterComponent={() => (
+            <View style={[styles.legendFooter, { borderTopColor: C.border }]}>
+              <Text style={[styles.legendFooterTitle, { color: C.textMuted }]}>Níveis</Text>
+              <View style={styles.legendFooterRow}>
                 {[
                   { icon: <Feather name="shopping-cart" size={12} color="#9E9E9E" />, label: "Aprendiz (Nv.1-10)", color: "#9E9E9E" },
                   { icon: <Feather name="clipboard" size={12} color="#D4AF37" />, label: "Fiscal (Nv.11-30)", color: "#D4AF37" },
                   { icon: <MaterialCommunityIcons name="crown" size={12} color="#FF6B6B" />, label: "Mestre (Nv.31+)", color: "#FF6B6B" },
                 ].map((l, i) => (
-                  <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <View key={i} style={styles.legendItem}>
                     {l.icon}
                     <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: l.color }}>{l.label}</Text>
                   </View>
                 ))}
               </View>
-            </>
+            </View>
           )}
         />
       )}
@@ -560,6 +562,10 @@ const styles = StyleSheet.create({
   regionFilter: { flexDirection: "row", borderRadius: 10, padding: 3, gap: 3 },
   regionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 7, borderRadius: 8 },
   regionBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  legendFooter: { marginTop: 8, paddingTop: 14, borderTopWidth: 1, gap: 8 },
+  legendFooterTitle: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 1, textTransform: "uppercase" },
+  legendFooterRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   leaderItem: { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 12, gap: 10 },
   rankBadge: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   rankNum: { fontSize: 13, fontFamily: "Inter_700Bold" },
