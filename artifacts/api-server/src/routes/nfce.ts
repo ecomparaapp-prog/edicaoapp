@@ -59,6 +59,68 @@ async function lookupCNPJ(cnpj: string): Promise<{ name: string | null; ok: bool
   }
 }
 
+// Try to fetch items from SEFAZ public portal (best-effort, HTML parsing)
+async function fetchItemsFromSefaz(
+  chave: string,
+  stateCode: string,
+): Promise<{ ean: string; name: string; qty: number; unit: string; price: number }[]> {
+  // State-specific public NFC-e consultation URLs
+  const urlMap: Record<string, string> = {
+    "53": `https://dec.fazenda.df.gov.br/nfce/consulta?p=${chave}|2|1|||`,
+    "35": `https://www.nfce.fazenda.sp.gov.br/NFCEConsultaPublica/Paginas/ConsultaNFCe.aspx?chNFe=${chave}`,
+    "33": `https://www.nfce.fazenda.rj.gov.br/consulta?chNFe=${chave}`,
+    "41": `https://www.fazenda.pr.gov.br/nfce/qrcode?chNFe=${chave}`,
+  };
+
+  const url = urlMap[stateCode];
+  if (!url) return [];
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; eCompara/1.0)",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (!res.ok) return [];
+    const html = await res.text();
+
+    // DF NFC-e HTML typically has item rows in a table with columns:
+    // Descrição | Qtd | UN | Vl Unit | Vl Total | EAN (sometimes hidden)
+    const items: { ean: string; name: string; qty: number; unit: string; price: number }[] = [];
+
+    // Try to extract items from common HTML patterns in SEFAZ portals
+    // Pattern 1: <span class="txtTit"> or <td class="col-left Itens">
+    const nameMatches = [...html.matchAll(/class=["']txtTit2?["'][^>]*>([^<]+)<\/span>/gi)];
+    const qtyMatches = [...html.matchAll(/class=["']Qcom["'][^>]*>([\d,.]+)<\/span>/gi)];
+    const unitMatches = [...html.matchAll(/class=["']Ucom["'][^>]*>([A-Z]+)<\/span>/gi)];
+    const priceMatches = [...html.matchAll(/class=["']vItem2Bt["'][^>]*>([\d.,]+)<\/span>/gi)];
+    const eanMatches = [...html.matchAll(/(?:EAN|GTIN|C[oó]d\.?\s*Bar)[^>]*>[^<]*(\d{8,14})/gi)];
+
+    if (nameMatches.length > 0) {
+      for (let i = 0; i < nameMatches.length; i++) {
+        const name = nameMatches[i][1]?.trim() ?? "";
+        const qty = parseFloat((qtyMatches[i]?.[1] ?? "1").replace(",", ".")) || 1;
+        const unit = unitMatches[i]?.[1]?.trim() ?? "UN";
+        const price = parseFloat((priceMatches[i]?.[1] ?? "0").replace(/\./g, "").replace(",", ".")) || 0;
+        const ean = eanMatches[i]?.[1]?.trim() ?? "";
+
+        if (name && price > 0) {
+          items.push({ ean, name, qty, unit, price: price / qty });
+        }
+      }
+    }
+
+    console.log(`[SEFAZ] Parsed ${items.length} items for chave ${chave.slice(0, 10)}... (state ${stateCode})`);
+    return items;
+  } catch (err) {
+    console.warn(`[SEFAZ] Fetch failed for state ${stateCode}:`, (err as Error).message);
+    return [];
+  }
+}
+
 // Enrich items with product names from our EAN cache
 async function enrichItems(items: { ean: string; name: string; qty: number; unit: string; price: number }[]) {
   const eans = items.map((i) => i.ean).filter((e) => /^\d{8,14}$/.test(e));
@@ -198,11 +260,21 @@ nfceRouter.post("/nfce/validate", async (req, res) => {
   const cnpjResult = await lookupCNPJ(parsed.cnpj);
   const storeName = cnpjResult.name ?? `Estabelecimento ${parsed.cnpjFormatted}`;
 
-  // ── Items: use client-provided items or build a minimal placeholder ───────
-  const rawItems: { ean: string; name: string; qty: number; unit: string; price: number }[] =
-    Array.isArray(clientItems) && clientItems.length > 0
-      ? clientItems
-      : [];
+  // ── Items: use client-provided items or try to fetch from SEFAZ ───────────
+  const hasClientItems = Array.isArray(clientItems) && clientItems.length > 0;
+  let rawItems: { ean: string; name: string; qty: number; unit: string; price: number }[] =
+    hasClientItems ? clientItems! : [];
+
+  let itemsSource: "client" | "sefaz" | "unavailable" = hasClientItems ? "client" : "unavailable";
+
+  // Try SEFAZ XML lookup when no items provided (best-effort, 6s timeout)
+  if (!hasClientItems) {
+    const sefazItems = await fetchItemsFromSefaz(chave, parsed.stateCode);
+    if (sefazItems.length > 0) {
+      rawItems = sefazItems;
+      itemsSource = "sefaz";
+    }
+  }
 
   const enrichedItems = await enrichItems(rawItems);
   const totalValue = enrichedItems.reduce((s, i) => s + i.price * i.qty, 0);
@@ -244,6 +316,7 @@ nfceRouter.post("/nfce/validate", async (req, res) => {
   res.status(201).json({
     ok: true,
     duplicate: false,
+    itemsSource,
 
     // ── For the customer ────────────────────────────────────────────────────
     customer: {
@@ -256,6 +329,7 @@ nfceRouter.post("/nfce/validate", async (req, res) => {
       stateCode: parsed.stateCode,
       stateName: parsed.stateName,
       model: parsed.modelName,
+      itemsSource,
     },
 
     // ── For the system (price indexing) ────────────────────────────────────

@@ -20,43 +20,60 @@ import { Colors } from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
 import { validateNfce, type NfceItem } from "@/services/nfceService";
 
-/* ── Fallback mock data used only when no real items come from QR scan ── */
+/* ── Exemplos de NFC-e do Distrito Federal (estado 53) para testes ── */
 const MOCK_NOTAS: Record<string, {
   storeName: string; storeId: string; storeCNPJ: string;
   items: NfceItem[];
 }> = {
-  "35250300000001234560014050012345678901234567": {
-    storeName: "Tatico Supermercados", storeId: "2", storeCNPJ: "00.000.001/0001-01",
+  // Exemplo 1 — Tatico Supermercados, Santa Maria DF (5 itens = 150 pts)
+  "53260307280903000173650010001245671123456789": {
+    storeName: "Tatico Supermercados Santa Maria", storeId: "1", storeCNPJ: "07.280.903/0001-73",
     items: [
-      { ean: "7891000053508", name: "Leite Parmalat 1L", qty: 2, unit: "UN", price: 4.89 },
-      { ean: "7891910000197", name: "Arroz Tio João 5kg", qty: 1, unit: "UN", price: 21.90 },
-      { ean: "7894900700015", name: "Coca-Cola 2L", qty: 2, unit: "UN", price: 8.49 },
-      { ean: "7891000310755", name: "Açúcar União 1kg", qty: 1, unit: "UN", price: 4.29 },
-      { ean: "7896036090015", name: "Óleo de Soja 900ml", qty: 1, unit: "UN", price: 6.79 },
+      { ean: "7891000053508", name: "Leite Integral Parmalat 1L", qty: 2, unit: "UN", price: 5.49 },
+      { ean: "7891910000197", name: "Arroz Tio João 5kg", qty: 1, unit: "UN", price: 22.90 },
+      { ean: "7894900700015", name: "Coca-Cola 2L", qty: 2, unit: "UN", price: 8.79 },
+      { ean: "7891000310755", name: "Açúcar Cristal União 1kg", qty: 1, unit: "UN", price: 4.49 },
+      { ean: "7896004804009", name: "Óleo de Soja Liza 900ml", qty: 1, unit: "UN", price: 7.19 },
     ],
   },
-  "35250315000014500700014050098765432109876543": {
-    storeName: "Extra Econômico", storeId: "5", storeCNPJ: "15.000.014/0001-00",
+  // Exemplo 2 — Comper Supermercado, Santa Maria DF (12 itens = 300 pts, bônus 2x)
+  "53260326729748000182650010000894321987654328": {
+    storeName: "Comper Supermercado Santa Maria", storeId: "2", storeCNPJ: "26.729.748/0001-82",
     items: [
-      { ean: "7891910000197", name: "Arroz Tio João 5kg", qty: 2, unit: "UN", price: 19.90 },
-      { ean: "7891000053508", name: "Leite Parmalat 1L", qty: 3, unit: "UN", price: 4.59 },
-      { ean: "7894900700015", name: "Coca-Cola 2L", qty: 1, unit: "UN", price: 7.99 },
-      { ean: "7891000310755", name: "Açúcar União 1kg", qty: 2, unit: "UN", price: 3.99 },
-      { ean: "7896036090015", name: "Óleo de Soja 900ml", qty: 2, unit: "UN", price: 5.99 },
-      { ean: "7891149100006", name: "Macarrão Penne 500g", qty: 3, unit: "UN", price: 3.49 },
-      { ean: "7891700201035", name: "Farinha de Trigo 1kg", qty: 1, unit: "UN", price: 4.19 },
-      { ean: "7896007801015", name: "Sabão em Pó 1kg", qty: 1, unit: "UN", price: 8.99 },
-      { ean: "7891150062144", name: "Biscoito Recheado 130g", qty: 4, unit: "UN", price: 2.39 },
-      { ean: "7891962047706", name: "Café Pilão 500g", qty: 1, unit: "UN", price: 12.49 },
-      { ean: "7891000100103", name: "Leite Condensado 395g", qty: 2, unit: "UN", price: 5.79 },
-      { ean: "7896036090022", name: "Vinagre de Maçã 750ml", qty: 1, unit: "UN", price: 3.29 },
+      { ean: "7891910000197", name: "Arroz Tio João 5kg", qty: 2, unit: "UN", price: 21.50 },
+      { ean: "7891000053508", name: "Leite Integral Parmalat 1L", qty: 3, unit: "UN", price: 5.19 },
+      { ean: "7894900700015", name: "Coca-Cola 2L", qty: 2, unit: "UN", price: 8.29 },
+      { ean: "7891000310755", name: "Açúcar Cristal União 1kg", qty: 2, unit: "UN", price: 4.29 },
+      { ean: "7896004804009", name: "Óleo de Soja Liza 900ml", qty: 2, unit: "UN", price: 6.89 },
+      { ean: "7891149100006", name: "Macarrão Penne Barilla 500g", qty: 3, unit: "UN", price: 3.99 },
+      { ean: "7891700201035", name: "Farinha de Trigo Dona Benta 1kg", qty: 1, unit: "UN", price: 4.59 },
+      { ean: "7896007801015", name: "Sabão em Pó OMO 1kg", qty: 1, unit: "UN", price: 11.49 },
+      { ean: "7891150062144", name: "Biscoito Recheado Oreo 144g", qty: 2, unit: "UN", price: 3.89 },
+      { ean: "7891962047706", name: "Café Pilão Torrado 500g", qty: 1, unit: "UN", price: 13.99 },
+      { ean: "7891000100103", name: "Leite Condensado Moça 395g", qty: 2, unit: "UN", price: 6.29 },
+      { ean: "7896036090022", name: "Vinagre de Maçã Heinz 750ml", qty: 1, unit: "UN", price: 4.19 },
+    ],
+  },
+  // Exemplo 3 — Atacadão Santa Maria DF (8 itens = 150 pts)
+  "53260375315333000109650010003456781112233445": {
+    storeName: "Atacadão Santa Maria", storeId: "4", storeCNPJ: "75.315.333/0001-09",
+    items: [
+      { ean: "7891910000197", name: "Arroz Tio João 5kg", qty: 5, unit: "UN", price: 19.99 },
+      { ean: "7891000053508", name: "Leite Integral Parmalat 1L", qty: 12, unit: "UN", price: 4.79 },
+      { ean: "7891000310755", name: "Açúcar Cristal União 5kg", qty: 2, unit: "UN", price: 18.90 },
+      { ean: "7896004804009", name: "Óleo de Soja Liza 900ml", qty: 6, unit: "UN", price: 6.49 },
+      { ean: "7896007801015", name: "Sabão em Pó OMO 3kg", qty: 1, unit: "UN", price: 29.90 },
+      { ean: "7891962047706", name: "Café Pilão Torrado 500g", qty: 3, unit: "UN", price: 12.99 },
+      { ean: "7894900700015", name: "Coca-Cola 2L", qty: 6, unit: "UN", price: 7.99 },
+      { ean: "7891149100006", name: "Macarrão Penne 500g", qty: 4, unit: "UN", price: 3.29 },
     ],
   },
 };
 
 const SAMPLE_KEYS = [
-  "35250300000001234560014050012345678901234567",
-  "35250315000014500700014050098765432109876543",
+  "53260307280903000173650010001245671123456789",
+  "53260326729748000182650010000894321987654328",
+  "53260375315333000109650010003456781112233445",
 ];
 
 interface NotaData {
@@ -84,6 +101,7 @@ export default function NFCeScannerScreen() {
   const [result, setResult] = useState<{ ok: boolean; duplicate: boolean; points: number } | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [apiSource, setApiSource] = useState<"api" | "mock" | null>(null);
+  const [itemsSource, setItemsSource] = useState<"client" | "sefaz" | "unavailable" | null>(null);
 
   const handleParse = async () => {
     const key = chNFeInput.trim().replace(/\s/g, "");
@@ -98,6 +116,7 @@ export default function NFCeScannerScreen() {
     setResult(null);
     setConfirmed(false);
     setApiSource(null);
+    setItemsSource(null);
 
     // Try the real API first (validates, deduplicates, enriches via ReceitaWS)
     const userId = user?.id ?? "anon_" + Date.now();
@@ -106,6 +125,8 @@ export default function NFCeScannerScreen() {
 
     if (apiResult.ok && apiResult.customer) {
       // API validated and processed successfully
+      const src = (apiResult as any).itemsSource as "client" | "sefaz" | "unavailable" ?? "unavailable";
+      setItemsSource(src);
       const nota: NotaData = {
         storeName: apiResult.customer.storeName,
         storeCNPJ: apiResult.customer.cnpj,
@@ -319,28 +340,44 @@ export default function NFCeScannerScreen() {
               </View>
               <View style={{ alignItems: "flex-end" }}>
                 <Text style={[styles.notaTotal, { color: "#22C55E" }]}>R$ {totalValue.toFixed(2).replace(".", ",")}</Text>
-                <Text style={[styles.notaItemCount, { color: C.textMuted }]}>{parsedNota.items.length} itens</Text>
+                <Text style={[styles.notaItemCount, { color: C.textMuted }]}>
+                  {parsedNota.items.length > 0 ? `${parsedNota.items.length} itens` : itemsSource === "unavailable" ? "Itens via SEFAZ" : "—"}
+                </Text>
               </View>
             </LinearGradient>
 
-            {parsedNota.items.map((item, idx) => (
-              <View
-                key={item.ean + idx}
-                style={[styles.notaItem, idx < parsedNota.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
-              >
-                <View style={[styles.notaItemIcon, { backgroundColor: C.backgroundTertiary }]}>
-                  <MaterialCommunityIcons name="barcode" size={14} color={C.textMuted} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.notaItemName, { color: C.text }]}>{item.name}</Text>
-                  <Text style={[styles.notaItemEan, { color: C.textMuted }]}>{item.ean} · {item.qty}{item.unit}</Text>
-                </View>
-                <View style={{ alignItems: "flex-end" }}>
-                  <Text style={[styles.notaItemPrice, { color: C.text }]}>R$ {item.price.toFixed(2).replace(".", ",")}</Text>
-                  <Text style={[styles.notaItemSub, { color: C.textMuted }]}>un</Text>
+            {parsedNota.items.length === 0 ? (
+              <View style={[styles.noItemsBox, { backgroundColor: C.backgroundSecondary }]}>
+                <MaterialCommunityIcons name="information-outline" size={22} color={C.textMuted} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.noItemsTitle, { color: C.text }]}>Itens não disponíveis no QR Code</Text>
+                  <Text style={[styles.noItemsDesc, { color: C.textMuted }]}>
+                    {itemsSource === "unavailable"
+                      ? "O QR Code da nota contém apenas a chave de acesso. Os itens ficam no XML emitido pela SEFAZ, que não está acessível publicamente. A nota foi validada pelo CNPJ e você pode confirmar para ganhar os pontos."
+                      : "Itens não encontrados. Confirme a nota para registrar a compra."}
+                  </Text>
                 </View>
               </View>
-            ))}
+            ) : (
+              parsedNota.items.map((item, idx) => (
+                <View
+                  key={item.ean + idx}
+                  style={[styles.notaItem, idx < parsedNota.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border }]}
+                >
+                  <View style={[styles.notaItemIcon, { backgroundColor: C.backgroundTertiary }]}>
+                    <MaterialCommunityIcons name="barcode" size={14} color={C.textMuted} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.notaItemName, { color: C.text }]}>{item.name}</Text>
+                    <Text style={[styles.notaItemEan, { color: C.textMuted }]}>{item.ean} · {item.qty}{item.unit}</Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={[styles.notaItemPrice, { color: C.text }]}>R$ {item.price.toFixed(2).replace(".", ",")}</Text>
+                    <Text style={[styles.notaItemSub, { color: C.textMuted }]}>un</Text>
+                  </View>
+                </View>
+              ))
+            )}
 
             <View style={[styles.notaFooter, { backgroundColor: "#CC000010" }]}>
               <View style={{ flex: 1 }}>
@@ -453,6 +490,9 @@ const styles = StyleSheet.create({
   notaFooterLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   notaFooterBonus: { fontSize: 11, fontFamily: "Inter_700Bold", marginTop: 2 },
   notaFooterPts: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#CC0000" },
+  noItemsBox: { flexDirection: "row", gap: 10, alignItems: "flex-start", margin: 14, borderRadius: 10, padding: 12 },
+  noItemsTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  noItemsDesc: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2, lineHeight: 17 },
   confirmBtn: { backgroundColor: "#22C55E", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, marginHorizontal: 14, marginBottom: 14, borderRadius: 14 },
   confirmBtnTxt: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
   resultCard: { borderRadius: 16, borderWidth: 1.5, padding: 24, alignItems: "center", gap: 14 },
