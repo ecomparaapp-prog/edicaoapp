@@ -244,18 +244,6 @@ export default function StoreScreen() {
           </View>
         </View>
 
-        {/* Favoritar */}
-        <Pressable
-          onPress={toggleFavorite}
-          style={[styles.iconBtn, { backgroundColor: isFavorite ? "#FFF3E0" : C.backgroundSecondary }]}
-          hitSlop={8}
-        >
-          <Ionicons
-            name={isFavorite ? "heart" : "heart-outline"}
-            size={20}
-            color={isFavorite ? "#E53935" : C.textMuted}
-          />
-        </Pressable>
       </View>
 
       {/* Contatos (verificado) */}
@@ -276,58 +264,93 @@ export default function StoreScreen() {
         </View>
       )}
 
-      {/* Ações principais — uma única linha proporcional */}
+      {/* Ações principais */}
       <View style={[styles.actionsBar, { backgroundColor: C.backgroundSecondary, borderBottomColor: C.border }]}>
-        {/* Cadastrar Produto */}
+        {/* Favoritar — sempre visível, movido para cá para não sobrepor info do header */}
         <Pressable
-          style={[styles.actionBtn, { backgroundColor: C.primary, flex: 1 }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push({
-              pathname: "/register-price",
-              params: {
-                preselectedPlaceId: store.id,
-                preselectedPlaceName: store.name,
-              },
-            });
-          }}
+          onPress={toggleFavorite}
+          style={[styles.actionBtn, { backgroundColor: isFavorite ? "#FFF0F0" : (isDark ? "#2A2A2A" : "#EFEFEF"), borderWidth: 1, borderColor: isFavorite ? "#E53935" : C.border }]}
+          hitSlop={8}
         >
-          <MaterialIcon name="barcode-scan" color="#fff" />
-          <Text style={styles.actionBtnText} numberOfLines={1}>Cadastrar no Mercado</Text>
+          <Ionicons
+            name={isFavorite ? "heart" : "heart-outline"}
+            size={15}
+            color={isFavorite ? "#E53935" : C.textSecondary}
+          />
+          <Text style={[styles.actionBtnText, { color: isFavorite ? "#E53935" : C.textSecondary }]} numberOfLines={1}>
+            {isFavorite ? "Favoritado" : "Favoritar"}
+          </Text>
         </Pressable>
 
-        {/* Este é meu negócio */}
-        <Pressable
-          style={[styles.actionBtn, { backgroundColor: "#8B0000", flex: 1 }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push({
-              pathname: "/merchant-register",
-              params: {
-                googlePlaceId: store.id,
-                placeName: store.name,
-                placeLat: String(store.lat),
-                placeLng: String(store.lng),
-              },
-            });
-          }}
-        >
-          <Feather name="briefcase" size={13} color="#fff" />
-          <Text style={styles.actionBtnText} numberOfLines={1}>Meu Negócio</Text>
-        </Pressable>
-
-        {/* Sugerir Mudança (shadow apenas) */}
-        {store.isShadow && (
+        {store.isVerified ? (
+          /* Parceiro verificado: botão "Preço Incorreto" no lugar de Cadastrar */
           <Pressable
-            style={[styles.actionBtn, { flex: 1, backgroundColor: isDark ? "#2A2A2A" : "#EFEFEF", borderWidth: 1, borderColor: C.border }]}
+            style={[styles.actionBtn, { backgroundColor: C.primary, flex: 1 }]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowSuggestModal(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push({
+                pathname: "/register-price",
+                params: {
+                  preselectedPlaceId: store.id,
+                  preselectedPlaceName: store.name,
+                  isCorrection: "true",
+                },
+              });
             }}
           >
-            <Feather name="edit-2" size={13} color={C.textSecondary} />
-            <Text style={[styles.actionBtnText, { color: C.textSecondary }]} numberOfLines={1}>Sugerir</Text>
+            <Feather name="alert-triangle" size={13} color="#fff" />
+            <Text style={styles.actionBtnText} numberOfLines={1}>Preço Incorreto</Text>
           </Pressable>
+        ) : (
+          /* Não-parceiro: Cadastrar + Meu Negócio + Sugerir */
+          <>
+            <Pressable
+              style={[styles.actionBtn, { backgroundColor: C.primary, flex: 1 }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push({
+                  pathname: "/register-price",
+                  params: {
+                    preselectedPlaceId: store.id,
+                    preselectedPlaceName: store.name,
+                  },
+                });
+              }}
+            >
+              <MaterialIcon name="barcode-scan" color="#fff" />
+              <Text style={styles.actionBtnText} numberOfLines={1}>Cadastrar</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.actionBtn, { backgroundColor: "#8B0000" }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push({
+                  pathname: "/merchant-register",
+                  params: {
+                    googlePlaceId: store.id,
+                    placeName: store.name,
+                    placeLat: String(store.lat),
+                    placeLng: String(store.lng),
+                  },
+                });
+              }}
+            >
+              <Feather name="briefcase" size={13} color="#fff" />
+              <Text style={styles.actionBtnText} numberOfLines={1}>Meu Negócio</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.actionBtn, { backgroundColor: isDark ? "#2A2A2A" : "#EFEFEF", borderWidth: 1, borderColor: C.border }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowSuggestModal(true);
+              }}
+            >
+              <Feather name="edit-2" size={13} color={C.textSecondary} />
+              <Text style={[styles.actionBtnText, { color: C.textSecondary }]} numberOfLines={1}>Sugerir</Text>
+            </Pressable>
+          </>
         )}
       </View>
 

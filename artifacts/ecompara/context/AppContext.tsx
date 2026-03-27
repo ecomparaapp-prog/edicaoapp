@@ -162,12 +162,12 @@ export interface NFCeEntry {
 }
 
 const MOCK_STORES: Store[] = [
-  { id: "1", name: "Tatico Supermercados", distance: 0.6, address: "QR 205 Conj 1 Lote 1, Santa Maria", lat: -15.8620, lng: -47.9975, plan: "plus" },
-  { id: "2", name: "Comper Supermercado", distance: 1.1, address: "EQN 205/206, Santa Maria", lat: -15.8645, lng: -47.9955, plan: "normal" },
-  { id: "3", name: "Supermercado São Paulo", distance: 1.7, address: "QR 307 Conj A, Santa Maria", lat: -15.8660, lng: -47.9940, plan: "plus" },
-  { id: "4", name: "Atacadão Santa Maria", distance: 2.3, address: "DF-001 Km 12, Santa Maria", lat: -15.8610, lng: -47.9930, plan: "normal" },
-  { id: "5", name: "Baratão Supermercados", distance: 3.0, address: "QR 102 Conj B, Santa Maria", lat: -15.8680, lng: -47.9985, plan: "normal" },
-  { id: "6", name: "Assaí Atacadista", distance: 3.8, address: "BR-040, Santa Maria Norte", lat: -15.8590, lng: -47.9920, plan: "plus" },
+  { id: "1", name: "Tatico Supermercados", distance: 0.6, address: "QR 205 Conj 1 Lote 1, Santa Maria", lat: -15.8620, lng: -47.9975, plan: "plus", status: "verified", isPartner: true, isShadow: false, phone: "(61) 3902-1234", website: "https://tatico.com.br" },
+  { id: "2", name: "Comper Supermercado", distance: 1.1, address: "EQN 205/206, Santa Maria", lat: -15.8645, lng: -47.9955, plan: "normal", status: "shadow", isShadow: true },
+  { id: "3", name: "Supermercado São Paulo", distance: 1.7, address: "QR 307 Conj A, Santa Maria", lat: -15.8660, lng: -47.9940, plan: "plus", status: "shadow", isShadow: true },
+  { id: "4", name: "Atacadão Santa Maria", distance: 2.3, address: "DF-001 Km 12, Santa Maria", lat: -15.8610, lng: -47.9930, plan: "normal", status: "shadow", isShadow: true },
+  { id: "5", name: "Baratão Supermercados", distance: 3.0, address: "QR 102 Conj B, Santa Maria", lat: -15.8680, lng: -47.9985, plan: "normal", status: "shadow", isShadow: true },
+  { id: "6", name: "Assaí Atacadista", distance: 3.8, address: "BR-040, Santa Maria Norte", lat: -15.8590, lng: -47.9920, plan: "plus", status: "shadow", isShadow: true },
 ];
 
 const MOCK_BANNERS: Banner[] = [

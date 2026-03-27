@@ -1,12 +1,13 @@
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Platform,
   Pressable,
+  SectionList,
   StyleSheet,
   Text,
   TextInput,
@@ -14,9 +15,13 @@ import {
   useColorScheme,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { Colors } from "@/constants/colors";
-import { useApp, type Product } from "@/context/AppContext";
+import { useApp, type Product, type Store } from "@/context/AppContext";
+
+const FAVORITES_KEY = "@ecompara_favorite_stores";
+const MAX_STORE_DISTANCE_KM = 5;
 
 export default function SearchScreen() {
   const colorScheme = useColorScheme();
@@ -24,17 +29,39 @@ export default function SearchScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { searchProducts, searchProductsAsync, addToShoppingList } = useApp();
+  const { searchProducts, searchProductsAsync, addToShoppingList, stores } = useApp();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>(() => searchProducts(""));
+  const [storeResults, setStoreResults] = useState<Store[]>([]);
   const [searching, setSearching] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : 90;
 
-  // Show local results instantly, then enrich with Cosmos cache after debounce
+  useEffect(() => {
+    AsyncStorage.getItem(FAVORITES_KEY).then((raw) => {
+      const favs: string[] = raw ? JSON.parse(raw) : [];
+      setFavoriteIds(new Set(favs));
+    });
+  }, []);
+
+  const searchStores = useCallback((q: string): Store[] => {
+    if (!q.trim()) return [];
+    const lower = q.toLowerCase();
+    return stores.filter((s) => {
+      const nameMatch = s.name.toLowerCase().includes(lower);
+      if (!nameMatch) return false;
+      const storeId = s.googlePlaceId ?? s.id;
+      const isFav = favoriteIds.has(storeId) || favoriteIds.has(s.id);
+      const isNearby = (s.distance ?? 999) <= MAX_STORE_DISTANCE_KM;
+      return isFav || isNearby;
+    });
+  }, [stores, favoriteIds]);
+
   useEffect(() => {
     setResults(searchProducts(query));
+    setStoreResults(searchStores(query));
     let cancelled = false;
     setSearching(true);
     const timer = setTimeout(async () => {
@@ -46,11 +73,9 @@ export default function SearchScreen() {
       }
     }, 400);
     return () => { cancelled = true; clearTimeout(timer); setSearching(false); };
-  }, [query]);
+  }, [query, favoriteIds]);
 
-  const handleSearch = (text: string) => {
-    setQuery(text);
-  };
+  const handleSearch = (text: string) => setQuery(text);
 
   const getBestPrice = (product: Product) => {
     if (!product.prices.length) return null;
@@ -125,6 +150,83 @@ export default function SearchScreen() {
     );
   };
 
+  const renderStore = ({ item }: { item: Store }) => {
+    const isVerified = item.status === "verified";
+    const isFav = favoriteIds.has(item.googlePlaceId ?? item.id) || favoriteIds.has(item.id);
+    return (
+      <Pressable
+        style={[
+          styles.storeCard,
+          { backgroundColor: C.surfaceElevated, borderColor: C.border },
+          isVerified && { borderColor: C.primary },
+        ]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push({
+            pathname: "/store/[id]",
+            params: {
+              id: item.googlePlaceId ?? item.id,
+              name: item.name,
+              address: item.address ?? "",
+              lat: String(item.lat ?? ""),
+              lng: String(item.lng ?? ""),
+              distance: String(item.distance ?? ""),
+              rating: String(item.rating ?? ""),
+              photoUrl: item.photoUrl ?? "",
+              status: item.status ?? "shadow",
+              phone: item.phone ?? "",
+              website: item.website ?? "",
+            },
+          });
+        }}
+      >
+        <View style={[styles.storeIconBox, { backgroundColor: isDark ? C.backgroundTertiary : "#F0F0F0" }]}>
+          <Feather name="shopping-bag" size={20} color={isVerified ? C.primary : C.textMuted} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <Text style={[styles.storeName, { color: C.text }]} numberOfLines={1}>{item.name}</Text>
+            {isVerified && (
+              <View style={[styles.verifiedBadge, { backgroundColor: "#E8F5E9" }]}>
+                <Feather name="check-circle" size={9} color="#2E7D32" />
+                <Text style={[styles.verifiedBadgeText, { color: "#2E7D32" }]}>Parceiro</Text>
+              </View>
+            )}
+            {isFav && (
+              <Ionicons name="heart" size={11} color="#E53935" />
+            )}
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 }}>
+            <Feather name="map-pin" size={10} color={C.textMuted} />
+            <Text style={[styles.storeMeta, { color: C.textMuted }]} numberOfLines={1}>
+              {item.distance > 0 ? `${item.distance}km · ` : ""}{item.address || "Endereço não disponível"}
+            </Text>
+          </View>
+        </View>
+        <Feather name="chevron-right" size={16} color={C.textMuted} />
+      </Pressable>
+    );
+  };
+
+  const hasStores = storeResults.length > 0;
+  const hasProducts = results.length > 0;
+  const hasQuery = query.trim().length > 0;
+
+  const sections = [
+    ...(hasStores ? [{
+      title: "Mercados",
+      data: storeResults,
+      renderItem: renderStore,
+      keyExtractor: (item: Store) => item.id,
+    }] : []),
+    ...(hasProducts ? [{
+      title: "Produtos",
+      data: results,
+      renderItem: renderProduct,
+      keyExtractor: (item: Product) => item.ean,
+    }] : []),
+  ];
+
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
       {/* Header */}
@@ -133,7 +235,7 @@ export default function SearchScreen() {
           <Feather name="search" size={18} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text }]}
-            placeholder="EAN, produto ou marca..."
+            placeholder="Produto, EAN ou nome do mercado..."
             placeholderTextColor={C.textMuted}
             value={query}
             onChangeText={handleSearch}
@@ -154,33 +256,66 @@ export default function SearchScreen() {
         </View>
       </View>
 
-      {/* Results */}
-      <FlatList
-        data={results}
-        keyExtractor={(item) => item.ean}
-        renderItem={renderProduct}
-        contentContainerStyle={{ padding: 16, paddingBottom: bottomPad, gap: 10 }}
-        scrollEnabled={!!results.length}
-        ListEmptyComponent={() => (
+      {/* Tip sobre favoritar mercados (mostrado quando há resultados de mercado com distância limite) */}
+      {hasQuery && hasStores && (
+        <View style={[styles.favTip, { backgroundColor: isDark ? "#1A1A2E" : "#EEF2FF", borderColor: isDark ? "#3730A3" : "#C7D2FE" }]}>
+          <Ionicons name="heart" size={12} color="#6366F1" />
+          <Text style={[styles.favTipText, { color: isDark ? "#A5B4FC" : "#4338CA" }]}>
+            Mercados favoritos aparecem na busca de qualquer distância.{" "}
+            <Text style={{ fontFamily: "Inter_700Bold" }}>Favorite para não perder promoções!</Text>
+          </Text>
+        </View>
+      )}
+
+      {/* Resultados mistos: Mercados + Produtos */}
+      {hasQuery ? (
+        sections.length === 0 ? (
           <View style={styles.empty}>
-            <MaterialCommunityIcons name="magnify-close" size={48} color={C.textMuted} />
-            <Text style={[styles.emptyText, { color: C.textMuted }]}>Nenhum produto encontrado</Text>
-          </View>
-        )}
-        ListHeaderComponent={() => (
-          <View style={styles.resultsHeader}>
             {searching ? (
-              <ActivityIndicator size="small" color={C.primary} />
-            ) : null}
-            {results.length > 0 ? (
-              <Text style={[styles.resultCount, { color: C.textMuted }]}>
-                {results.length} produto{results.length !== 1 ? "s" : ""} encontrado{results.length !== 1 ? "s" : ""}
-                {searching ? " · buscando mais..." : ""}
-              </Text>
-            ) : null}
+              <ActivityIndicator size="large" color={C.primary} />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="magnify-close" size={48} color={C.textMuted} />
+                <Text style={[styles.emptyText, { color: C.textMuted }]}>Nenhum resultado encontrado</Text>
+              </>
+            )}
           </View>
-        )}
-      />
+        ) : (
+          <SectionList
+            sections={sections as any}
+            keyExtractor={(item: any) => item.ean ?? item.id}
+            renderItem={({ item, section }: any) => section.renderItem({ item })}
+            renderSectionHeader={({ section }) => (
+              <View style={[styles.sectionHeader, { backgroundColor: C.background, borderBottomColor: C.border }]}>
+                <Text style={[styles.sectionTitle, { color: C.textSecondary }]}>{section.title}</Text>
+                {searching && section.title === "Produtos" && (
+                  <ActivityIndicator size="small" color={C.primary} />
+                )}
+                <Text style={[styles.sectionCount, { color: C.textMuted }]}>
+                  {section.data.length} encontrado{section.data.length !== 1 ? "s" : ""}
+                </Text>
+              </View>
+            )}
+            contentContainerStyle={{ paddingBottom: bottomPad }}
+            stickySectionHeadersEnabled
+          />
+        )
+      ) : (
+        /* Estado vazio — sem query */
+        <View style={styles.emptyHint}>
+          <MaterialCommunityIcons name="magnify" size={52} color={C.textMuted} style={{ opacity: 0.5 }} />
+          <Text style={[styles.emptyHintTitle, { color: C.text }]}>Busque produtos ou mercados</Text>
+          <Text style={[styles.emptyHintSub, { color: C.textMuted }]}>
+            Digite o nome do produto, EAN ou o nome de um mercado próximo.
+          </Text>
+          <View style={[styles.favTipLarge, { backgroundColor: isDark ? "#1A1A2E" : "#EEF2FF", borderColor: isDark ? "#3730A3" : "#C7D2FE" }]}>
+            <Ionicons name="heart" size={14} color="#6366F1" />
+            <Text style={[styles.favTipLargeText, { color: isDark ? "#A5B4FC" : "#4338CA" }]}>
+              <Text style={{ fontFamily: "Inter_700Bold" }}>Dica:</Text> Mercados favoritos aparecem na busca independente da distância. Favorite seus mercados preferidos para acessar ofertas a qualquer hora!
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -199,13 +334,63 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   scanBtn: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  resultsHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
-  resultCount: { fontSize: 12, fontFamily: "Inter_500Medium", flex: 1 },
+  favTip: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginHorizontal: 16,
+    marginBottom: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  favTipText: { flex: 1, fontSize: 11, fontFamily: "Inter_400Regular", lineHeight: 16 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    gap: 8,
+  },
+  sectionTitle: { fontSize: 12, fontFamily: "Inter_700Bold", flex: 1 },
+  sectionCount: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  storeCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 16,
+    marginVertical: 6,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  storeIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  storeName: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  storeMeta: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  verifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  verifiedBadgeText: { fontSize: 9, fontFamily: "Inter_700Bold" },
   productCard: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 14,
     padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 6,
     borderWidth: 1,
     gap: 12,
   },
@@ -220,6 +405,19 @@ const styles = StyleSheet.create({
   savingsText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
   storeCount: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 2 },
   addBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  empty: { alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 12 },
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 32 },
   emptyText: { fontSize: 15, fontFamily: "Inter_400Regular" },
+  emptyHint: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, gap: 12 },
+  emptyHintTitle: { fontSize: 17, fontFamily: "Inter_700Bold", textAlign: "center" },
+  emptyHintSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
+  favTipLarge: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 8,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  favTipLargeText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
 });

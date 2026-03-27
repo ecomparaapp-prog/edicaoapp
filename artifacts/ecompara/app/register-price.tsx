@@ -44,7 +44,8 @@ export default function RegisterPriceScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const { user } = useApp();
-  const params = useLocalSearchParams<{ preselectedPlaceId?: string; preselectedPlaceName?: string }>();
+  const params = useLocalSearchParams<{ preselectedPlaceId?: string; preselectedPlaceName?: string; isCorrection?: string }>();
+  const isCorrection = params.isCorrection === "true";
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
