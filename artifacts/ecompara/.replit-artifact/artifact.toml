@@ -24,4 +24,10 @@ BASE_PATH = "/"
 
 [services.production]
 build = ["pnpm", "--filter", "@workspace/ecompara", "run", "build"]
-run = ["pnpm", "--filter", "@workspace/ecompara", "run", "serve"]
+
+[services.production.run]
+args = ["pnpm", "--filter", "@workspace/ecompara", "run", "serve"]
+
+[services.production.run.env]
+PORT = "23273"
+BASE_PATH = "/"
