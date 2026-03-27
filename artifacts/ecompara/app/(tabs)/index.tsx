@@ -170,6 +170,26 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
 
+        {/* Quick Actions */}
+        <View style={[styles.quickActions, { marginHorizontal: 16, marginTop: 14 }]}>
+          <Pressable
+            style={[styles.qaRegister, { backgroundColor: C.primary }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push("/register-price");
+            }}
+          >
+            <MaterialCommunityIcons name="barcode-scan" size={22} color="#fff" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.qaRegisterTitle}>Cadastrar no Mercado</Text>
+              <Text style={styles.qaRegisterSub}>Escaneie e ganhe pontos</Text>
+            </View>
+            <View style={[styles.qaPoints, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+              <Text style={styles.qaPointsText}>+30 pts</Text>
+            </View>
+          </Pressable>
+        </View>
+
         {/* Ad Banners */}
         <HomeAdBanner
           isDark={isDark}
@@ -637,6 +657,11 @@ const styles = StyleSheet.create({
   quickActions: { flexDirection: "row", gap: 10 },
   quickCard: { flex: 1, borderRadius: 14, padding: 16, alignItems: "center", gap: 8 },
   quickCardText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  qaRegister: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14 },
+  qaRegisterTitle: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
+  qaRegisterSub: { color: "rgba(255,255,255,0.75)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
+  qaPoints: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
+  qaPointsText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.55)",

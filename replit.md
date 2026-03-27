@@ -204,6 +204,32 @@ Mission detail screen — swipe-to-validate UI:
 - "Missão Cumprida!" trophy celebration overlay on completion
 - `fromMission: true` on all validation API calls for 2x XP
 
+### `artifacts/ecompara/app/register-price.tsx`
+
+4-step "Cadastrar no Mercado" wizard — main product registration flow:
+
+**Steps:**
+1. **EAN** — scan/type EAN barcode → product lookup via Cosmos API
+2. **Price** — enter price seen on the shelf
+3. **Store** — GPS location finds nearby supermarkets → user selects one
+4. **Confirm** — review summary, see store type info, option to use NFC-e receipt for shadow stores → submit → animated result with points
+
+**Business logic (POST /api/prices):**
+- **Shadow store, no price within 5 days** → `product_registration` → 30 pts
+- **Shadow store, price exists within 5 days** → `price_validation` → 15 pts
+- **Partner store, price within 5% of latest** → `price_submission` → 10 pts
+- **Partner store, price conflict (>5% diff)**:
+  - < 3 users in 24h: `conflict_pending` → 0 pts, partner notified
+  - ≥ 3 users with same price in 24h: `auto_validated` → 30 pts each, all previous matching reports also updated
+- Shadow store users can tap "Tem nota fiscal?" to scan NFC-e for extra points (navigates to nfce-scanner with placeId)
+
+**DB changes:**
+- `price_reports` table: added `report_type text`, `points_awarded int`, `conflict_status text`, `partner_notified_at timestamptz`
+- Actual DB column name: `product_ean` (not `ean` — legacy from original import)
+- API partner validation endpoint: `POST /api/prices/:id/partner-validate`
+
+**Navigation entry point:** "Cadastrar no Mercado" red button on home screen (after search bar).
+
 ### Home screen missions features (`app/(tabs)/index.tsx`)
 
 - "Missões Relâmpago" horizontal scrollable section (after banners) with mission cards showing XP multiplier, distance, stale/disputed counts, "Iniciar Missão" CTA
