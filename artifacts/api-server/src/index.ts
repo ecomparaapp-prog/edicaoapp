@@ -1,5 +1,5 @@
 import app from "./app";
-import { ensurePostgis } from "./services/ensurePostgis";
+import { ensureSchema } from "./services/ensureSchema";
 
 const rawPort = process.env["PORT"];
 
@@ -16,7 +16,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function start() {
-  await ensurePostgis();
+  await ensureSchema();
   app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
   });
