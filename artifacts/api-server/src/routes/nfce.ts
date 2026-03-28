@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { nfceRecordsTable, priceReportsTable, eanCacheTable } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { isValidUserId } from "../utils/requireUser";
 
 const nfceRouter = Router();
 
@@ -206,8 +207,8 @@ nfceRouter.post("/nfce/validate", async (req, res) => {
     res.status(400).json({ ok: false, error: "chaveAcesso deve ter 44 dígitos." });
     return;
   }
-  if (!userId) {
-    res.status(400).json({ ok: false, error: "userId é obrigatório." });
+  if (!isValidUserId(userId)) {
+    res.status(401).json({ ok: false, error: "Login necessário para processar notas fiscais." });
     return;
   }
 

@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp, type Product } from "@/context/AppContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 const FAVORITES_KEY = "@ecompara_favorite_stores";
 
@@ -58,6 +59,7 @@ export default function StoreScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const { stores, products, addToShoppingList, shoppingList, updateShoppingItemQuantity } = useApp();
+  const { requireAuth } = useRequireAuth();
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : (insets.bottom ? insets.bottom + 60 : 80);
@@ -287,14 +289,16 @@ export default function StoreScreen() {
           <Pressable
             style={[styles.actionBtn, { backgroundColor: C.primary, flex: 1 }]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push({
-                pathname: "/register-price",
-                params: {
-                  preselectedPlaceId: store.id,
-                  preselectedPlaceName: store.name,
-                  isCorrection: "true",
-                },
+              requireAuth(() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push({
+                  pathname: "/register-price",
+                  params: {
+                    preselectedPlaceId: store.id,
+                    preselectedPlaceName: store.name,
+                    isCorrection: "true",
+                  },
+                });
               });
             }}
           >
@@ -307,13 +311,15 @@ export default function StoreScreen() {
             <Pressable
               style={[styles.actionBtn, { backgroundColor: C.primary, flex: 1 }]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push({
-                  pathname: "/register-price",
-                  params: {
-                    preselectedPlaceId: store.id,
-                    preselectedPlaceName: store.name,
-                  },
+                requireAuth(() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push({
+                    pathname: "/register-price",
+                    params: {
+                      preselectedPlaceId: store.id,
+                      preselectedPlaceName: store.name,
+                    },
+                  });
                 });
               }}
             >
@@ -324,15 +330,17 @@ export default function StoreScreen() {
             <Pressable
               style={[styles.actionBtn, { backgroundColor: "#8B0000" }]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push({
-                  pathname: "/merchant-register",
-                  params: {
-                    googlePlaceId: store.id,
-                    placeName: store.name,
-                    placeLat: String(store.lat),
-                    placeLng: String(store.lng),
-                  },
+                requireAuth(() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push({
+                    pathname: "/merchant-register",
+                    params: {
+                      googlePlaceId: store.id,
+                      placeName: store.name,
+                      placeLat: String(store.lat),
+                      placeLng: String(store.lng),
+                    },
+                  });
                 });
               }}
             >
@@ -343,8 +351,10 @@ export default function StoreScreen() {
             <Pressable
               style={[styles.actionBtn, { backgroundColor: isDark ? "#2A2A2A" : "#EFEFEF", borderWidth: 1, borderColor: C.border }]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setShowSuggestModal(true);
+                requireAuth(() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowSuggestModal(true);
+                });
               }}
             >
               <Feather name="edit-2" size={13} color={C.textSecondary} />

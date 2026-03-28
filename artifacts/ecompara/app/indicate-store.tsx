@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import { AuthGate } from "@/components/AuthGate";
 import { indicateStore } from "@/services/storesService";
 
 const INDICATION_POINTS = 1000;
@@ -48,6 +49,7 @@ export default function IndicateStoreScreen() {
   const pointsTranslate = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (!user) return;
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -69,7 +71,17 @@ export default function IndicateStoreScreen() {
         setLoadingLocation(false);
       }
     })();
-  }, []);
+  }, [user]);
+
+  if (!user) {
+    return (
+      <AuthGate
+        title="Login necessário"
+        description="Faça login para indicar um mercado e ganhar 1.000 pontos."
+        icon="map-marker-plus-outline"
+      />
+    );
+  }
 
   async function reverseGeocode(lat: number, lng: number) {
     try {
@@ -112,7 +124,7 @@ export default function IndicateStoreScreen() {
       return;
     }
 
-    const userId = user?.id ?? "anonymous";
+    const userId = user.id;
     setSubmitting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 

@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import { AuthGate } from "@/components/AuthGate";
 import { lookupEAN, type CosmosProduct } from "@/services/cosmosService";
 import { fetchNearbyStores, type NearbyStore } from "@/services/storesService";
 import { submitPrice, type SubmitPriceResult, type ReportType } from "@/services/priceService";
@@ -107,6 +108,16 @@ export default function RegisterPriceScreen() {
       ]).start();
     }
   }, [step]);
+
+  if (!user) {
+    return (
+      <AuthGate
+        title="Login necessário"
+        description="Faça login para registrar preços e ganhar pontos por cada contribuição."
+        icon="tag-outline"
+      />
+    );
+  }
 
   // ─── EAN lookup ───────────────────────────────────────────────────────────
 
@@ -212,7 +223,7 @@ export default function RegisterPriceScreen() {
     const priceNum = parseFloat(priceText.replace(",", "."));
     if (isNaN(priceNum)) return;
 
-    const userId = user?.id ?? "anonymous";
+    const userId = user.id;
     setSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 

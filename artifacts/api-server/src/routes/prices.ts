@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { priceReportsTable, placesCacheTable } from "@workspace/db/schema";
 import { eq, sql, and, desc } from "drizzle-orm";
+import { isValidUserId } from "../utils/requireUser";
 
 const pricesRouter = Router();
 
@@ -102,8 +103,12 @@ pricesRouter.post("/prices", async (req, res) => {
     productName?: string;
   };
 
-  if (!ean || !placeId || !userId || price == null) {
-    res.status(400).json({ error: "ean, placeId, userId e price são obrigatórios." });
+  if (!ean || !placeId || price == null) {
+    res.status(400).json({ error: "ean, placeId e price são obrigatórios." });
+    return;
+  }
+  if (!isValidUserId(userId)) {
+    res.status(401).json({ error: "Login necessário para registrar preços." });
     return;
   }
 

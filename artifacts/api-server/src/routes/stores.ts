@@ -5,6 +5,7 @@ import {
   partnershipRequestsTable,
 } from "@workspace/db/schema";
 import { sql } from "drizzle-orm";
+import { isValidUserId } from "../utils/requireUser";
 
 const storesRouter = Router();
 
@@ -282,8 +283,12 @@ storesRouter.post("/stores/indicate", async (req, res) => {
     google_place_id?: string;
   };
 
-  if (!user_id || !name || lat == null || lng == null) {
-    res.status(400).json({ error: "Campos obrigatórios: user_id, name, lat, lng." });
+  if (!name || lat == null || lng == null) {
+    res.status(400).json({ error: "Campos obrigatórios: name, lat, lng." });
+    return;
+  }
+  if (!isValidUserId(user_id)) {
+    res.status(401).json({ error: "Login necessário para indicar mercados." });
     return;
   }
 
@@ -343,8 +348,12 @@ storesRouter.post("/stores/report", async (req, res) => {
     reason?: string;
   };
 
-  if (!google_place_id || !reporter_user_id) {
-    res.status(400).json({ error: "Campos obrigatórios: google_place_id, reporter_user_id." });
+  if (!google_place_id) {
+    res.status(400).json({ error: "google_place_id é obrigatório." });
+    return;
+  }
+  if (!isValidUserId(reporter_user_id)) {
+    res.status(401).json({ error: "Login necessário para reportar mercados." });
     return;
   }
 

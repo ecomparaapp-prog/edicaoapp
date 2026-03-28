@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp, type Store } from "@/context/AppContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import {
   fetchProductPrices,
   voteOnPrice,
@@ -51,6 +52,7 @@ export default function ProductDetailScreen() {
   const bottomPad = isWeb ? 34 : insets.bottom + 24;
 
   const { getProductByEAN, addToShoppingList, submitPriceUpdate, stores, user, isLoggedIn } = useApp();
+  const { requireAuth } = useRequireAuth();
 
   const product = getProductByEAN(ean || "");
 
@@ -321,9 +323,10 @@ export default function ProductDetailScreen() {
             <Pressable
               style={[styles.ctaCard, { backgroundColor: isDark ? C.backgroundTertiary : "#FFF8F8", borderColor: C.primary + "30" }]}
               onPress={() => {
-                if (!isLoggedIn) { Alert.alert("Login necessário", "Faça login para registrar preços."); return; }
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setShowSubmit(true);
+                requireAuth(() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setShowSubmit(true);
+                });
               }}
             >
               <Ionicons name="trophy-outline" size={20} color={C.primary} />

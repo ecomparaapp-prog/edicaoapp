@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
+import { AuthGate } from "@/components/AuthGate";
 import { validateNfce, type NfceItem } from "@/services/nfceService";
 
 /* ── Exemplos de NFC-e do Distrito Federal (estado 53) para testes ── */
@@ -103,6 +104,16 @@ export default function NFCeScannerScreen() {
   const [apiSource, setApiSource] = useState<"api" | "mock" | null>(null);
   const [itemsSource, setItemsSource] = useState<"client" | "sefaz" | "unavailable" | null>(null);
 
+  if (!user) {
+    return (
+      <AuthGate
+        title="Login necessário"
+        description="Faça login para escanear notas fiscais e acumular pontos."
+        icon="barcode-scan"
+      />
+    );
+  }
+
   const handleParse = async () => {
     const key = chNFeInput.trim().replace(/\s/g, "");
     if (key.length !== 44) {
@@ -119,7 +130,7 @@ export default function NFCeScannerScreen() {
     setItemsSource(null);
 
     // Try the real API first (validates, deduplicates, enriches via ReceitaWS)
-    const userId = user?.id ?? "anon_" + Date.now();
+    const userId = user.id;
     const mockData = MOCK_NOTAS[key];
     const apiResult = await validateNfce(key, userId, mockData?.storeId, mockData?.items);
 
