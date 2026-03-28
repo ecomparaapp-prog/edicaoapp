@@ -71,12 +71,17 @@ export default function LoginScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: C.background, paddingTop: topPad, paddingBottom: bottomPad }]}>
-      <Pressable
-        style={[styles.closeBtn, { backgroundColor: C.backgroundSecondary }]}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-      >
-        <Feather name="x" size={20} color={C.text} />
-      </Pressable>
+
+      {/* Top bar — close button fora da área do logo */}
+      <View style={styles.topBar}>
+        <Pressable
+          style={[styles.closeBtn, { backgroundColor: C.backgroundSecondary }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.replace("/(tabs)/"); }}
+          hitSlop={8}
+        >
+          <Feather name="x" size={18} color={C.text} />
+        </Pressable>
+      </View>
 
       <View style={styles.content}>
         {/* Logo */}
@@ -180,10 +185,15 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 24 },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
   closeBtn: {
-    position: "absolute", top: 60, right: 24,
     width: 36, height: 36, borderRadius: 18,
-    alignItems: "center", justifyContent: "center", zIndex: 10,
+    alignItems: "center", justifyContent: "center",
   },
   content: { flex: 1, justifyContent: "center", gap: 32 },
   logoArea: { alignItems: "center", gap: 6 },

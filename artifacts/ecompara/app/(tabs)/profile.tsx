@@ -58,8 +58,6 @@ export default function ProfileScreen() {
 
   const [editingEan, setEditingEan] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-
   const [referralData, setReferralData] = useState<{
     referralCode: string | null;
     referralCount: number;
@@ -100,6 +98,12 @@ export default function ProfileScreen() {
     if (isLoggedIn) loadReferralData();
   }, [isLoggedIn, loadReferralData]);
 
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push("/(auth)/login");
+    }
+  }, [isLoggedIn]);
+
   const handleShareReferral = async () => {
     const link = referralData?.referralLink ?? `https://ecompara.com.br/invite/${referralData?.referralCode ?? ""}`;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -123,25 +127,6 @@ export default function ProfileScreen() {
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : 90;
-
-  const handleLogin = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setLoginLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    const mockUser: User = {
-      id: "u_local_" + Date.now(),
-      name: "João da Silva",
-      email: "joao.silva@gmail.com",
-      photo: "",
-      role: "customer",
-      points: 320,
-      rank: 12,
-      totalPriceUpdates: 16,
-    };
-    await setUser(mockUser);
-    setLoginLoading(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
 
   const handleLogout = () => {
     Alert.alert("Sair", "Deseja sair da sua conta?", [
@@ -324,45 +309,7 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
           </>
-        ) : (
-          <View style={styles.notLoggedIn}>
-            <View style={[styles.loginIcon, { backgroundColor: C.backgroundSecondary }]}>
-              <Feather name="user" size={40} color={C.textMuted} />
-            </View>
-            <Text style={[styles.notLoggedTitle, { color: C.text }]}>Entre na sua conta</Text>
-            <Text style={[styles.notLoggedSub, { color: C.textMuted }]}>
-              Faça login para salvar sua lista, acompanhar o ranking e ganhar pontos
-            </Text>
-            <Pressable
-              style={[styles.googleBtn, { backgroundColor: C.primary, opacity: loginLoading ? 0.75 : 1 }]}
-              onPress={handleLogin}
-              disabled={loginLoading}
-            >
-              <Feather name={loginLoading ? "loader" : "log-in"} size={18} color="#fff" />
-              <Text style={styles.googleBtnText}>{loginLoading ? "Entrando…" : "Entrar com Google"}</Text>
-            </Pressable>
-
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, width: "100%", marginTop: 4 }}>
-              <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
-              <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.textMuted }}>ou</Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
-            </View>
-
-            <Pressable
-              style={[styles.retailerLoginBtn, { backgroundColor: isDark ? "#1A1A1A" : "#FFF", borderColor: "#8B0000" }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/(auth)/login"); }}
-            >
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#8B000015", alignItems: "center", justifyContent: "center" }}>
-                <Feather name="store" size={17} color="#8B0000" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#8B0000" }}>Lojista · Entrar com Google</Text>
-                <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted, marginTop: 1 }}>Área exclusiva para supermercados parceiros</Text>
-              </View>
-              <Feather name="chevron-right" size={16} color="#8B0000" />
-            </Pressable>
-          </View>
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -1065,13 +1012,6 @@ const styles = StyleSheet.create({
   menuIcon: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   menuLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_600SemiBold" },
   menuSub: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  notLoggedIn: { alignItems: "center", paddingTop: 60, paddingHorizontal: 32, gap: 12 },
-  loginIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  notLoggedTitle: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  notLoggedSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
-  googleBtn: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, marginTop: 8 },
-  googleBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  retailerLoginBtn: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1.5, width: "100%" },
   // Retailer Header
   retailerHeaderGrad: { paddingHorizontal: 16, paddingBottom: 14, flexDirection: "row", alignItems: "flex-end", gap: 10 },
   retailerHeaderLabel: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontFamily: "Inter_500Medium" },
