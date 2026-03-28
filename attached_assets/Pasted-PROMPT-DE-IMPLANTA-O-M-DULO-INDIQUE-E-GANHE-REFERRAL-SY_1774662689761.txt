@@ -1,0 +1,19 @@
+PROMPT DE IMPLANTAÇÃO: MÓDULO "INDIQUE E GANHE" (REFERRAL SYSTEM)
+Objetivo: Criar um sistema de indicação viral com foco em segurança de dados e limite de recompensas por usuário.
+1. MECÂNICA DE INDICAÇÃO (FRONTEND & BACKEND)
+•	Geração de Link: Cada usuário deve ter um referral_code único vinculado ao seu perfil. O app deve gerar um link dinâmico (ex: ecompara.com.br/invite/USUARIO123).
+•	Fluxo do Convidado:
+1.	O novo usuário baixa o app via link de indicação.
+2.	O sistema armazena o referral_code em cache/cookies durante o primeiro acesso.
+3.	Gatilho de Recompensa: Os pontos só são liberados quando o novo usuário finalizar o cadastro completo, incluindo a validação do CPF.
+2. REGRAS DE SEGURANÇA E ANTI-FRAUDE
+•	Validação de CPF Único: O sistema deve impedir que o mesmo CPF seja cadastrado mais de uma vez no banco de dados. Caso um CPF já existente tente se cadastrar via link de indicação, a recompensa é abortada.
+•	Limite de Conversão: Cada usuário (indicador) só pode receber pontos por no máximo 5 indicações bem-sucedidas. Após a 5ª indicação, ele pode continuar enviando o link, mas não receberá mais créditos (limite de teto para evitar abusos).
+•	Device ID Check: Além do CPF, o sistema deve validar o ID do dispositivo para evitar que múltiplos CPFs sejam criados no mesmo aparelho em sequência.
+3. LOGICA DE PONTUAÇÃO (ARENA ECOMPARA)
+•	Crédito de Pontos: Assim que o cadastro do convidado for validado, o indicador recebe automaticamente os pontos (Ex: 2.000 XP).
+•	Notificação Push: O indicador deve receber um aviso imediato: "Sua indicação foi um sucesso! Você acabou de ganhar 2.000 pontos na Arena!".
+4. REQUISITOS TÉCNICOS (BACKEND)
+•	Tabela referrals: Criar relação entre referrer_id (quem indica) e referred_id (quem entra).
+•	Constraint: Implementar contador referral_count no perfil do usuário para travar a recompensa em 5 unidades.
+•	Segurança: Utilizar criptografia ou hashes para os links de convite, evitando que usuários descubram sequências lógicas de códigos de outros perfis.

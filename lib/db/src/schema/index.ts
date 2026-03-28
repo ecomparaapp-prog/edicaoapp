@@ -8,3 +8,4 @@ export * from "./userProfiles";
 export * from "./priceReports";
 export * from "./merchantRegistrations";
 export * from "./nfceRecords";
+export * from "./referrals";

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp } from "drizzle-orm/pg-core";
 
 export const userProfilesTable = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
@@ -12,6 +12,9 @@ export const userProfilesTable = pgTable("user_profiles", {
   fullNameLocked: boolean("full_name_locked").notNull().default(false),
   cpfLocked: boolean("cpf_locked").notNull().default(false),
   profileBonusAwarded: boolean("profile_bonus_awarded").notNull().default(false),
+  referralCode: text("referral_code").unique(),
+  referralCount: integer("referral_count").notNull().default(0),
+  deviceId: text("device_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

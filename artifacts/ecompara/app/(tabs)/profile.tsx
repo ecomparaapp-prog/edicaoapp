@@ -2,7 +2,8 @@ import { Feather, MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import * as ExpoClipboard from "expo-clipboard";
 import {
   Alert,
   FlatList,
@@ -58,6 +59,67 @@ export default function ProfileScreen() {
   const [editingEan, setEditingEan] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+
+  const [referralData, setReferralData] = useState<{
+    referralCode: string | null;
+    referralCount: number;
+    maxReferrals: number;
+    canEarnMore: boolean;
+    referralLink: string | null;
+    pointsPerReferral: number;
+  } | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
+
+  const loadReferralData = useCallback(async () => {
+    if (!user?.id) return;
+    setReferralLoading(true);
+    try {
+      const apiBase = process.env.EXPO_PUBLIC_API_URL || "https://ecompara.com.br/api";
+      const res = await fetch(`${apiBase}/referral/code/${encodeURIComponent(user.id)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReferralData(data);
+      }
+    } catch {
+      // offline — use optimistic mock
+      setReferralData({
+        referralCode: null,
+        referralCount: 0,
+        maxReferrals: 5,
+        canEarnMore: true,
+        referralLink: null,
+        pointsPerReferral: 2000,
+      });
+    } finally {
+      setReferralLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (isLoggedIn) loadReferralData();
+  }, [isLoggedIn, loadReferralData]);
+
+  const handleShareReferral = async () => {
+    const link = referralData?.referralLink ?? `https://ecompara.com.br/invite/${referralData?.referralCode ?? ""}`;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await Share.share({
+        message: `🛒 Economize nas compras de supermercado com o eCompara!\nBaixe agora e ganhe pontos na Arena: ${link}`,
+        url: link,
+        title: "eCompara — Indique e Ganhe",
+      });
+    } catch {}
+  };
+
+  const handleCopyCode = () => {
+    const code = referralData?.referralCode;
+    if (!code) return;
+    ExpoClipboard.setStringAsync(code);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCopyFeedback(true);
+    setTimeout(() => setCopyFeedback(false), 2000);
+  };
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : 90;
@@ -160,6 +222,93 @@ export default function ProfileScreen() {
                 </View>
               </View>
             </Pressable>
+
+            {/* Indique e Ganhe Card */}
+            <View style={{ paddingHorizontal: 16, marginBottom: 20 }}>
+              <LinearGradient
+                colors={["#1B5E20", "#2E7D32", "#388E3C"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.referralCard}
+              >
+                <View style={styles.referralCardHeader}>
+                  <View style={styles.referralCardIconWrap}>
+                    <MaterialCommunityIcons name="account-multiple-plus" size={22} color="#fff" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.referralCardTitle}>Indique e Ganhe</Text>
+                    <Text style={styles.referralCardSub}>
+                      Ganhe {(referralData?.pointsPerReferral ?? 2000).toLocaleString("pt-BR")} XP por cada amigo que baixar o app
+                    </Text>
+                  </View>
+                  <View style={styles.referralLimitBadge}>
+                    <Text style={styles.referralLimitText}>
+                      {referralData?.referralCount ?? 0}/{referralData?.maxReferrals ?? 5}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Progress bar */}
+                <View style={styles.referralProgressBg}>
+                  <View
+                    style={[
+                      styles.referralProgressFill,
+                      {
+                        width: `${Math.min(
+                          ((referralData?.referralCount ?? 0) / (referralData?.maxReferrals ?? 5)) * 100,
+                          100
+                        )}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.referralProgressLabel}>
+                  {referralData?.canEarnMore !== false
+                    ? `Faltam ${(referralData?.maxReferrals ?? 5) - (referralData?.referralCount ?? 0)} indicações para o limite`
+                    : "Parabéns! Você atingiu o limite de recompensas"}
+                </Text>
+
+                {/* Code box */}
+                {referralData?.referralCode ? (
+                  <Pressable style={styles.referralCodeBox} onPress={handleCopyCode}>
+                    <View>
+                      <Text style={styles.referralCodeLabel}>Seu código</Text>
+                      <Text style={styles.referralCodeText}>{referralData.referralCode}</Text>
+                    </View>
+                    <View style={[styles.referralCopyBtn, copyFeedback && { backgroundColor: "rgba(255,255,255,0.3)" }]}>
+                      <Feather name={copyFeedback ? "check" : "copy"} size={14} color="#fff" />
+                      <Text style={styles.referralCopyTxt}>{copyFeedback ? "Copiado!" : "Copiar"}</Text>
+                    </View>
+                  </Pressable>
+                ) : (
+                  <View style={[styles.referralCodeBox, { justifyContent: "center" }]}>
+                    <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontFamily: "Inter_400Regular" }}>
+                      {referralLoading ? "Gerando seu código…" : "Código indisponível offline"}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Share button */}
+                <Pressable
+                  style={[styles.referralShareBtn, !referralData?.referralCode && { opacity: 0.5 }]}
+                  onPress={handleShareReferral}
+                  disabled={!referralData?.referralCode}
+                >
+                  <Feather name="share-2" size={16} color="#2E7D32" />
+                  <Text style={styles.referralShareTxt}>Compartilhar link de indicação</Text>
+                </Pressable>
+
+                {/* Earned points display */}
+                {(referralData?.referralCount ?? 0) > 0 && (
+                  <View style={styles.referralEarned}>
+                    <MaterialCommunityIcons name="star-circle" size={16} color="#FFD54F" />
+                    <Text style={styles.referralEarnedTxt}>
+                      +{((referralData?.referralCount ?? 0) * (referralData?.pointsPerReferral ?? 2000)).toLocaleString("pt-BR")} XP já ganhos
+                    </Text>
+                  </View>
+                )}
+              </LinearGradient>
+            </View>
 
             <View style={{ paddingHorizontal: 16, gap: 8 }}>
               <MenuItem icon="map-pin" label="Localização" sub="Santa Maria, DF" color={C} onPress={() => router.push("/settings/location")} />
@@ -1050,4 +1199,55 @@ const styles = StyleSheet.create({
   plusLockedSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   plusUpgradeBtn: { backgroundColor: "#FFD700", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
   plusUpgradeTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#8B6914" },
+
+  referralCard: { borderRadius: 20, padding: 18, gap: 12 },
+  referralCardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  referralCardIconWrap: {
+    width: 42, height: 42, borderRadius: 13,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center", justifyContent: "center",
+  },
+  referralCardTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },
+  referralCardSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)", marginTop: 2 },
+  referralLimitBadge: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
+  },
+  referralLimitText: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#fff" },
+  referralProgressBg: {
+    height: 6, borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    overflow: "hidden",
+  },
+  referralProgressFill: {
+    height: 6, borderRadius: 3,
+    backgroundColor: "#A5D6A7",
+  },
+  referralProgressLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.7)" },
+  referralCodeBox: {
+    backgroundColor: "rgba(0,0,0,0.25)",
+    borderRadius: 12, padding: 14,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+  },
+  referralCodeLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.6)", marginBottom: 2 },
+  referralCodeText: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#fff", letterSpacing: 2 },
+  referralCopyBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8,
+  },
+  referralCopyTxt: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#fff" },
+  referralShareBtn: {
+    backgroundColor: "#fff",
+    borderRadius: 12, padding: 14,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+  },
+  referralShareTxt: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#2E7D32" },
+  referralEarned: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "rgba(255,213,79,0.15)",
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+    alignSelf: "flex-start",
+  },
+  referralEarnedTxt: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#FFD54F" },
 });

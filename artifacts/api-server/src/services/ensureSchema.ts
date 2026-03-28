@@ -213,6 +213,31 @@ export async function ensureSchema(): Promise<void> {
       ALTER TABLE places_cache ADD COLUMN IF NOT EXISTS favorites_count INTEGER NOT NULL DEFAULT 0;
     `);
 
+    await client.query(`
+      ALTER TABLE user_profiles
+        ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE,
+        ADD COLUMN IF NOT EXISTS referral_count INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS device_id TEXT;
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS referrals (
+        id SERIAL PRIMARY KEY,
+        referrer_user_id TEXT NOT NULL,
+        referred_user_id TEXT NOT NULL UNIQUE,
+        referred_cpf TEXT NOT NULL,
+        referred_device_id TEXT,
+        points_awarded INTEGER NOT NULL DEFAULT 2000,
+        status TEXT NOT NULL DEFAULT 'completed',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals (referrer_user_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_referred_cpf ON referrals (referred_cpf);
+    `);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);
