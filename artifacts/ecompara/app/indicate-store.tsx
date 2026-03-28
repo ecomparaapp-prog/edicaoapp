@@ -41,6 +41,7 @@ export default function IndicateStoreScreen() {
   const [storeName, setStoreName] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [loadingLocation, setLoadingLocation] = useState(true);
+  const [geocoding, setGeocoding] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -84,15 +85,24 @@ export default function IndicateStoreScreen() {
   }
 
   async function reverseGeocode(lat: number, lng: number) {
+    setGeocoding(true);
+    setStoreAddress("");
     try {
       const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
       if (results.length > 0) {
         const r = results[0];
-        const parts = [r.street, r.streetNumber, r.district, r.city].filter(Boolean);
-        setStoreAddress(parts.join(", "));
+        // Build a rich address: Street Number, Street, District, City - State
+        const streetPart = [r.street, r.streetNumber].filter(Boolean).join(", ");
+        const localityPart = [r.district || r.subregion, r.city].filter(Boolean).join(" — ");
+        const statePart = r.region ? ` - ${r.region}` : "";
+        const parts = [streetPart, localityPart].filter(Boolean);
+        const formatted = parts.join(", ") + statePart;
+        setStoreAddress(formatted);
       }
     } catch {
-      // silent
+      // silent — user can type manually
+    } finally {
+      setGeocoding(false);
     }
   }
 
