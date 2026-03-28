@@ -269,6 +269,123 @@ storesRouter.post("/stores/favorite", async (req, res) => {
   res.json({ ok: true });
 });
 
+const INDICATION_POINTS = 1000;
+const FRAUD_REPORT_THRESHOLD = 3;
+
+storesRouter.post("/stores/indicate", async (req, res) => {
+  const { user_id, name, address, lat, lng, google_place_id } = req.body as {
+    user_id?: string;
+    name?: string;
+    address?: string;
+    lat?: number;
+    lng?: number;
+    google_place_id?: string;
+  };
+
+  if (!user_id || !name || lat == null || lng == null) {
+    res.status(400).json({ error: "Campos obrigatórios: user_id, name, lat, lng." });
+    return;
+  }
+
+  const placeId = google_place_id ?? `user_${user_id}_${Date.now()}`;
+
+  try {
+    // Anti-spam: check if this user already indicated this exact place
+    if (google_place_id) {
+      const existing = await db.execute(sql`
+        SELECT id FROM store_indications
+        WHERE user_id = ${user_id} AND google_place_id = ${placeId}
+        LIMIT 1
+      `);
+      if ((existing.rows as unknown[]).length > 0) {
+        res.status(409).json({ error: "Você já indicou este mercado anteriormente." });
+        return;
+      }
+    }
+
+    // Upsert into places_cache
+    await db.execute(sql`
+      INSERT INTO places_cache
+        (google_place_id, name, address, lat, lng, status, is_shadow, is_partner, indicated_by, synced_at, geom)
+      VALUES (
+        ${placeId}, ${name}, ${address ?? null}, ${lat}, ${lng},
+        'shadow', true, false, ${user_id}, NOW(),
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)
+      )
+      ON CONFLICT (google_place_id) DO NOTHING
+    `);
+
+    // Record indication and award points
+    await db.execute(sql`
+      INSERT INTO store_indications (user_id, google_place_id, store_name, points_awarded)
+      VALUES (${user_id}, ${placeId}, ${name}, ${INDICATION_POINTS})
+      ON CONFLICT (user_id, google_place_id) DO NOTHING
+    `);
+
+    console.log(`[StoreIndication] User ${user_id} indicated "${name}" (${placeId}) — +${INDICATION_POINTS}pts`);
+
+    res.status(201).json({
+      ok: true,
+      points_awarded: INDICATION_POINTS,
+      google_place_id: placeId,
+      message: "Parabéns, Explorador! Você mapeou um novo mercado para a comunidade.",
+    });
+  } catch (err) {
+    console.error("POST /stores/indicate error:", err);
+    res.status(500).json({ error: "Erro ao registrar indicação." });
+  }
+});
+
+storesRouter.post("/stores/report", async (req, res) => {
+  const { google_place_id, reporter_user_id, reason } = req.body as {
+    google_place_id?: string;
+    reporter_user_id?: string;
+    reason?: string;
+  };
+
+  if (!google_place_id || !reporter_user_id) {
+    res.status(400).json({ error: "Campos obrigatórios: google_place_id, reporter_user_id." });
+    return;
+  }
+
+  try {
+    // Insert report (unique per reporter+place)
+    await db.execute(sql`
+      INSERT INTO store_indication_reports (google_place_id, reporter_user_id, reason)
+      VALUES (${google_place_id}, ${reporter_user_id}, ${reason ?? null})
+      ON CONFLICT (reporter_user_id, google_place_id) DO NOTHING
+    `);
+
+    // Count total unique reports for this store
+    const countResult = await db.execute(sql`
+      SELECT COUNT(*) as cnt FROM store_indication_reports
+      WHERE google_place_id = ${google_place_id}
+    `);
+    const reportCount = Number((countResult.rows[0] as { cnt: string }).cnt);
+
+    // Fraud threshold: deduct points from original indicador
+    if (reportCount >= FRAUD_REPORT_THRESHOLD) {
+      await db.execute(sql`
+        UPDATE store_indications
+        SET points_deducted = TRUE, reports_count = ${reportCount}
+        WHERE google_place_id = ${google_place_id}
+          AND points_deducted = FALSE
+      `);
+      console.log(`[StoreReport] Place ${google_place_id} hit fraud threshold (${reportCount} reports) — points deducted.`);
+    } else {
+      await db.execute(sql`
+        UPDATE store_indications SET reports_count = ${reportCount}
+        WHERE google_place_id = ${google_place_id}
+      `);
+    }
+
+    res.json({ ok: true, report_count: reportCount, fraud_threshold: FRAUD_REPORT_THRESHOLD });
+  } catch (err) {
+    console.error("POST /stores/report error:", err);
+    res.status(500).json({ error: "Erro ao registrar denúncia." });
+  }
+});
+
 storesRouter.post("/stores/suggest", async (req, res) => {
   const { google_place_id, original_name, suggested_name, note } = req.body as {
     google_place_id?: string;

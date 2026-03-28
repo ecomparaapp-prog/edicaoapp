@@ -1,10 +1,10 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   ActivityIndicator,
-  FlatList,
+  Animated,
   Platform,
   Pressable,
   SectionList,
@@ -22,6 +22,51 @@ import { useApp, type Product, type Store } from "@/context/AppContext";
 
 const FAVORITES_KEY = "@ecompara_favorite_stores";
 const MAX_STORE_DISTANCE_KM = 5;
+
+function IndicateStoreBanner({ isDark, C }: { isDark: boolean; C: typeof Colors.light }) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.03, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  return (
+    <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+      <Pressable
+        style={[
+          styles.indicateBanner,
+          { backgroundColor: isDark ? "#1A2E1A" : "#E8F5E9", borderColor: isDark ? "#388E3C" : "#A5D6A7" },
+        ]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          router.push("/indicate-store");
+        }}
+      >
+        <View style={[styles.indicateIconBox, { backgroundColor: "#2E7D32" }]}>
+          <MaterialCommunityIcons name="map-marker-plus" size={20} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.indicateTitle, { color: isDark ? "#A5D6A7" : "#1B5E20" }]}>
+            Não encontrou seu mercado?
+          </Text>
+          <Text style={[styles.indicateSub, { color: isDark ? "#81C784" : "#388E3C" }]}>
+            Ganhe <Text style={{ fontFamily: "Inter_700Bold" }}>1.000 pontos</Text> indicando ele agora!
+          </Text>
+        </View>
+        <View style={[styles.indicateChevron, { backgroundColor: "#2E7D32" }]}>
+          <Feather name="chevron-right" size={14} color="#fff" />
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function SearchScreen() {
   const colorScheme = useColorScheme();
@@ -243,12 +288,14 @@ export default function SearchScreen() {
       data: storeResults,
       renderItem: renderStore,
       keyExtractor: (item: Store) => item.id,
+      showIndicateBanner: true,
     }] : []),
     ...(hasProducts ? [{
       title: "Produtos",
       data: results,
       renderItem: renderProduct,
       keyExtractor: (item: Product) => item.ean,
+      showIndicateBanner: false,
     }] : []),
   ];
 
@@ -302,6 +349,9 @@ export default function SearchScreen() {
               <>
                 <MaterialCommunityIcons name="magnify-close" size={48} color={C.textMuted} />
                 <Text style={[styles.emptyText, { color: C.textMuted }]}>Nenhum resultado encontrado</Text>
+                <View style={{ width: "100%", paddingHorizontal: 16, marginTop: 8 }}>
+                  <IndicateStoreBanner isDark={isDark} C={C} />
+                </View>
               </>
             )}
           </View>
@@ -321,6 +371,13 @@ export default function SearchScreen() {
                 </Text>
               </View>
             )}
+            renderSectionFooter={({ section }: any) =>
+              section.showIndicateBanner ? (
+                <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
+                  <IndicateStoreBanner isDark={isDark} C={C} />
+                </View>
+              ) : null
+            }
             contentContainerStyle={{ paddingBottom: bottomPad }}
             stickySectionHeadersEnabled
           />
@@ -435,6 +492,30 @@ const styles = StyleSheet.create({
   stepperBtn: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
   stepperQty: { width: 28, textAlign: "center", fontSize: 13, fontFamily: "Inter_700Bold" },
   inListLabel: { fontSize: 9, fontFamily: "Inter_600SemiBold", letterSpacing: 0.3 },
+  indicateBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  indicateIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  indicateTitle: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  indicateSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  indicateChevron: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 32 },
   emptyText: { fontSize: 15, fontFamily: "Inter_400Regular" },
   emptyHint: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, gap: 12 },

@@ -1,0 +1,31 @@
+A Lógica: "The Explorer Engine" (O Motor Explorador)
+1.	O Gatilho: Na tela de busca, se o retorno da API do eCompara for vazio ou o usuário não vir o mercado vizinho, aparece o botão: "Não encontrou seu mercado? Ganhe 1.000 pontos indicando ele agora!".
+2.	A Ponte Google Maps: O app abre um seletor de mapa (Google Maps nativo) filtrando por establishment. O usuário clica no pino do mercado pequeno.
+3.	Captura de Dados (Shadow Entry): O app captura o place_id, nome, endereço e coordenadas.
+4.	Premiação Imediata: O sistema credita os 1.000 pontos de recompensa ao usuario eCompara com a mensagem: "Parabéns, Explorador! Você mapeou um novo mercado para a comunidade."
+5.	Persistência: Esse mercado sai do "limbo" do Google e entra no seu banco de dados PostgreSQL. A partir daí, ele é Propriedade de Dados do eCompara.
+ 
+🚀 PROMPT DE IMPLANTAÇÃO: MÓDULO DE INDICAÇÃO E IMPORTAÇÃO GEOGRÁFICA
+Contexto do Projeto: App eCompara (Flutter + NestJS + PostgreSQL/PostGIS). Objetivo: Implementar funcionalidade de "Crowdsourced Mapping" para cadastrar mercados que não aparecem nos filtros padrão da API.
+ 
+1. REQUISITOS DE FRONTEND (FLUTTER)
+•	Interface de Busca: Adicionar widget EmptyState ou botão flutuante Add_Missing_Store quando a lista de resultados for insuficiente.
+•	Integração de Mapa: Abrir Google Maps Pick Location permitindo ao usuário selecionar um pino de estabelecimento existente no Google Maps.
+•	Payload de Envio: Enviar ao backend o google_place_id, formatted_address, geometry (lat/lng) e name.
+•	Feedback de Gamificação: Exibir animação de "Level Up" ou "Pontos Recebidos" (+1.000 XP) após a confirmação do servidor.
+2. REQUISITOS DE BACKEND (NESTJS)
+•	Endpoint: POST /stores/import-from-google.
+•	Lógica de Validação (Anti-Spam):
+o	Verificar se o place_id já existe no banco local (evitar duplicidade de pontos).
+o	Validar se o place_type retornado pelo Google é compatível (Store, Food, Establishment).
+•	Persistência de Dados:
+o	Salvar no banco como status: SHADOW (mercado não parceiro).
+o	Vincular o user_id que indicou para fins de ranking e auditoria.
+•	Integração com Gamificação:
+o	Chamar o serviço PointsService.add(userId, 1000, 'STORE_INDICATION_BONUS').
+3. REQUISITOS DE BANCO DE DADOS (POSTGIS)
+•	Tabela stores: Garantir que a coluna google_place_id seja um INDEX UNIQUE.
+•	Geolocalização: Salvar a coordenada no formato GEOGRAPHY(POINT, 4326) para cálculos de distância ultra-rápidos via ST_Distance.
+4. REGRAS DE NEGÓCIO
+•	O mercado importado deve ficar disponível imediatamente para todos os usuários num raio de 10km.
+•	Se o mercado importado for um "mercado fantasma" (fechado ou inexistente, e adicione estas opções no menu opções, dentro das observações), permitir que outros usuários denunciem. Se 3 denúncias forem confirmadas, o indicador perde os 1.000 pontos (Punição por Fraude).

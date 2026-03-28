@@ -183,6 +183,36 @@ export async function ensureSchema(): Promise<void> {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS store_indications (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        google_place_id TEXT NOT NULL,
+        store_name TEXT NOT NULL,
+        points_awarded INTEGER NOT NULL DEFAULT 1000,
+        reports_count INTEGER NOT NULL DEFAULT 0,
+        points_deducted BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(user_id, google_place_id)
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS store_indication_reports (
+        id SERIAL PRIMARY KEY,
+        google_place_id TEXT NOT NULL,
+        reporter_user_id TEXT NOT NULL,
+        reason TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(reporter_user_id, google_place_id)
+      );
+    `);
+
+    await client.query(`
+      ALTER TABLE places_cache ADD COLUMN IF NOT EXISTS indicated_by TEXT;
+      ALTER TABLE places_cache ADD COLUMN IF NOT EXISTS favorites_count INTEGER NOT NULL DEFAULT 0;
+    `);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);

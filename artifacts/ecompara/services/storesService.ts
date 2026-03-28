@@ -55,6 +55,65 @@ export async function fetchNearbyStores(
   }
 }
 
+export interface IndicateStoreRequest {
+  user_id: string;
+  name: string;
+  address?: string;
+  lat: number;
+  lng: number;
+  google_place_id?: string;
+}
+
+export interface IndicateStoreResult {
+  ok: boolean;
+  points_awarded?: number;
+  google_place_id?: string;
+  message?: string;
+  error?: string;
+}
+
+export async function indicateStore(payload: IndicateStoreRequest): Promise<IndicateStoreResult> {
+  const base = getApiBaseUrl();
+  try {
+    const res = await fetch(`${base}/stores/indicate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json() as IndicateStoreResult;
+    if (!res.ok) return { ok: false, error: data.error ?? "Erro ao registrar indicação." };
+    return { ok: true, points_awarded: data.points_awarded, google_place_id: data.google_place_id, message: data.message };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erro de conexão." };
+  }
+}
+
+export interface ReportStoreResult {
+  ok: boolean;
+  report_count?: number;
+  error?: string;
+}
+
+export async function reportStore(
+  google_place_id: string,
+  reporter_user_id: string,
+  reason?: string,
+): Promise<ReportStoreResult> {
+  const base = getApiBaseUrl();
+  try {
+    const res = await fetch(`${base}/stores/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ google_place_id, reporter_user_id, reason }),
+    });
+    const data = await res.json() as ReportStoreResult;
+    if (!res.ok) return { ok: false, error: data.error ?? "Erro ao registrar denúncia." };
+    return { ok: true, report_count: data.report_count };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erro de conexão." };
+  }
+}
+
 export async function submitPartnershipClaim(
   claim: ClaimRequest,
 ): Promise<{ ok: boolean; error?: string }> {
