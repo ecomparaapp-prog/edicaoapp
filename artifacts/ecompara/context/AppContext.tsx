@@ -233,6 +233,7 @@ export const MOCK_PRODUCTS: Product[] = [
     { storeId: "4", storeName: "Atacadão", price: 7.49, distance: 2.3, updatedAt: "2026-03-25", lat: -15.8610, lng: -47.9930 },
   ]},
   { ean: "7891000310755", name: "Açúcar Cristal União 1kg", brand: "União", category: "Condimentos", prices: [
+    { storeId: "1", storeName: "Tatico", price: 5.19, distance: 0.6, updatedAt: "2026-03-26", lat: -15.8620, lng: -47.9975 },
     { storeId: "2", storeName: "Comper", price: 4.89, distance: 1.1, updatedAt: "2026-03-25", lat: -15.8645, lng: -47.9955 },
     { storeId: "3", storeName: "Sup. São Paulo", price: 4.49, distance: 1.7, updatedAt: "2026-03-25", lat: -15.8660, lng: -47.9940 },
     { storeId: "6", storeName: "Assaí", price: 3.99, distance: 3.8, updatedAt: "2026-03-25", lat: -15.8590, lng: -47.9920 },
@@ -246,6 +247,28 @@ export const MOCK_PRODUCTS: Product[] = [
     { storeId: "1", storeName: "Tatico", price: 7.49, distance: 0.6, updatedAt: "2026-03-25", lat: -15.8620, lng: -47.9975 },
     { storeId: "3", storeName: "Sup. São Paulo", price: 6.99, distance: 1.7, updatedAt: "2026-03-25", lat: -15.8660, lng: -47.9940 },
     { storeId: "6", storeName: "Assaí", price: 6.49, distance: 3.8, updatedAt: "2026-03-25", lat: -15.8590, lng: -47.9920 },
+  ]},
+  /* ── Produtos para testar "sem preço disponível" + sugestão de similar ── */
+  { ean: "7896000512450", name: "Macarrão Espaguete Barilla 500g", brand: "Barilla", category: "Massas", prices: [] },
+  { ean: "7891024138014", name: "Sabão em Pó OMO Lavagem Perfeita 1kg", brand: "OMO", category: "Limpeza", prices: [] },
+  /* ── Similares com preço cadastrado (aparecem como sugestão) ── */
+  { ean: "7891903065701", name: "Macarrão Espaguete Nissin 500g", brand: "Nissin", category: "Massas", prices: [
+    { storeId: "1", storeName: "Tatico", price: 3.29, distance: 0.6, updatedAt: "2026-03-26", lat: -15.8620, lng: -47.9975 },
+    { storeId: "2", storeName: "Comper", price: 2.99, distance: 1.1, updatedAt: "2026-03-25", lat: -15.8645, lng: -47.9955 },
+    { storeId: "3", storeName: "Sup. São Paulo", price: 3.15, distance: 1.7, updatedAt: "2026-03-25", lat: -15.8660, lng: -47.9940 },
+  ]},
+  { ean: "7896098900023", name: "Macarrão Parafuso Adria 500g", brand: "Adria", category: "Massas", prices: [
+    { storeId: "1", storeName: "Tatico", price: 3.59, distance: 0.6, updatedAt: "2026-03-26", lat: -15.8620, lng: -47.9975 },
+    { storeId: "4", storeName: "Atacadão", price: 2.89, distance: 2.3, updatedAt: "2026-03-25", lat: -15.8610, lng: -47.9930 },
+  ]},
+  { ean: "7896016604061", name: "Detergente Ypê 500ml", brand: "Ypê", category: "Limpeza", prices: [
+    { storeId: "1", storeName: "Tatico", price: 2.49, distance: 0.6, updatedAt: "2026-03-26", lat: -15.8620, lng: -47.9975 },
+    { storeId: "2", storeName: "Comper", price: 2.29, distance: 1.1, updatedAt: "2026-03-25", lat: -15.8645, lng: -47.9955 },
+    { storeId: "3", storeName: "Sup. São Paulo", price: 2.39, distance: 1.7, updatedAt: "2026-03-25", lat: -15.8660, lng: -47.9940 },
+  ]},
+  { ean: "7891150038515", name: "Limpador Multiuso Flash 500ml", brand: "Flash", category: "Limpeza", prices: [
+    { storeId: "2", storeName: "Comper", price: 4.79, distance: 1.1, updatedAt: "2026-03-25", lat: -15.8645, lng: -47.9955 },
+    { storeId: "5", storeName: "Baratão", price: 4.29, distance: 3.0, updatedAt: "2026-03-25", lat: -15.8680, lng: -47.9985 },
   ]},
 ];
 

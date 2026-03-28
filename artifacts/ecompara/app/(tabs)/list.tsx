@@ -35,6 +35,7 @@ type StrategyResult = {
 };
 
 type Strategies = {
+  bestCoverageStore: (StrategyResult & { isComplete: boolean; totalItems: number }) | null;
   cheapestStore: StrategyResult | null;
   cheapestMix: {
     total: number;
@@ -42,13 +43,29 @@ type Strategies = {
     breakdown: { name: string; price: number; storeName: string }[];
   };
   nearestStore: StrategyResult | null;
+  noMatchItems: ShoppingItem[];
 };
 
 function calcStrategies(items: ShoppingItem[], products: Product[], stores: Store[]): Strategies | null {
   const withEan = items.filter((i) => i.eanCode);
   if (withEan.length === 0) return null;
+
+  // Items with no price in any store
+  const noMatchItems = withEan.filter((item) => {
+    const prod = products.find((p) => p.ean === item.eanCode);
+    return !prod || prod.prices.length === 0;
+  });
+
+  // Only items that have prices somewhere
+  const pricedItems = withEan.filter((item) => {
+    const prod = products.find((p) => p.ean === item.eanCode);
+    return prod && prod.prices.length > 0;
+  });
+
+  if (pricedItems.length === 0) return { bestCoverageStore: null, cheapestStore: null, cheapestMix: { total: 0, stores: [], breakdown: [] }, nearestStore: null, noMatchItems };
+
   const storeMap: Record<string, { storeName: string; distance: number; total: number; coverage: number; breakdown: { name: string; price: number; storeName: string }[] }> = {};
-  withEan.forEach((item) => {
+  pricedItems.forEach((item) => {
     const prod = products.find((p) => p.ean === item.eanCode);
     if (!prod) return;
     prod.prices.forEach((pr) => {
@@ -61,14 +78,24 @@ function calcStrategies(items: ShoppingItem[], products: Product[], stores: Stor
       storeMap[pr.storeId].breakdown.push({ name: item.productName, price: pr.price, storeName: pr.storeName });
     });
   });
+
   const storeResults: StrategyResult[] = Object.entries(storeMap).map(([storeId, v]) => ({ storeId, ...v }));
-  const fullCoverage = storeResults.filter((s) => s.coverage === withEan.length);
+
+  // Best coverage store: most items first, then cheapest as tiebreak
+  const sortedByCoverage = [...storeResults].sort((a, b) => b.coverage - a.coverage || a.total - b.total);
+  const topStore = sortedByCoverage[0] ?? null;
+  const bestCoverageStore = topStore
+    ? { ...topStore, isComplete: topStore.coverage === pricedItems.length, totalItems: pricedItems.length }
+    : null;
+
+  const fullCoverage = storeResults.filter((s) => s.coverage === pricedItems.length);
   const s1Pool = fullCoverage.length ? fullCoverage : storeResults;
   const cheapestStore = s1Pool.reduce<StrategyResult | null>((best, s) => (!best || s.total < best.total ? s : best), null);
+
   let mixTotal = 0;
   const mixBreakdown: { name: string; price: number; storeName: string }[] = [];
   const mixStoreSet = new Set<string>();
-  withEan.forEach((item) => {
+  pricedItems.forEach((item) => {
     const prod = products.find((p) => p.ean === item.eanCode);
     if (!prod || !prod.prices.length) return;
     const cheapest = prod.prices.reduce((a, b) => (b.price < a.price ? b : a));
@@ -76,8 +103,28 @@ function calcStrategies(items: ShoppingItem[], products: Product[], stores: Stor
     mixBreakdown.push({ name: item.productName, price: cheapest.price, storeName: cheapest.storeName });
     mixStoreSet.add(cheapest.storeName);
   });
+
   const nearestStore = storeResults.reduce<StrategyResult | null>((near, s) => (!near || s.distance < near.distance ? s : near), null);
-  return { cheapestStore, cheapestMix: { total: mixTotal, stores: [...mixStoreSet], breakdown: mixBreakdown }, nearestStore };
+  return { bestCoverageStore, cheapestStore, cheapestMix: { total: mixTotal, stores: [...mixStoreSet], breakdown: mixBreakdown }, nearestStore, noMatchItems };
+}
+
+function findSimilarProducts(item: ShoppingItem, allProducts: Product[]): Product[] {
+  const itemProduct = allProducts.find((p) => p.ean === item.eanCode);
+  if (!itemProduct) return [];
+  const nameWords = itemProduct.name.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+  const scored = allProducts
+    .filter((p) => p.ean !== item.eanCode && p.prices.length > 0)
+    .map((p) => {
+      let score = 0;
+      if (p.category === itemProduct.category) score += 3;
+      const pWords = p.name.toLowerCase().split(/\s+/);
+      nameWords.forEach((w) => { if (pWords.some((pw) => pw.includes(w) || w.includes(pw))) score += 1; });
+      return { product: p, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ product }) => product);
+  return scored.slice(0, 3);
 }
 
 function formatDuration(secs: number): string {
@@ -321,21 +368,44 @@ export default function ShoppingListScreen() {
           </View>
         )}
 
-        {/* 3 Strategies */}
-        {strategies && listData.length > 0 && (
+        {/* Best store for list (shown first, always prominent) */}
+        {strategies?.bestCoverageStore && listData.length > 0 && (
           <View style={{ marginTop: 20, paddingHorizontal: 16 }}>
             <View style={styles.stratHeader}>
+              <MaterialCommunityIcons name="trophy-outline" size={16} color={strategies.bestCoverageStore.isComplete ? "#2E7D32" : "#E65100"} />
+              <Text style={[styles.stratTitle, { color: C.text }]}>Melhor mercado para sua lista</Text>
+            </View>
+            <BestStoreCard store={strategies.bestCoverageStore} C={C} isDark={isDark}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.bestCoverageStore!.storeId}`); }} />
+          </View>
+        )}
+
+        {/* No-match items with similar suggestions */}
+        {strategies?.noMatchItems && strategies.noMatchItems.length > 0 && (
+          <NoMatchSection noMatchItems={strategies.noMatchItems} products={products} C={C} isDark={isDark}
+            onSwap={(oldItem, newProd) => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              const cheapest = newProd.prices.reduce((a, b) => (b.price < a.price ? b : a));
+              removeFromShoppingList(oldItem.id);
+              addToShoppingList({ eanCode: newProd.ean, productName: newProd.name, quantity: oldItem.quantity, checked: false, bestPrice: cheapest.price, bestStore: cheapest.storeName });
+            }} />
+        )}
+
+        {/* 3 Strategies */}
+        {strategies && listData.length > 0 && (strategies.cheapestStore || strategies.cheapestMix.total > 0 || strategies.nearestStore) && (
+          <View style={{ marginTop: 16, paddingHorizontal: 16 }}>
+            <View style={styles.stratHeader}>
               <Feather name="zap" size={15} color={C.primary} />
-              <Text style={[styles.stratTitle, { color: C.text }]}>Melhores opções de compra</Text>
+              <Text style={[styles.stratTitle, { color: C.text }]}>Outras opções de compra</Text>
             </View>
             {strategies.cheapestStore && (
-              <StrategyCard icon="tag" label="Mais barato em um mercado" storeNames={strategies.cheapestStore.storeName} total={strategies.cheapestStore.total} badge={strategies.cheapestStore.coverage < shoppingList.filter(i => i.eanCode).length ? `${strategies.cheapestStore.coverage} de ${shoppingList.filter(i => i.eanCode).length} itens` : undefined} distance={`${strategies.cheapestStore.distance}km`} accentColor={C.primary} C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.cheapestStore!.storeId}`); }} />
+              <StrategyCard icon="tag" label="Mais barato em um mercado" storeNames={strategies.cheapestStore.storeName} total={strategies.cheapestStore.total} badge={strategies.bestCoverageStore && strategies.cheapestStore.coverage < strategies.bestCoverageStore.totalItems ? `${strategies.cheapestStore.coverage} de ${strategies.bestCoverageStore.totalItems} itens` : undefined} distance={`${strategies.cheapestStore.distance}km`} accentColor={C.primary} C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.cheapestStore!.storeId}`); }} />
             )}
             {strategies.cheapestMix.total > 0 && (
               <StrategyCard icon="layers" label="Mais barato item a item" storeNames={strategies.cheapestMix.stores.join(", ")} total={strategies.cheapestMix.total} badge="Múltiplos mercados" accentColor="#1B5E20" C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/(tabs)/search"); }} />
             )}
             {strategies.nearestStore && (
-              <StrategyCard icon="navigation" label="Mercado mais próximo" storeNames={strategies.nearestStore.storeName} total={strategies.nearestStore.total} distance={`${strategies.nearestStore.distance}km`} badge={strategies.nearestStore.coverage < shoppingList.filter(i => i.eanCode).length ? `${strategies.nearestStore.coverage} de ${shoppingList.filter(i => i.eanCode).length} itens` : undefined} accentColor="#0D47A1" C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.nearestStore!.storeId}`); }} />
+              <StrategyCard icon="navigation" label="Mercado mais próximo" storeNames={strategies.nearestStore.storeName} total={strategies.nearestStore.total} distance={`${strategies.nearestStore.distance}km`} badge={strategies.bestCoverageStore && strategies.nearestStore.coverage < strategies.bestCoverageStore.totalItems ? `${strategies.nearestStore.coverage} de ${strategies.bestCoverageStore.totalItems} itens` : undefined} accentColor="#0D47A1" C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.nearestStore!.storeId}`); }} />
             )}
           </View>
         )}
@@ -570,6 +640,121 @@ function ItemRow({ item, C, onToggle, onRemove, onQuantityChange }: {
   );
 }
 
+/* ─── BestStoreCard ─── */
+
+function BestStoreCard({
+  store, C, isDark, onPress,
+}: {
+  store: StrategyResult & { isComplete: boolean; totalItems: number };
+  C: ThemeColors;
+  isDark: boolean;
+  onPress: () => void;
+}) {
+  const green = "#2E7D32";
+  const orange = "#E65100";
+  const accentColor = store.isComplete ? green : orange;
+  return (
+    <Pressable
+      style={[styles.bestCard, { backgroundColor: accentColor + "12", borderColor: accentColor + "40" }]}
+      onPress={onPress}
+    >
+      <View style={[styles.bestIconBox, { backgroundColor: accentColor + "20" }]}>
+        <MaterialCommunityIcons name={store.isComplete ? "check-all" : "store-check-outline"} size={26} color={accentColor} />
+      </View>
+      <View style={{ flex: 1, gap: 3 }}>
+        <Text style={[styles.bestStoreName, { color: C.text }]} numberOfLines={1}>{store.storeName}</Text>
+        <View style={styles.bestMeta}>
+          <View style={[styles.bestBadge, { backgroundColor: accentColor }]}>
+            <MaterialCommunityIcons name={store.isComplete ? "check-circle-outline" : "numeric"} size={11} color="#fff" />
+            <Text style={styles.bestBadgeTxt}>
+              {store.isComplete ? `Tem todos os ${store.totalItems} itens!` : `${store.coverage} de ${store.totalItems} itens`}
+            </Text>
+          </View>
+          {store.distance > 0 && (
+            <View style={styles.bestDistChip}>
+              <Feather name="map-pin" size={10} color={C.textMuted} />
+              <Text style={[styles.bestDistTxt, { color: C.textMuted }]}>{store.distance}km</Text>
+            </View>
+          )}
+        </View>
+      </View>
+      <View style={styles.bestRight}>
+        <Text style={[styles.bestTotal, { color: accentColor }]}>R$ {store.total.toFixed(2).replace(".", ",")}</Text>
+        <Pressable style={[styles.bestBtn, { backgroundColor: accentColor }]} onPress={onPress}>
+          <Feather name="arrow-right" size={13} color="#fff" />
+          <Text style={styles.bestBtnTxt}>Ver</Text>
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+}
+
+/* ─── NoMatchSection ─── */
+
+function NoMatchSection({
+  noMatchItems, products, C, isDark, onSwap,
+}: {
+  noMatchItems: ShoppingItem[];
+  products: Product[];
+  C: ThemeColors;
+  isDark: boolean;
+  onSwap: (oldItem: ShoppingItem, newProd: Product) => void;
+}) {
+  return (
+    <View style={{ marginTop: 20, paddingHorizontal: 16 }}>
+      <View style={styles.stratHeader}>
+        <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#E65100" />
+        <Text style={[styles.stratTitle, { color: C.text }]}>Sem preço disponível</Text>
+      </View>
+      {noMatchItems.map((item) => {
+        const similares = findSimilarProducts(item, products);
+        return (
+          <View key={item.id} style={[styles.noMatchCard, { backgroundColor: isDark ? "#1A1A1A" : "#FFF8F5", borderColor: "#E6510030" }]}>
+            <View style={styles.noMatchHeader}>
+              <MaterialCommunityIcons name="package-variant-remove" size={16} color="#E65100" />
+              <Text style={[styles.noMatchName, { color: C.text }]} numberOfLines={1}>{item.productName}</Text>
+              <View style={[styles.noMatchBadge]}>
+                <Text style={styles.noMatchBadgeTxt}>Sem preço</Text>
+              </View>
+            </View>
+            {similares.length > 0 && (
+              <>
+                <Text style={[styles.similarLabel, { color: C.textMuted }]}>Produtos similares disponíveis:</Text>
+                {similares.map((prod) => {
+                  const cheapest = prod.prices.reduce((a, b) => (b.price < a.price ? b : a));
+                  return (
+                    <Pressable
+                      key={prod.ean}
+                      style={[styles.similarRow, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}
+                      onPress={() => onSwap(item, prod)}
+                    >
+                      <View style={[styles.similarIcon, { backgroundColor: "#1565C018" }]}>
+                        <Feather name="box" size={13} color="#1565C0" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.similarName, { color: C.text }]} numberOfLines={1}>{prod.name}</Text>
+                        <Text style={[styles.similarBrand, { color: C.textMuted }]}>{prod.brand} · {cheapest.storeName}</Text>
+                      </View>
+                      <Text style={[styles.similarPrice, { color: "#1565C0" }]}>R$ {cheapest.price.toFixed(2).replace(".", ",")}</Text>
+                      <View style={styles.swapBtn}>
+                        <Feather name="refresh-cw" size={11} color="#fff" />
+                        <Text style={styles.swapBtnTxt}>Trocar</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </>
+            )}
+            {similares.length === 0 && (
+              <Text style={[styles.similarLabel, { color: C.textMuted }]}>Nenhum similar encontrado no catálogo.</Text>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 type StrategyCardProps = {
   icon: React.ComponentProps<typeof Feather>["name"];
   label: string;
@@ -712,6 +897,33 @@ const styles = StyleSheet.create({
   resultPtsLabel: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   resultBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 13, borderRadius: 14 },
   resultBtnTxt: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  /* best store card */
+  bestCard: { flexDirection: "row", alignItems: "center", borderRadius: 18, padding: 16, borderWidth: 1.5, gap: 12, marginBottom: 4 },
+  bestIconBox: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  bestStoreName: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  bestMeta: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" },
+  bestBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  bestBadgeTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
+  bestDistChip: { flexDirection: "row", alignItems: "center", gap: 3 },
+  bestDistTxt: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  bestRight: { alignItems: "flex-end", gap: 8 },
+  bestTotal: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  bestBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 9 },
+  bestBtnTxt: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  /* no match section */
+  noMatchCard: { borderRadius: 16, padding: 14, borderWidth: 1, marginBottom: 10, gap: 10 },
+  noMatchHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  noMatchName: { flex: 1, fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  noMatchBadge: { backgroundColor: "#E6510020", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  noMatchBadgeTxt: { color: "#E65100", fontSize: 10, fontFamily: "Inter_700Bold" },
+  similarLabel: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 4 },
+  similarRow: { flexDirection: "row", alignItems: "center", borderRadius: 12, padding: 10, borderWidth: 1, gap: 10 },
+  similarIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  similarName: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  similarBrand: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  similarPrice: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  swapBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#1565C0", paddingHorizontal: 9, paddingVertical: 6, borderRadius: 8 },
+  swapBtnTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
   /* strategies */
   stratHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
   stratTitle: { fontSize: 15, fontFamily: "Inter_700Bold" },
