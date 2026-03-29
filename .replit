@@ -68,11 +68,4 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-PLACES_MONTHLY_CALL_LIMIT = "200"
-NODE_ENV = "production"
-MAILTRAP_HOST = "sandbox.smtp.mailtrap.io"
-MAILTRAP_PORT = "2525"
-MAIL_FROM_NAME = "eCompara"
-MAIL_FROM_ADDRESS = "noreply@ecompara.com.br"
-MAILTRAP_USER = "1a604916f6bdc4"
-ADMIN_PASSWORD = "admin123"
+ADMIN_PASSWORD = "Admin@2026!"
