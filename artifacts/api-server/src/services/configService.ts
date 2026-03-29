@@ -6,21 +6,54 @@ export const CONFIGURABLE_KEYS = [
   "GOOGLE_PLACES_KEY",
   "COSMOS_TOKEN",
   "PLACES_MONTHLY_CALL_LIMIT",
+  "MAIL_FROM_NAME",
+  "MAIL_FROM_ADDRESS",
+  "MAILTRAP_HOST",
+  "MAILTRAP_PORT",
+  "MAILTRAP_USER",
+  "MAILTRAP_PASS",
 ] as const;
 
 export type ConfigKey = (typeof CONFIGURABLE_KEYS)[number];
+
+export const CONFIG_GROUPS: Record<string, ConfigKey[]> = {
+  "Integrações Externas": ["GOOGLE_PLACES_KEY", "COSMOS_TOKEN", "PLACES_MONTHLY_CALL_LIMIT"],
+  "E-mail — Remetente": ["MAIL_FROM_NAME", "MAIL_FROM_ADDRESS"],
+  "E-mail — Servidor SMTP": ["MAILTRAP_HOST", "MAILTRAP_PORT", "MAILTRAP_USER", "MAILTRAP_PASS"],
+};
 
 const CONFIG_LABELS: Record<ConfigKey, string> = {
   GOOGLE_PLACES_KEY: "Google Places API Key",
   COSMOS_TOKEN: "Token Bluesoft Cosmos (EAN)",
   PLACES_MONTHLY_CALL_LIMIT: "Limite mensal de chamadas (Google Places)",
+  MAIL_FROM_NAME: "Nome do remetente",
+  MAIL_FROM_ADDRESS: "E-mail remetente (from)",
+  MAILTRAP_HOST: "Servidor SMTP (host)",
+  MAILTRAP_PORT: "Porta SMTP",
+  MAILTRAP_USER: "Usuário SMTP",
+  MAILTRAP_PASS: "Senha SMTP",
 };
 
 const CONFIG_DESCRIPTIONS: Record<ConfigKey, string> = {
   GOOGLE_PLACES_KEY: "Chave de API do Google Places usada para buscar lojas próximas.",
   COSMOS_TOKEN: "Token de autenticação para a API Bluesoft Cosmos de busca por código de barras (EAN).",
   PLACES_MONTHLY_CALL_LIMIT: "Número máximo de chamadas mensais à API do Google Places. Padrão: 200.",
+  MAIL_FROM_NAME: "Nome exibido como remetente nos e-mails. Ex: eCompara",
+  MAIL_FROM_ADDRESS: "Endereço de e-mail do remetente. Use seu e-mail temporário para testes (Gmail, Yahoo etc.) e troque antes da produção.",
+  MAILTRAP_HOST: "Host do servidor SMTP. Mailtrap sandbox: sandbox.smtp.mailtrap.io",
+  MAILTRAP_PORT: "Porta SMTP. Recomendado: 587 (STARTTLS). Outras opções: 25, 465, 2525.",
+  MAILTRAP_USER: "Usuário de autenticação SMTP fornecido pelo Mailtrap.",
+  MAILTRAP_PASS: "Senha de autenticação SMTP fornecida pelo Mailtrap.",
 };
+
+// Campos não-sensíveis: exibir valor completo no painel
+const PLAIN_TEXT_KEYS: ConfigKey[] = [
+  "PLACES_MONTHLY_CALL_LIMIT",
+  "MAIL_FROM_NAME",
+  "MAIL_FROM_ADDRESS",
+  "MAILTRAP_HOST",
+  "MAILTRAP_PORT",
+];
 
 export async function getConfig(key: ConfigKey): Promise<string | undefined> {
   try {
@@ -97,7 +130,7 @@ export async function getAllConfigStatus(): Promise<
 }
 
 function maskSecret(key: ConfigKey, value: string): string {
-  if (key === "PLACES_MONTHLY_CALL_LIMIT") return value;
+  if (PLAIN_TEXT_KEYS.includes(key)) return value;
   if (value.length <= 8) return "••••••••";
   return value.slice(0, 4) + "••••••••" + value.slice(-4);
 }

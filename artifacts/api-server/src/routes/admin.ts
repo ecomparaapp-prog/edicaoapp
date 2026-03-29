@@ -12,6 +12,7 @@ import {
   setConfig,
   deleteConfig,
   CONFIGURABLE_KEYS,
+  CONFIG_GROUPS,
   type ConfigKey,
 } from "../services/configService";
 import { sendClaimInvitation } from "../services/emailService";
@@ -308,7 +309,11 @@ adminRouter.post("/admin/merchant-registrations/:id/reject", async (req, res) =>
 adminRouter.get("/admin/config", async (_req, res) => {
   try {
     const configs = await getAllConfigStatus();
-    res.json({ configs });
+    const groups = Object.entries(CONFIG_GROUPS).map(([groupName, keys]) => ({
+      name: groupName,
+      items: configs.filter((c) => keys.includes(c.key as ConfigKey)),
+    }));
+    res.json({ configs, groups });
   } catch (err) {
     console.error("GET /admin/config error:", err);
     res.status(500).json({ error: "Erro ao obter configurações." });

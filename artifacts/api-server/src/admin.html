@@ -627,36 +627,46 @@
       not_set:  '<span class="badge badge-red">não configurado</span>',
     };
 
+    function renderConfigRow(c) {
+      const escapedLabel = c.label.replace(/'/g, "\\'");
+      const escapedDesc = c.description.replace(/'/g, "\\'");
+      return `
+        <div class="config-row">
+          <div class="config-meta">
+            <strong>${c.label}</strong>
+            <small>${c.description}</small>
+          </div>
+          ${c.isSet
+            ? `<span class="config-value">${c.value ?? '••••••••'}</span>${SOURCE_LABEL[c.source]}`
+            : SOURCE_LABEL['not_set']
+          }
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="btn-gray btn-small" onclick="openConfigModal('${c.key}','${escapedLabel}','${escapedDesc}')">
+              ${c.isSet ? 'Alterar' : 'Definir'}
+            </button>
+            ${c.source === 'database'
+              ? `<button class="btn-gray btn-small" onclick="resetConfig('${c.key}', this)" title="Remover valor do banco e usar variável de ambiente">↩ Reverter</button>`
+              : ''
+            }
+          </div>
+        </div>`;
+    }
+
     async function loadConfig() {
       document.getElementById('config-list').innerHTML = '<span class="empty">Carregando…</span>';
       try {
         const r = await apiFetch(`${BASE}/admin/config`);
         const d = await r.json();
         if (!r.ok) throw new Error(d.error ?? 'Erro');
-        const configs = d.configs;
-        if (!configs || configs.length === 0) {
+        const groups = d.groups;
+        if (!groups || groups.length === 0) {
           document.getElementById('config-list').innerHTML = '<span class="empty">Nenhuma configuração disponível.</span>';
           return;
         }
-        document.getElementById('config-list').innerHTML = configs.map(c => `
-          <div class="config-row">
-            <div class="config-meta">
-              <strong>${c.label}</strong>
-              <small>${c.description}</small>
-            </div>
-            ${c.isSet
-              ? `<span class="config-value">${c.value ?? '••••••••'}</span>${SOURCE_LABEL[c.source]}`
-              : SOURCE_LABEL['not_set']
-            }
-            <div style="display:flex;gap:6px;flex-shrink:0">
-              <button class="btn-gray btn-small" onclick="openConfigModal('${c.key}','${c.label}','${c.description}')">
-                ${c.isSet ? 'Alterar' : 'Definir'}
-              </button>
-              ${c.source === 'database'
-                ? `<button class="btn-gray btn-small" onclick="resetConfig('${c.key}', this)" title="Remover valor do banco e usar variável de ambiente">↩ Reverter</button>`
-                : ''
-              }
-            </div>
+        document.getElementById('config-list').innerHTML = groups.map(g => `
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.8px;padding:10px 0 6px;">${g.name}</div>
+            ${g.items.map(renderConfigRow).join('')}
           </div>
         `).join('');
       } catch(e) {

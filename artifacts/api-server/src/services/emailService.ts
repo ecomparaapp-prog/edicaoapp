@@ -1,10 +1,12 @@
 import nodemailer from "nodemailer";
+import { getConfig } from "./configService";
 
-function createTransporter() {
-  const host = process.env["MAILTRAP_HOST"] ?? "sandbox.smtp.mailtrap.io";
-  const port = parseInt(process.env["MAILTRAP_PORT"] ?? "587", 10);
-  const user = process.env["MAILTRAP_USER"];
-  const pass = process.env["MAILTRAP_PASS"];
+async function createTransporter() {
+  const host = (await getConfig("MAILTRAP_HOST")) ?? process.env["MAILTRAP_HOST"] ?? "sandbox.smtp.mailtrap.io";
+  const portStr = (await getConfig("MAILTRAP_PORT")) ?? process.env["MAILTRAP_PORT"] ?? "587";
+  const port = parseInt(portStr, 10);
+  const user = (await getConfig("MAILTRAP_USER")) ?? process.env["MAILTRAP_USER"];
+  const pass = (await getConfig("MAILTRAP_PASS")) ?? process.env["MAILTRAP_PASS"];
 
   if (!user || !pass) {
     console.warn("[Email] MAILTRAP_USER ou MAILTRAP_PASS não configurados — e-mails não serão enviados.");
@@ -19,6 +21,12 @@ function createTransporter() {
   });
 }
 
+async function getFromAddress(): Promise<{ name: string; addr: string }> {
+  const name = (await getConfig("MAIL_FROM_NAME")) ?? process.env["MAIL_FROM_NAME"] ?? "eCompara";
+  const addr = (await getConfig("MAIL_FROM_ADDRESS")) ?? process.env["MAIL_FROM_ADDRESS"] ?? "noreply@ecompara.com.br";
+  return { name, addr };
+}
+
 export interface SendVerificationCodeOptions {
   to: string;
   storeName: string;
@@ -27,15 +35,14 @@ export interface SendVerificationCodeOptions {
 }
 
 export async function sendVerificationCode(opts: SendVerificationCodeOptions): Promise<boolean> {
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   if (!transporter) {
     console.log(`[Email] (sem transporter) Código de verificação para ${opts.to}: ${opts.code}`);
     return false;
   }
 
-  const fromName = process.env["MAIL_FROM_NAME"] ?? "eCompara";
-  const fromAddr = process.env["MAIL_FROM_ADDRESS"] ?? "noreply@ecompara.com.br";
+  const { name: fromName, addr: fromAddr } = await getFromAddress();
 
   try {
     const info = await transporter.sendMail({
@@ -124,15 +131,15 @@ export interface SendClaimInvitationOptions {
 }
 
 export async function sendClaimInvitation(opts: SendClaimInvitationOptions): Promise<boolean> {
-  const transporter = createTransporter();
-  const fromName = process.env["MAIL_FROM_NAME"] ?? "eCompara";
-  const fromAddr = process.env["MAIL_FROM_ADDRESS"] ?? "noreply@ecompara.com.br";
+  const transporter = await createTransporter();
   const appLink = `ecompara://merchant-register?registration_id=${opts.registrationId}`;
 
   if (!transporter) {
     console.log(`[Email] (sem transporter) Convite de claim para ${opts.to} — registrationId: ${opts.registrationId}`);
     return false;
   }
+
+  const { name: fromName, addr: fromAddr } = await getFromAddress();
 
   try {
     const info = await transporter.sendMail({
