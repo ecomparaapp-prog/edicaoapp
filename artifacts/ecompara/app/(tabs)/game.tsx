@@ -74,57 +74,90 @@ function getRankColor(rank: number) {
 
 function PointsTableSheet({ visible, onClose, C, isDark }: { visible: boolean; onClose: () => void; C: typeof Colors.light; isDark: boolean }) {
   const { height: screenHeight } = useWindowDimensions();
-  const slideAnim = useRef(new Animated.Value(800)).current;
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     if (visible) {
-      Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
+      Animated.parallel([
+        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 60, friction: 12, overshootClamping: false }),
+        Animated.timing(backdropAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]).start();
     } else {
-      Animated.timing(slideAnim, { toValue: 800, duration: 220, useNativeDriver: true }).start();
+      Animated.parallel([
+        Animated.timing(slideAnim, { toValue: screenHeight, duration: 260, useNativeDriver: true }),
+        Animated.timing(backdropAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      ]).start();
     }
   }, [visible]);
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={[styles.sheetOverlay, { backgroundColor: C.overlay }]} onPress={onClose}>
-        <Animated.View
-          style={[styles.sheetContainer, { backgroundColor: C.surface, transform: [{ translateY: slideAnim }] }]}
-          onStartShouldSetResponder={() => true}
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      {/* Backdrop — tapping it closes the sheet */}
+      <Animated.View
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: C.overlay, opacity: backdropAnim }]}
+        pointerEvents={visible ? "auto" : "none"}
+      >
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+      </Animated.View>
+
+      {/* Sheet — sits at the bottom, never blocks its own scroll */}
+      <Animated.View
+        style={[
+          styles.sheetContainer,
+          {
+            backgroundColor: C.surface,
+            transform: [{ translateY: slideAnim }],
+            maxHeight: screenHeight * 0.82,
+          },
+        ]}
+      >
+        {/* Drag handle */}
+        <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
+
+        {/* Header */}
+        <View style={styles.sheetHeader}>
+          <Text style={[styles.sheetTitle, { color: C.text }]}>Como Pontuar</Text>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Feather name="x" size={22} color={C.textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Scrollable content — gets full gesture ownership */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          bounces
+          alwaysBounceVertical
+          overScrollMode="always"
+          nestedScrollEnabled
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 48 }}
         >
-          <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
-          <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: C.text }]}>Como Pontuar</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Feather name="x" size={22} color={C.textMuted} />
-            </TouchableOpacity>
+          <View style={[styles.ruleBox, { backgroundColor: isDark ? "#1A1A00" : "#FFFBEA", borderColor: "#D4AF37" + "60" }]}>
+            <Feather name="info" size={13} color="#D4AF37" />
+            <Text style={[styles.ruleText, { color: C.textSecondary }]}>
+              Fim de semana: Cupons valem 1.2x XP  •  Máx. 3 confirmações/hora  •  Trava GPS: ações OCR/Check a até 200m
+            </Text>
           </View>
-          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: screenHeight * 0.65 }} contentContainerStyle={{ paddingBottom: 40 }}>
-            <View style={[styles.ruleBox, { backgroundColor: isDark ? "#1A1A00" : "#FFFBEA", borderColor: "#D4AF37" + "60" }]}>
-              <Feather name="info" size={13} color="#D4AF37" />
-              <Text style={[styles.ruleText, { color: C.textSecondary }]}>
-                Fim de semana: Cupons valem 1.2x XP  •  Máx. 3 confirmações/hora  •  Trava GPS: ações OCR/Check a até 200m
-              </Text>
-            </View>
-            {POINTS_TABLE.map((row, i) => (
-              <View key={i} style={[styles.tableRow, { borderColor: C.border, backgroundColor: i % 2 === 0 ? C.surface : (isDark ? "#161616" : "#FAFAFA") }]}>
-                <View style={[styles.tableIcon, { backgroundColor: C.primary + "18" }]}>
-                  <Feather name="zap" size={13} color={C.primary} />
-                </View>
-                <View style={{ flex: 1, gap: 3 }}>
-                  <Text style={[styles.tableAction, { color: C.text }]}>{row.action}</Text>
-                  <Text style={[styles.tableBase, { color: C.primary }]}>{row.base}</Text>
-                  {row.bonus ? (
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <Feather name="star" size={10} color="#D4AF37" />
-                      <Text style={[styles.tableBonus, { color: C.textSecondary }]}>{row.bonus}</Text>
-                    </View>
-                  ) : null}
-                </View>
+          {POINTS_TABLE.map((row, i) => (
+            <View key={i} style={[styles.tableRow, { borderColor: C.border, backgroundColor: i % 2 === 0 ? C.surface : (isDark ? "#161616" : "#FAFAFA") }]}>
+              <View style={[styles.tableIcon, { backgroundColor: C.primary + "18" }]}>
+                <Feather name="zap" size={13} color={C.primary} />
               </View>
-            ))}
-          </ScrollView>
-        </Animated.View>
-      </Pressable>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={[styles.tableAction, { color: C.text }]}>{row.action}</Text>
+                <Text style={[styles.tableBase, { color: C.primary }]}>{row.base}</Text>
+                {row.bonus ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Feather name="star" size={10} color="#D4AF37" />
+                    <Text style={[styles.tableBonus, { color: C.textSecondary }]}>{row.bonus}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </Animated.View>
     </Modal>
   );
 }
@@ -774,7 +807,21 @@ const styles = StyleSheet.create({
   redeemHeaderTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
   redeemHeaderSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
   sheetOverlay: { flex: 1, justifyContent: "flex-end" },
-  sheetContainer: { borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 0 },
+  sheetContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 16,
+  },
   sheetHandle: { width: 38, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
   sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   sheetTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
