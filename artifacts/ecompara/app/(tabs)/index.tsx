@@ -1,6 +1,7 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import * as Location from "expo-location";
 import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -27,8 +28,8 @@ import type { ClaimRequest } from "@/services/storesService";
 import { fetchNearbyMissions, type NearbyMission } from "@/services/missionService";
 import HomeAdBanner from "@/components/HomeAdBanner";
 
-const DEFAULT_LAT = -15.8634;
-const DEFAULT_LNG = -47.9968;
+const FALLBACK_LAT = -15.8634;
+const FALLBACK_LNG = -47.9968;
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -57,11 +58,31 @@ export default function HomeScreen() {
   const bottomPad = isWeb ? 84 : (insets.bottom ? insets.bottom + 60 : 80);
 
   useEffect(() => {
-    loadNearbyStores(DEFAULT_LAT, DEFAULT_LNG, 50);
-    setMissionsLoading(true);
-    fetchNearbyMissions(DEFAULT_LAT, DEFAULT_LNG, 2)
-      .then(setMissions)
-      .finally(() => setMissionsLoading(false));
+    async function loadWithLocation() {
+      let lat = FALLBACK_LAT;
+      let lng = FALLBACK_LNG;
+
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const pos = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+        }
+      } catch {
+        // sem permissão ou erro: usa fallback silenciosamente
+      }
+
+      loadNearbyStores(lat, lng, 50);
+      setMissionsLoading(true);
+      fetchNearbyMissions(lat, lng, 2)
+        .then(setMissions)
+        .finally(() => setMissionsLoading(false));
+    }
+
+    loadWithLocation();
   }, []);
 
   const handleClaim = async () => {

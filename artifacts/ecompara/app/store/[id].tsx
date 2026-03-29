@@ -268,98 +268,94 @@ export default function StoreScreen() {
 
       {/* Ações principais */}
       <View style={[styles.actionsBar, { backgroundColor: C.backgroundSecondary, borderBottomColor: C.border }]}>
-        {/* Favoritar — sempre visível, movido para cá para não sobrepor info do header */}
-        <Pressable
-          onPress={toggleFavorite}
-          style={[styles.actionBtn, { backgroundColor: isFavorite ? "#FFF0F0" : (isDark ? "#2A2A2A" : "#EFEFEF"), borderWidth: 1, borderColor: isFavorite ? "#E53935" : C.border }]}
-          hitSlop={8}
-        >
-          <Ionicons
-            name={isFavorite ? "heart" : "heart-outline"}
-            size={15}
-            color={isFavorite ? "#E53935" : C.textSecondary}
-          />
-          <Text style={[styles.actionBtnText, { color: isFavorite ? "#E53935" : C.textSecondary }]} numberOfLines={1}>
-            {isFavorite ? "Favoritado" : "Favoritar"}
-          </Text>
-        </Pressable>
-
         {store.isVerified ? (
-          /* Parceiro verificado: botão "Preço Incorreto" no lugar de Cadastrar */
-          <Pressable
-            style={[styles.actionBtn, { backgroundColor: C.primary, flex: 1 }]}
-            onPress={() => {
-              requireAuth(() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push({
-                  pathname: "/register-price",
-                  params: {
-                    preselectedPlaceId: store.id,
-                    preselectedPlaceName: store.name,
-                    isCorrection: "true",
-                  },
-                });
-              });
-            }}
-          >
-            <Feather name="alert-triangle" size={13} color="#fff" />
-            <Text style={styles.actionBtnText} numberOfLines={1}>Preço Incorreto</Text>
-          </Pressable>
-        ) : (
-          /* Não-parceiro: Cadastrar + Meu Negócio + Sugerir */
-          <>
+          /* Parceiro verificado: linha única com Favoritar + Cadastrar preço */
+          <View style={styles.actionsRow}>
             <Pressable
-              style={[styles.actionBtn, { backgroundColor: C.primary, flex: 1 }]}
+              onPress={toggleFavorite}
+              style={[styles.actionBtnSecondary, { backgroundColor: isFavorite ? "#FFF0F0" : (isDark ? "#2A2A2A" : "#EFEFEF"), borderColor: isFavorite ? "#E53935" : C.border }]}
+              hitSlop={8}
+            >
+              <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={16} color={isFavorite ? "#E53935" : C.textSecondary} />
+              <Text style={[styles.actionBtnSecondaryText, { color: isFavorite ? "#E53935" : C.textSecondary }]}>
+                {isFavorite ? "Favoritado" : "Favoritar"}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.actionBtnPrimary, { backgroundColor: C.primary, flex: 1 }]}
               onPress={() => {
                 requireAuth(() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   router.push({
                     pathname: "/register-price",
-                    params: {
-                      preselectedPlaceId: store.id,
-                      preselectedPlaceName: store.name,
-                    },
+                    params: { preselectedPlaceId: store.id, preselectedPlaceName: store.name, isCorrection: "true" },
                   });
                 });
               }}
             >
-              <MaterialIcon name="barcode-scan" color="#fff" />
-              <Text style={styles.actionBtnText} numberOfLines={1}>Cadastrar</Text>
+              <Feather name="alert-triangle" size={15} color="#fff" />
+              <Text style={styles.actionBtnPrimaryText}>Cadastrar Preço</Text>
             </Pressable>
-
-            <Pressable
-              style={[styles.actionBtn, { backgroundColor: "#8B0000" }]}
-              onPress={() => {
-                requireAuth(() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  router.push({
-                    pathname: "/merchant-register",
-                    params: {
-                      googlePlaceId: store.id,
-                      placeName: store.name,
-                      placeLat: String(store.lat),
-                      placeLng: String(store.lng),
-                    },
+          </View>
+        ) : (
+          /* Não-parceiro: 2 linhas — principal em cima, secundários embaixo */
+          <>
+            <View style={styles.actionsRow}>
+              <Pressable
+                style={[styles.actionBtnPrimary, { backgroundColor: C.primary, flex: 1 }]}
+                onPress={() => {
+                  requireAuth(() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    router.push({
+                      pathname: "/register-price",
+                      params: { preselectedPlaceId: store.id, preselectedPlaceName: store.name },
+                    });
                   });
-                });
-              }}
-            >
-              <Feather name="briefcase" size={13} color="#fff" />
-              <Text style={styles.actionBtnText} numberOfLines={1}>Meu Negócio</Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.actionBtn, { backgroundColor: isDark ? "#2A2A2A" : "#EFEFEF", borderWidth: 1, borderColor: C.border }]}
-              onPress={() => {
-                requireAuth(() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowSuggestModal(true);
-                });
-              }}
-            >
-              <Feather name="edit-2" size={13} color={C.textSecondary} />
-              <Text style={[styles.actionBtnText, { color: C.textSecondary }]} numberOfLines={1}>Sugerir</Text>
-            </Pressable>
+                }}
+              >
+                <MaterialIcon name="barcode-scan" color="#fff" />
+                <Text style={styles.actionBtnPrimaryText}>Cadastrar Preço</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.actionBtnPrimary, { backgroundColor: "#8B0000", flex: 1 }]}
+                onPress={() => {
+                  requireAuth(() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    router.push({
+                      pathname: "/merchant-register",
+                      params: { googlePlaceId: store.id, placeName: store.name, placeLat: String(store.lat), placeLng: String(store.lng) },
+                    });
+                  });
+                }}
+              >
+                <Feather name="briefcase" size={15} color="#fff" />
+                <Text style={styles.actionBtnPrimaryText}>Meu Negócio</Text>
+              </Pressable>
+            </View>
+            <View style={[styles.actionsRow, { marginTop: 8 }]}>
+              <Pressable
+                onPress={toggleFavorite}
+                style={[styles.actionBtnSecondary, { flex: 1, backgroundColor: isFavorite ? "#FFF0F0" : (isDark ? "#2A2A2A" : "#EFEFEF"), borderColor: isFavorite ? "#E53935" : C.border }]}
+                hitSlop={8}
+              >
+                <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={16} color={isFavorite ? "#E53935" : C.textSecondary} />
+                <Text style={[styles.actionBtnSecondaryText, { color: isFavorite ? "#E53935" : C.textSecondary }]}>
+                  {isFavorite ? "Favoritado" : "Favoritar"}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.actionBtnSecondary, { flex: 1, backgroundColor: isDark ? "#2A2A2A" : "#EFEFEF", borderColor: C.border }]}
+                onPress={() => {
+                  requireAuth(() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowSuggestModal(true);
+                  });
+                }}
+              >
+                <Feather name="edit-2" size={16} color={C.textSecondary} />
+                <Text style={[styles.actionBtnSecondaryText, { color: C.textSecondary }]}>Sugerir Correção</Text>
+              </Pressable>
+            </View>
           </>
         )}
       </View>
@@ -587,22 +583,37 @@ const styles = StyleSheet.create({
   verifiedLink: { flexDirection: "row", alignItems: "center", gap: 4 },
   verifiedLinkText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   actionsBar: {
-    flexDirection: "row",
-    gap: 8,
+    flexDirection: "column",
+    gap: 0,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
-  actionBtn: {
+  actionsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionBtnPrimary: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    borderRadius: 10,
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 13,
+    borderRadius: 12,
   },
-  actionBtnText: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  actionBtnPrimaryText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
+  actionBtnSecondary: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  actionBtnSecondaryText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   shadowNotice: {
     flexDirection: "row",
     alignItems: "flex-start",

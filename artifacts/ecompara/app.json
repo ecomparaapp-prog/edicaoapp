@@ -15,14 +15,23 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.ecompara.app"
+      "bundleIdentifier": "com.ecompara.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "O eCompara usa sua localização para mostrar supermercados próximos a você.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "O eCompara usa sua localização em segundo plano para notificar sobre missões próximas."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0A0A0A"
       },
-      "package": "com.ecompara.app"
+      "package": "com.ecompara.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -35,7 +44,15 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "O eCompara usa sua localização para mostrar supermercados e missões próximas a você.",
+          "locationAlwaysPermission": "O eCompara usa sua localização em segundo plano para notificar sobre missões próximas.",
+          "locationWhenInUsePermission": "O eCompara usa sua localização para mostrar supermercados próximos a você."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
