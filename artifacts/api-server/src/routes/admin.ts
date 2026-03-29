@@ -14,6 +14,7 @@ import {
   CONFIGURABLE_KEYS,
   type ConfigKey,
 } from "../services/configService";
+import { sendClaimInvitation } from "../services/emailService";
 
 const adminRouter = Router();
 
@@ -131,11 +132,121 @@ adminRouter.get("/admin/partnerships", async (_req, res) => {
     const requests = await db
       .select()
       .from(partnershipRequestsTable)
-      .orderBy(partnershipRequestsTable.createdAt);
+      .orderBy(desc(partnershipRequestsTable.createdAt));
     res.json({ requests });
   } catch (err) {
     console.error("GET /admin/partnerships error:", err);
     res.status(500).json({ error: "Erro ao listar pedidos." });
+  }
+});
+
+adminRouter.post("/admin/partnerships/:id/approve", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
+
+  const { note } = req.body as { note?: string };
+
+  try {
+    const claims = await db
+      .select()
+      .from(partnershipRequestsTable)
+      .where(eq(partnershipRequestsTable.id, id))
+      .limit(1);
+
+    if (claims.length === 0) {
+      res.status(404).json({ error: "Pedido não encontrado." });
+      return;
+    }
+
+    const claim = claims[0];
+
+    if (claim.status !== "pending") {
+      res.status(409).json({ error: `Pedido já foi ${claim.status === "approved" ? "aprovado" : "rejeitado"}.` });
+      return;
+    }
+
+    // Criar cadastro de comerciante pré-preenchido com status pending_completion
+    const [registration] = await db
+      .insert(merchantRegistrationsTable)
+      .values({
+        googlePlaceId: claim.googlePlaceId,
+        nomeFantasia: claim.placeName,
+        ownerName: claim.requesterName,
+        verificationMethod: "email",
+        verificationContact: claim.requesterEmail,
+        status: "pending_completion",
+      })
+      .returning();
+
+    // Atualizar o claim com status aprovado e link para o cadastro criado
+    await db
+      .update(partnershipRequestsTable)
+      .set({
+        status: "approved",
+        adminNote: note ?? null,
+        convertedRegistrationId: registration.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(partnershipRequestsTable.id, id));
+
+    // Enviar e-mail de convite ao proprietário
+    const emailSent = await sendClaimInvitation({
+      to: claim.requesterEmail,
+      ownerName: claim.requesterName,
+      storeName: claim.placeName,
+      registrationId: registration.id,
+    });
+
+    console.log(`[Admin] Claim #${id} aprovado → registration #${registration.id} criado. E-mail: ${emailSent ? "enviado" : "falhou"}`);
+
+    res.json({
+      ok: true,
+      registrationId: registration.id,
+      emailSent,
+    });
+  } catch (err) {
+    console.error("POST /admin/partnerships/:id/approve error:", err);
+    res.status(500).json({ error: "Erro ao aprovar pedido." });
+  }
+});
+
+adminRouter.post("/admin/partnerships/:id/reject", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
+
+  const { note } = req.body as { note?: string };
+
+  try {
+    const claims = await db
+      .select()
+      .from(partnershipRequestsTable)
+      .where(eq(partnershipRequestsTable.id, id))
+      .limit(1);
+
+    if (claims.length === 0) {
+      res.status(404).json({ error: "Pedido não encontrado." });
+      return;
+    }
+
+    if (claims[0].status !== "pending") {
+      res.status(409).json({ error: "Pedido já foi processado." });
+      return;
+    }
+
+    await db
+      .update(partnershipRequestsTable)
+      .set({
+        status: "rejected",
+        adminNote: note ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(partnershipRequestsTable.id, id));
+
+    console.log(`[Admin] Claim #${id} rejeitado.`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /admin/partnerships/:id/reject error:", err);
+    res.status(500).json({ error: "Erro ao rejeitar pedido." });
   }
 });
 

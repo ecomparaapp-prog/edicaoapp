@@ -380,6 +380,27 @@ export async function ensureSchema(): Promise<void> {
       ON CONFLICT (action) DO NOTHING;
     `);
 
+    // ── Claim → Merchant Registration migration support ───────────────────────
+    await client.query(`
+      ALTER TABLE partnership_requests
+        ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending',
+        ADD COLUMN IF NOT EXISTS admin_note TEXT,
+        ADD COLUMN IF NOT EXISTS converted_registration_id INTEGER,
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    `);
+
+    await client.query(`
+      ALTER TABLE merchant_registrations
+        ALTER COLUMN cnpj DROP NOT NULL,
+        ALTER COLUMN razao_social DROP NOT NULL,
+        ALTER COLUMN nome_fantasia DROP NOT NULL;
+    `);
+
+    await client.query(`
+      ALTER TABLE merchant_registrations
+        ADD COLUMN IF NOT EXISTS owner_name TEXT;
+    `);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);

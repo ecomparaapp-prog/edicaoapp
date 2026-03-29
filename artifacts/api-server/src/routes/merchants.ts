@@ -117,9 +117,51 @@ merchantsRouter.get("/merchants/cnpj/:cnpj", async (req, res) => {
   }
 });
 
-// POST /api/merchants/register — create registration (pending_verification)
+// GET /api/merchants/registration/:id — fetch pre-filled registration (pending_completion)
+merchantsRouter.get("/merchants/registration/:id", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido." });
+    return;
+  }
+
+  try {
+    const rows = await db
+      .select()
+      .from(merchantRegistrationsTable)
+      .where(eq(merchantRegistrationsTable.id, id))
+      .limit(1);
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: "Cadastro não encontrado." });
+      return;
+    }
+
+    const reg = rows[0];
+
+    if (reg.status !== "pending_completion") {
+      res.status(410).json({ error: "Este cadastro não está aguardando conclusão." });
+      return;
+    }
+
+    res.json({
+      id: reg.id,
+      googlePlaceId: reg.googlePlaceId,
+      nomeFantasia: reg.nomeFantasia,
+      ownerName: reg.ownerName,
+      verificationContact: reg.verificationContact,
+      status: reg.status,
+    });
+  } catch (err) {
+    console.error("GET /merchants/registration/:id error:", err);
+    res.status(500).json({ error: "Erro ao buscar cadastro." });
+  }
+});
+
+// POST /api/merchants/register — create or complete registration
 merchantsRouter.post("/merchants/register", async (req, res) => {
   const {
+    registrationId,
     googlePlaceId,
     cnpj,
     razaoSocial,
@@ -162,39 +204,91 @@ merchantsRouter.post("/merchants/register", async (req, res) => {
   }
 
   const code = Math.floor(1000 + Math.random() * 9000).toString();
+  const isDev = process.env.NODE_ENV === "development";
 
   try {
-    const [registration] = await db
-      .insert(merchantRegistrationsTable)
-      .values({
-        googlePlaceId: googlePlaceId ?? null,
-        cnpj: cnpjNorm,
-        razaoSocial,
-        nomeFantasia,
-        inscricaoEstadual: inscricaoEstadual ?? null,
-        cep: cep ?? null,
-        address: address ?? null,
-        lat: lat != null ? String(lat) : null,
-        lng: lng != null ? String(lng) : null,
-        operatingHours: operatingHours ?? null,
-        phone: phone ?? null,
-        whatsapp: whatsapp ?? null,
-        parking: parking ?? "none",
-        cardBrands: cardBrands ?? [],
-        delivery: delivery ?? "none",
-        logoUrl: logoUrl ?? null,
-        verificationMethod,
-        verificationContact,
-        verificationCode: code,
-        status: "pending_verification",
-      })
-      .returning();
+    let registration;
 
-    const isDev = process.env.NODE_ENV === "development";
+    // Se vier um registrationId, completar cadastro pré-aprovado (pending_completion)
+    if (registrationId) {
+      const existing = await db
+        .select()
+        .from(merchantRegistrationsTable)
+        .where(eq(merchantRegistrationsTable.id, Number(registrationId)))
+        .limit(1);
+
+      if (existing.length === 0) {
+        res.status(404).json({ error: "Cadastro pré-aprovado não encontrado." });
+        return;
+      }
+
+      if (existing[0].status !== "pending_completion") {
+        res.status(409).json({ error: "Este cadastro não está aguardando conclusão." });
+        return;
+      }
+
+      const [updated] = await db
+        .update(merchantRegistrationsTable)
+        .set({
+          cnpj: cnpjNorm,
+          razaoSocial,
+          nomeFantasia,
+          inscricaoEstadual: inscricaoEstadual ?? null,
+          cep: cep ?? null,
+          address: address ?? null,
+          lat: lat != null ? String(lat) : null,
+          lng: lng != null ? String(lng) : null,
+          operatingHours: operatingHours ?? null,
+          phone: phone ?? null,
+          whatsapp: whatsapp ?? null,
+          parking: parking ?? "none",
+          cardBrands: cardBrands ?? [],
+          delivery: delivery ?? "none",
+          logoUrl: logoUrl ?? null,
+          verificationMethod,
+          verificationContact,
+          verificationCode: code,
+          status: "pending_verification",
+          updatedAt: new Date(),
+        })
+        .where(eq(merchantRegistrationsTable.id, Number(registrationId)))
+        .returning();
+
+      registration = updated;
+      console.log(`[Merchant] Claim concluído → registration #${registration.id} atualizado para pending_verification`);
+    } else {
+      // Novo cadastro padrão
+      const [inserted] = await db
+        .insert(merchantRegistrationsTable)
+        .values({
+          googlePlaceId: googlePlaceId ?? null,
+          cnpj: cnpjNorm,
+          razaoSocial,
+          nomeFantasia,
+          inscricaoEstadual: inscricaoEstadual ?? null,
+          cep: cep ?? null,
+          address: address ?? null,
+          lat: lat != null ? String(lat) : null,
+          lng: lng != null ? String(lng) : null,
+          operatingHours: operatingHours ?? null,
+          phone: phone ?? null,
+          whatsapp: whatsapp ?? null,
+          parking: parking ?? "none",
+          cardBrands: cardBrands ?? [],
+          delivery: delivery ?? "none",
+          logoUrl: logoUrl ?? null,
+          verificationMethod,
+          verificationContact,
+          verificationCode: code,
+          status: "pending_verification",
+        })
+        .returning();
+
+      registration = inserted;
+    }
 
     console.log(`[Merchant] Verification code for registration #${registration.id}: ${code}`);
 
-    // Enviar código por e-mail via Mailtrap (ou outro SMTP configurado)
     if (verificationMethod === "email") {
       await sendVerificationCode({
         to: verificationContact,

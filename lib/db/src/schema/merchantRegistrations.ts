@@ -29,6 +29,7 @@ export type ParkingType = "none" | "free" | "paid";
 export type DeliveryType = "none" | "own" | "app";
 export type VerificationMethod = "email" | "phone";
 export type RegistrationStatus =
+  | "pending_completion"
   | "pending_verification"
   | "pending_approval"
   | "approved"
@@ -39,10 +40,11 @@ export const merchantRegistrationsTable = pgTable("merchant_registrations", {
 
   googlePlaceId: text("google_place_id"),
 
-  cnpj: text("cnpj").notNull(),
-  razaoSocial: text("razao_social").notNull(),
-  nomeFantasia: text("nome_fantasia").notNull(),
+  cnpj: text("cnpj"),
+  razaoSocial: text("razao_social"),
+  nomeFantasia: text("nome_fantasia"),
   inscricaoEstadual: text("inscricao_estadual"),
+  ownerName: text("owner_name"),
 
   cep: text("cep"),
   address: text("address"),
