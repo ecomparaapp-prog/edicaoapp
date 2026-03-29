@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "eCompara",
+    "name": "ecompara",
     "slug": "ecompara",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,13 +14,15 @@
       "backgroundColor": "#0A0A0A"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ecompara.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0A0A0A"
-      }
+      },
+      "package": "com.ecompara.app"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
