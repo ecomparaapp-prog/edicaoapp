@@ -289,19 +289,22 @@ merchantsRouter.post("/merchants/register", async (req, res) => {
 
     console.log(`[Merchant] Verification code for registration #${registration.id}: ${code}`);
 
+    let emailPreviewUrl: string | undefined;
     if (verificationMethod === "email") {
-      await sendVerificationCode({
+      const emailResult = await sendVerificationCode({
         to: verificationContact,
         storeName: nomeFantasia,
         code,
         registrationId: registration.id,
       });
+      emailPreviewUrl = emailResult.previewUrl;
     }
 
     res.status(201).json({
       ok: true,
       registrationId: registration.id,
       ...(isDev ? { _devCode: code } : {}),
+      ...(emailPreviewUrl ? { _emailPreviewUrl: emailPreviewUrl } : {}),
     });
   } catch (err) {
     console.error("POST /merchants/register error:", err);
@@ -395,17 +398,23 @@ merchantsRouter.post("/merchants/resend", async (req, res) => {
     console.log(`[Merchant] Resent verification code for registration #${registrationId}: ${newCode}`);
 
     // Reenviar por e-mail se o método de verificação for e-mail
+    let resendPreviewUrl: string | undefined;
     if (reg.verificationMethod === "email" && reg.verificationContact) {
-      await sendVerificationCode({
+      const emailResult = await sendVerificationCode({
         to: reg.verificationContact,
         storeName: reg.nomeFantasia,
         code: newCode,
         registrationId,
       });
+      resendPreviewUrl = emailResult.previewUrl;
     }
 
     const isDev = process.env.NODE_ENV === "development";
-    res.json({ ok: true, ...(isDev ? { _devCode: newCode } : {}) });
+    res.json({
+      ok: true,
+      ...(isDev ? { _devCode: newCode } : {}),
+      ...(resendPreviewUrl ? { _emailPreviewUrl: resendPreviewUrl } : {}),
+    });
   } catch (err) {
     console.error("POST /merchants/resend error:", err);
     res.status(500).json({ error: "Erro ao reenviar código." });

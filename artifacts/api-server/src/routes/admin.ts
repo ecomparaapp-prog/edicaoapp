@@ -191,19 +191,20 @@ adminRouter.post("/admin/partnerships/:id/approve", async (req, res) => {
       .where(eq(partnershipRequestsTable.id, id));
 
     // Enviar e-mail de convite ao proprietário
-    const emailSent = await sendClaimInvitation({
+    const emailResult = await sendClaimInvitation({
       to: claim.requesterEmail,
       ownerName: claim.requesterName,
       storeName: claim.placeName,
       registrationId: registration.id,
     });
 
-    console.log(`[Admin] Claim #${id} aprovado → registration #${registration.id} criado. E-mail: ${emailSent ? "enviado" : "falhou"}`);
+    console.log(`[Admin] Claim #${id} aprovado → registration #${registration.id} criado. E-mail: ${emailResult.sent ? "enviado" : "falhou"}`);
 
     res.json({
       ok: true,
       registrationId: registration.id,
-      emailSent,
+      emailSent: emailResult.sent,
+      ...(emailResult.previewUrl ? { emailPreviewUrl: emailResult.previewUrl } : {}),
     });
   } catch (err) {
     console.error("POST /admin/partnerships/:id/approve error:", err);
