@@ -30,7 +30,6 @@ const MOCK_ALERTS = [
   { id: "a1", type: "price_report", product: "Leite Parmalat 1L", reported: "R$ 4,89", current: "R$ 5,49", reporter: "Ana S.", time: "Há 12 min", urgent: true },
   { id: "a2", type: "price_report", product: "Arroz Tio João 5kg", reported: "R$ 21,90", current: "R$ 24,90", reporter: "Carlos R.", time: "Há 38 min", urgent: true },
   { id: "a3", type: "verification", product: "Coca-Cola 2L", reported: "R$ 8,49", current: "R$ 9,99", reporter: "Pedro L.", time: "Há 1h", urgent: false },
-  { id: "a4", type: "new_claim", product: "", reported: "", current: "", reporter: "Marcos N.", time: "Há 2h", urgent: false },
 ];
 
 const MOCK_RECENT_ACTIVITY = [
@@ -842,21 +841,6 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
             </View>
           ))}
 
-          <Text style={[styles.sectionLabel, { color: C.textMuted, marginTop: 6 }]}>SOLICITAÇÕES DE PARCERIA</Text>
-          {MOCK_ALERTS.filter((a) => a.type === "new_claim").map((alert) => (
-            <View key={alert.id} style={[styles.alertCard, { backgroundColor: C.surfaceElevated, borderColor: C.border, borderLeftColor: "#2196F3", borderLeftWidth: 3 }]}>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={[styles.alertProduct, { color: C.text }]}>Solicitação de revindicação</Text>
-                <Text style={[styles.alertMeta, { color: C.textMuted }]}>Usuário {alert.reporter} reivindica ser dono desta loja · {alert.time}</Text>
-              </View>
-              <View style={{ gap: 6, marginLeft: 8 }}>
-                <TouchableOpacity style={[styles.alertBtn, { backgroundColor: "#2196F3" }]} onPress={() => Alert.alert("Em análise", "A solicitação será analisada pela equipe eCompara.")}>
-                  <Feather name="eye" size={13} color="#fff" />
-                  <Text style={styles.alertBtnText}>Ver</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
         </ScrollView>
       )}
 
