@@ -237,6 +237,48 @@
         </div>
       </div>
 
+      <!-- Prize Tiers -->
+      <div class="card">
+        <div class="card-header">
+          <h2>🏆 Prêmios Semanais — Tiers</h2>
+          <button class="btn-gray btn-small" onclick="loadPrizeTiers()">Atualizar</button>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:#666;margin-bottom:16px">
+            Configure os valores de prêmio (R$) por posição no ranking semanal. O cron executa toda sexta-feira às 00:00 BRT.
+          </p>
+          <div id="prize-tiers-body"><span class="empty">Carregando…</span></div>
+          <div class="msg" id="prize-tiers-msg"></div>
+        </div>
+      </div>
+
+      <!-- Weekly Winners -->
+      <div class="card">
+        <div class="card-header">
+          <h2>🥇 Vencedores Semanais</h2>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="winners-week-select" onchange="loadWeeklyWinners()" style="width:auto;font-size:12px;padding:6px 10px">
+              <option value="">Todas as semanas</option>
+            </select>
+            <button class="btn-gray btn-small" onclick="loadWeeklyWinners()">Atualizar</button>
+            <button class="btn-red btn-small" onclick="runManualSnapshot(this)">Snapshot Manual</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Semana</th><th>Posição</th><th>Usuário</th><th>Pontos</th><th>Prêmio</th><th>Status / Chave PIX</th><th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="winners-body"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="msg" id="winners-msg"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -262,6 +304,7 @@
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
       loadConfig(); loadCredit(); loadZones(); loadMerchantRegistrations(); loadPartnerships();
+      loadPrizeTiers(); loadWeeklyWinners();
     }
 
     function showLogin() {
@@ -663,6 +706,150 @@
       } catch(err) {
         showMsg('config-msg', err.message ?? 'Erro ao reverter.', false);
         btn.disabled = false;
+      }
+    }
+
+    // ── Prêmios Semanais ──────────────────────────────────────────
+    async function loadPrizeTiers() {
+      document.getElementById('prize-tiers-body').innerHTML = '<span class="empty">Carregando…</span>';
+      try {
+        const r = await apiFetch(`${BASE}/admin/prize-tiers`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        document.getElementById('prize-tiers-body').innerHTML = d.tiers.map(t => `
+          <div class="config-row" id="tier-row-${t.position}">
+            <div class="config-meta">
+              <strong>${t.label}</strong>
+              <small>Posição ${t.position}</small>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span style="font-size:12px;color:#888">R$</span>
+              <input type="number" step="0.01" min="0" id="tier-amt-${t.position}" value="${t.prize_amount.toFixed(2)}" style="width:100px;text-align:right" />
+              <button class="btn-green btn-small" onclick="saveTier(${t.position}, this)">Salvar</button>
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {
+        document.getElementById('prize-tiers-body').innerHTML = '<span class="empty">Erro ao carregar.</span>';
+      }
+    }
+
+    async function saveTier(pos, btn) {
+      const amt = parseFloat(document.getElementById(`tier-amt-${pos}`).value);
+      if (isNaN(amt) || amt < 0) { alert('Valor inválido.'); return; }
+      btn.disabled = true; btn.textContent = '…';
+      try {
+        const r = await apiFetch(`${BASE}/admin/prize-tiers`, {
+          method: 'PUT',
+          body: JSON.stringify({ tiers: [{ position: pos, amount: amt }] }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        showMsg('prize-tiers-msg', `Tier ${pos} salvo com sucesso!`, true);
+      } catch(err) {
+        showMsg('prize-tiers-msg', err.message, false);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Salvar';
+      }
+    }
+
+    async function loadWeeklyWinners(weekFilter) {
+      const sel = document.getElementById('winners-week-select');
+      const week = weekFilter ?? sel.value ?? '';
+      document.getElementById('winners-body').innerHTML = '<tr><td colspan="7" class="empty">Carregando…</td></tr>';
+      try {
+        const url = week ? `${BASE}/admin/weekly-winners?week=${week}` : `${BASE}/admin/weekly-winners`;
+        const r = await apiFetch(url);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+
+        // Populate week filter
+        if (d.availableWeeks && d.availableWeeks.length) {
+          const opts = d.availableWeeks.map(w => `<option value="${w}" ${w === week ? 'selected' : ''}>${w}</option>`).join('');
+          sel.innerHTML = `<option value="">Todas as semanas</option>${opts}`;
+        }
+
+        if (!d.winners.length) {
+          document.getElementById('winners-body').innerHTML = '<tr><td colspan="7" class="empty">Nenhum vencedor registrado.</td></tr>';
+          return;
+        }
+
+        const STATUS_BADGE = {
+          pending: '<span class="badge badge-yellow">Pendente</span>',
+          claimed: '<span class="badge badge-green">Resgatado</span>',
+          paid:    '<span class="badge badge-green" style="background:#c8e6c9">Pago ✓</span>',
+          expired: '<span class="badge badge-gray">Expirado</span>',
+        };
+
+        document.getElementById('winners-body').innerHTML = d.winners.map(w => `
+          <tr>
+            <td>${w.week_start}</td>
+            <td><strong>#${w.rank}</strong></td>
+            <td style="font-size:11px">${w.nickname || w.full_name || w.user_id}</td>
+            <td>${(w.weekly_points ?? 0).toLocaleString('pt-BR')} pts</td>
+            <td>R$ ${(w.prize_amount ?? 0).toFixed(2)}</td>
+            <td>${STATUS_BADGE[w.status] ?? w.status}${w.pix_key ? `<br/><small style="font-size:10px;color:#888;font-family:monospace">${w.pix_key}</small>` : ''}</td>
+            <td>
+              ${w.status === 'claimed' ? `<button class="btn-green btn-small" onclick="markPaid(${w.id}, this)">Marcar pago</button>` : ''}
+              ${w.status === 'pending' ? `<button class="btn-red btn-small" onclick="banUser('${w.user_id}', this)">Banir</button>` : ''}
+            </td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        document.getElementById('winners-body').innerHTML = `<tr><td colspan="7" class="empty">Erro: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function markPaid(id, btn) {
+      const note = prompt('Nota sobre o pagamento (opcional):');
+      if (note === null) return;
+      btn.disabled = true; btn.textContent = '…';
+      try {
+        const r = await apiFetch(`${BASE}/admin/weekly-winners/${id}/mark-paid`, {
+          method: 'POST',
+          body: JSON.stringify({ note: note || undefined }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        showMsg('winners-msg', `Prêmio #${id} marcado como pago!`, true);
+        loadWeeklyWinners();
+      } catch(err) {
+        showMsg('winners-msg', err.message, false);
+        btn.disabled = false; btn.textContent = 'Marcar pago';
+      }
+    }
+
+    async function banUser(userId, btn) {
+      if (!confirm(`Banir usuário ${userId} do ranking e remover prêmios pendentes?`)) return;
+      btn.disabled = true; btn.textContent = '…';
+      try {
+        const r = await apiFetch(`${BASE}/admin/ranking/ban/${userId}`, {
+          method: 'POST',
+          body: JSON.stringify({ ban: true }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        showMsg('winners-msg', `Usuário ${userId} banido do ranking.`, true);
+        loadWeeklyWinners();
+      } catch(err) {
+        showMsg('winners-msg', err.message, false);
+        btn.disabled = false; btn.textContent = 'Banir';
+      }
+    }
+
+    async function runManualSnapshot(btn) {
+      if (!confirm('Executar snapshot manual agora? Isso criará o ranking da semana atual.')) return;
+      btn.disabled = true; btn.innerHTML = 'Executando… <span class="spinner" style="border-color:#fff;border-top-color:transparent"></span>';
+      try {
+        const r = await apiFetch(`${BASE}/admin/weekly-snapshot`, { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        showMsg('winners-msg', `Snapshot concluído: ${d.winnersInserted} vencedores registrados para a semana ${d.weekStart}.`, true);
+        loadWeeklyWinners();
+      } catch(err) {
+        showMsg('winners-msg', err.message, false);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Snapshot Manual';
       }
     }
 

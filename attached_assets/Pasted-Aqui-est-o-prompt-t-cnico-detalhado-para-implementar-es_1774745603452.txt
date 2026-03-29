@@ -1,0 +1,29 @@
+Aqui está o prompt técnico detalhado para implementar essa lógica de premiação e o painel administrativo:
+ 
+🚀 PROMPT DE IMPLANTAÇÃO: RANKING SEMANAL E RESGATE DE PRÊMIOS
+Objetivo: Implementar um sistema de ranking semanal que premia os 10 melhores pontuadores com valores em dinheiro/créditos, com reset automático e gestão via painel administrativo.
+1. LÓGICA DE PREMIAÇÃO (TIERS)
+O sistema deve identificar a posição do usuário no encerramento da semana e permitir o resgate com base nos seguintes patamares (editáveis):
+•	1º Lugar: R$ 500,00 (Exemplo)
+•	2º Lugar: R$ 200,00 (Exemplo)
+•	3º Lugar: R$ 100,00 (Exemplo)
+•	4º ao 10º Lugar: R$ 50,00 (Exemplo - Valor Fixo para o grupo)
+2. RESET SEMANAL (CRON JOB)
+•	Agendamento: Toda Sexta-feira às 00:00.
+•	Ação: 1. O sistema deve gerar um "Snapshot" (foto) do ranking final da semana. 2. Salvar os 10 vencedores na tabela weekly_winners para permitir o resgate. 3. Zerar a coluna weekly_points de todos os usuários no banco de dados para iniciar a nova rodada.
+3. PAINEL ADMINISTRATIVO (/ADMIN)
+Criar uma interface para que o administrador possa editar:
+•	Valores dos Prêmios: Inputs numéricos para cada posição (1º, 2º, 3º e 4º-10º).
+•	Status de Resgate: Lista de vencedores com botão de "Marcar como Pago" após a transferência (PIX).
+•	Logs de Auditoria: Visualizar o ranking de semanas anteriores para resolução de disputas.
+4. REGRAS DE NEGÓCIO E SEGURANÇA
+•	Elegibilidade: O botão de "Resgatar Prêmio" só deve ficar ativo para os IDs de usuário que constam no Snapshot dos 10 melhores da semana anterior.
+•	Prazo de Resgate: O vencedor tem até 7 dias para solicitar o resgate antes que o prêmio expire.
+•	Anti-Fraude: Se um usuário for banido ou sinalizado por fraude em notas fiscais, ele deve ser removido automaticamente do ranking antes do snapshot de sexta-feira.
+ 
+🧪 EXEMPLOS PARA TESTE (MOCK DATA)
+Para validar a implementação, utilize os seguintes cenários de teste:
+•	Cenário A (Vencedor Top 1): Usuário "João" termina em 1º com 50.000 pontos. Na sexta-feira 00:01, ele deve ver o botão "Resgatar R$ 500" e seu saldo semanal deve estar em 0.
+•	Cenário B (Vencedor do Bloco): Usuária "Maria" termina em 7º lugar. Ela deve ver o botão de "Resgatar R$ 50".
+•	Cenário C (Fora do Ranking): Usuário "Carlos" termina em 11º lugar. O sistema deve exibir: "Você ficou em 11º! Por apenas uma posição você não ganhou. Tente novamente esta semana!".
+•	Cenário D (Mudança de Valor): O administrador muda o prêmio do 1º lugar de R$ 500 para R$ 600 no painel. O sistema deve atualizar o valor para o próximo resgate imediatamente.

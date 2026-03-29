@@ -1,7 +1,7 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   FlatList,
@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
   useColorScheme,
@@ -20,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 import { useApp, type GameEntry, type DailyMission, type PointsHistoryEntry } from "@/context/AppContext";
+import { fetchMyPrizes, redeemPrize, getCountdownToFriday, type WeeklyWinnerEntry } from "@/services/prizesService";
 
 const REDEEM_OPTIONS = [
   { id: "r1", points: 500, value: "R$ 5,00", icon: "gift" as const },
@@ -251,6 +253,28 @@ export default function GameScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const toastAnim = useRef(new Animated.Value(0)).current;
+
+  // Weekly prize state
+  const [prizeEntry, setPrizeEntry] = useState<WeeklyWinnerEntry | null>(null);
+  const [prizeLoading, setPrizeLoading] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixKey, setPixKey] = useState("");
+  const [pixSubmitting, setPixSubmitting] = useState(false);
+  const [countdown, setCountdown] = useState(getCountdownToFriday());
+
+  useEffect(() => {
+    if (!user?.id) return;
+    setPrizeLoading(true);
+    fetchMyPrizes(user.id).then((res) => {
+      setPrizeEntry(res.winner);
+      setPrizeLoading(false);
+    });
+  }, [user?.id]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCountdown(getCountdownToFriday()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : 90;
@@ -522,16 +546,150 @@ export default function GameScreen() {
           }}
           contentContainerStyle={{ padding: 16, paddingBottom: bottomPad, gap: 10 }}
           ListHeaderComponent={() => (
-            <View style={[styles.redeemHeader, { backgroundColor: isDark ? "#1A0000" : "#FFF8F8", borderColor: C.primary + "30" }]}>
-              <Feather name="dollar-sign" size={15} color={C.primary} />
-              <View>
-                <Text style={[styles.redeemHeaderTitle, { color: C.text }]}>Seus pontos: {userPoints.toLocaleString("pt-BR")}</Text>
-                <Text style={[styles.redeemHeaderSub, { color: C.textMuted }]}>Resgate por dinheiro real via PIX</Text>
+            <>
+              {/* Points balance row */}
+              <View style={[styles.redeemHeader, { backgroundColor: isDark ? "#1A0000" : "#FFF8F8", borderColor: C.primary + "30" }]}>
+                <Feather name="dollar-sign" size={15} color={C.primary} />
+                <View>
+                  <Text style={[styles.redeemHeaderTitle, { color: C.text }]}>Seus pontos: {userPoints.toLocaleString("pt-BR")}</Text>
+                  <Text style={[styles.redeemHeaderSub, { color: C.textMuted }]}>Resgate por dinheiro real via PIX</Text>
+                </View>
               </View>
-            </View>
+
+              {/* Weekly Prize Card */}
+              {prizeEntry && prizeEntry.status === "pending" ? (
+                <LinearGradient
+                  colors={prizeEntry.rank === 1 ? ["#B8860B", "#FFD700"] : prizeEntry.rank <= 3 ? ["#1565C0", "#42A5F5"] : ["#2E7D32", "#66BB6A"]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={styles.weeklyPrizeCard}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <MaterialCommunityIcons name="trophy" size={28} color="#fff" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.weeklyPrizeTitle}>
+                        🏆 Você ficou em {prizeEntry.rank}º lugar!
+                      </Text>
+                      <Text style={styles.weeklyPrizeAmount}>
+                        R$ {prizeEntry.prizeAmount.toFixed(2).replace(".", ",")} via PIX
+                      </Text>
+                      <Text style={styles.weeklyPrizeSub}>
+                        Semana de {prizeEntry.weekStart} · {prizeEntry.weeklyPoints.toLocaleString("pt-BR")} pts
+                      </Text>
+                    </View>
+                  </View>
+                  <Pressable
+                    style={styles.weeklyPrizeBtn}
+                    onPress={() => { setPixKey(""); setShowPixModal(true); }}
+                  >
+                    <Feather name="send" size={14} color="#fff" />
+                    <Text style={styles.weeklyPrizeBtnText}>Resgatar via PIX</Text>
+                  </Pressable>
+                </LinearGradient>
+              ) : prizeEntry && (prizeEntry.status === "claimed" || prizeEntry.status === "paid") ? (
+                <View style={[styles.weeklyPrizeCard, { backgroundColor: C.success + "18", borderWidth: 1, borderColor: C.success + "50" }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <Feather name="check-circle" size={24} color={C.success} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.weeklyPrizeTitle, { color: C.text }]}>
+                        {prizeEntry.status === "paid" ? "Pagamento realizado! ✓" : "Resgate solicitado!"}
+                      </Text>
+                      <Text style={[styles.weeklyPrizeSub, { color: C.textMuted }]}>
+                        {prizeEntry.status === "paid"
+                          ? `R$ ${prizeEntry.prizeAmount.toFixed(2).replace(".", ",")} enviado via PIX`
+                          : "Pagamento PIX em até 48 horas"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                /* No prize or expired — show countdown */
+                <View style={[styles.weeklyCountdownCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <MaterialCommunityIcons name="trophy-outline" size={20} color={C.primary} />
+                    <Text style={[styles.weeklyCountdownTitle, { color: C.text }]}>Prêmio Semanal</Text>
+                  </View>
+                  <Text style={[styles.weeklyCountdownSub, { color: C.textMuted }]}>
+                    Top 10 ganham prêmios em dinheiro toda sexta-feira
+                  </Text>
+                  <View style={styles.weeklyTiers}>
+                    {[{ pos: "1º", prize: "R$ 500", color: "#FFD700" }, { pos: "2º", prize: "R$ 200", color: "#C0C0C0" }, { pos: "3º", prize: "R$ 100", color: "#CD7F32" }, { pos: "4–10º", prize: "R$ 50", color: C.primary }].map((t) => (
+                      <View key={t.pos} style={styles.weeklyTierItem}>
+                        <Text style={[styles.weeklyTierPos, { color: t.color }]}>{t.pos}</Text>
+                        <Text style={[styles.weeklyTierPrize, { color: C.text }]}>{t.prize}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <View style={[styles.weeklyCountdownRow, { borderTopColor: C.border }]}>
+                    <Feather name="clock" size={13} color={C.textMuted} />
+                    <Text style={[styles.weeklyCountdownTime, { color: C.textMuted }]}>
+                      Próximo reset em {countdown.days}d {countdown.hours}h {countdown.minutes}m
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              <Text style={[styles.sectionLabel, { color: C.textMuted, marginTop: 8 }]}>TROCA POR PONTOS</Text>
+            </>
           )}
         />
       )}
+
+      {/* PIX Key Redemption Modal */}
+      <Modal visible={showPixModal} transparent animationType="fade" onRequestClose={() => setShowPixModal(false)}>
+        <Pressable style={[styles.sheetOverlay, { backgroundColor: C.overlay }]} onPress={() => setShowPixModal(false)}>
+          <View style={[styles.pixModal, { backgroundColor: C.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <MaterialCommunityIcons name="trophy" size={22} color={C.primary} />
+              <Text style={[styles.pixModalTitle, { color: C.text }]}>
+                Resgatar R$ {prizeEntry?.prizeAmount?.toFixed(2)?.replace(".", ",")}
+              </Text>
+            </View>
+            <Text style={[styles.pixModalSub, { color: C.textMuted }]}>
+              Insira sua chave PIX para receber o pagamento em até 48 horas.
+            </Text>
+            <TextInput
+              style={[styles.pixInput, { backgroundColor: C.backgroundSecondary, borderColor: C.border, color: C.text }]}
+              placeholder="CPF, e-mail, telefone ou chave aleatória"
+              placeholderTextColor={C.textMuted}
+              value={pixKey}
+              onChangeText={setPixKey}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={[styles.pixModalHint, { color: C.textMuted }]}>
+              Verifique sua chave PIX antes de confirmar. Pagamentos enviados para chave incorreta não são estornados.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+              <Pressable
+                style={[styles.pixBtn, { flex: 1, backgroundColor: C.backgroundTertiary }]}
+                onPress={() => setShowPixModal(false)}
+              >
+                <Text style={[styles.pixBtnText, { color: C.text }]}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.pixBtn, { flex: 1, backgroundColor: C.primary, opacity: (!pixKey.trim() || pixSubmitting) ? 0.5 : 1 }]}
+                disabled={!pixKey.trim() || pixSubmitting}
+                onPress={async () => {
+                  if (!prizeEntry || !user?.id || !pixKey.trim()) return;
+                  setPixSubmitting(true);
+                  const result = await redeemPrize(user.id, prizeEntry.id, pixKey.trim());
+                  setPixSubmitting(false);
+                  setShowPixModal(false);
+                  if (result.ok) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    showToast(result.message ?? "Resgate solicitado! PIX em até 48h.");
+                    setPrizeEntry({ ...prizeEntry, status: "claimed", claimedAt: new Date().toISOString() });
+                  } else {
+                    showToast(result.error ?? "Erro ao resgatar.");
+                  }
+                }}
+              >
+                <Text style={[styles.pixBtnText, { color: "#fff" }]}>{pixSubmitting ? "Enviando…" : "Confirmar PIX"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
 
       <PointsTableSheet visible={showPointsSheet} onClose={() => setShowPointsSheet(false)} C={C} isDark={isDark} />
     </View>
@@ -627,6 +785,28 @@ const styles = StyleSheet.create({
   tableAction: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   tableBase: { fontSize: 13, fontFamily: "Inter_700Bold" },
   tableBonus: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  weeklyPrizeCard: { borderRadius: 16, padding: 16, gap: 12, marginBottom: 4 },
+  weeklyPrizeTitle: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
+  weeklyPrizeAmount: { color: "#fff", fontSize: 24, fontFamily: "Inter_700Bold", lineHeight: 28, marginTop: 2 },
+  weeklyPrizeSub: { color: "rgba(255,255,255,0.75)", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  weeklyPrizeBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16 },
+  weeklyPrizeBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" },
+  weeklyCountdownCard: { borderRadius: 16, padding: 16, borderWidth: 1, gap: 0, marginBottom: 4 },
+  weeklyCountdownTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  weeklyCountdownSub: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17, marginBottom: 12 },
+  weeklyTiers: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
+  weeklyTierItem: { alignItems: "center", flex: 1 },
+  weeklyTierPos: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  weeklyTierPrize: { fontSize: 11, fontFamily: "Inter_600SemiBold", marginTop: 2 },
+  weeklyCountdownRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingTop: 10, borderTopWidth: 1 },
+  weeklyCountdownTime: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  pixModal: { margin: 24, borderRadius: 18, padding: 22, gap: 10 },
+  pixModalTitle: { fontSize: 17, fontFamily: "Inter_700Bold", flex: 1 },
+  pixModalSub: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  pixInput: { borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "Inter_400Regular" },
+  pixModalHint: { fontSize: 11, fontFamily: "Inter_400Regular", lineHeight: 16 },
+  pixBtn: { borderRadius: 11, paddingVertical: 12, alignItems: "center" },
+  pixBtnText: { fontSize: 14, fontFamily: "Inter_700Bold" },
   toast: {
     position: "absolute",
     alignSelf: "center",

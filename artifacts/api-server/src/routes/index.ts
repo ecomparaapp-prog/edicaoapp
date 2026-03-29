@@ -10,6 +10,7 @@ import missionsRouter from "./missions";
 import nfceRouter from "./nfce";
 import referralsRouter from "./referrals";
 import pointsRouter from "./points";
+import prizesRouter from "./prizes";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(missionsRouter);
 router.use(nfceRouter);
 router.use(referralsRouter);
 router.use(pointsRouter);
+router.use(prizesRouter);
 
 export default router;

@@ -265,6 +265,62 @@ export async function ensureSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS confidence_score NUMERIC(5,4);
     `);
 
+    // ── Weekly ranking prize system ──────────────────────────────────────────
+    // Prize amounts per rank position (editable by admin)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS prize_tiers (
+        position INTEGER PRIMARY KEY,  -- 1 = 1st, 2 = 2nd, ..., 10 = 4th-10th
+        prize_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+        label TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Seed default prize tiers if table is empty
+    await client.query(`
+      INSERT INTO prize_tiers (position, prize_amount, label) VALUES
+        (1,  500.00, '1º Lugar'),
+        (2,  200.00, '2º Lugar'),
+        (3,  100.00, '3º Lugar'),
+        (4,   50.00, '4º ao 10º Lugar'),
+        (5,   50.00, '4º ao 10º Lugar'),
+        (6,   50.00, '4º ao 10º Lugar'),
+        (7,   50.00, '4º ao 10º Lugar'),
+        (8,   50.00, '4º ao 10º Lugar'),
+        (9,   50.00, '4º ao 10º Lugar'),
+        (10,  50.00, '4º ao 10º Lugar')
+      ON CONFLICT (position) DO NOTHING;
+    `);
+
+    // Weekly winners snapshot (one row per user per week)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS weekly_winners (
+        id SERIAL PRIMARY KEY,
+        week_start DATE NOT NULL,           -- Monday of the week
+        user_id TEXT NOT NULL,
+        rank INTEGER NOT NULL,
+        weekly_points INTEGER NOT NULL DEFAULT 0,
+        prize_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'pending', -- pending | claimed | paid | expired
+        pix_key TEXT,
+        claimed_at TIMESTAMPTZ,
+        paid_at TIMESTAMPTZ,
+        admin_note TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(week_start, user_id)
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_weekly_winners_user ON weekly_winners (user_id, week_start DESC);
+      CREATE INDEX IF NOT EXISTS idx_weekly_winners_week ON weekly_winners (week_start DESC, rank ASC);
+    `);
+
+    // Track if user is banned from ranking (anti-fraud)
+    await client.query(`
+      ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE;
+    `);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);
