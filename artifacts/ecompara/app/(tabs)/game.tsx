@@ -548,123 +548,96 @@ export default function GameScreen() {
 
       {/* RESGATAR TAB */}
       {activeSection === "resgatar" && (
-        <FlatList
-          data={REDEEM_OPTIONS}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const canRedeem = userPoints >= item.points;
-            return (
-              <Pressable
-                style={[styles.redeemCard, { backgroundColor: C.surfaceElevated, borderColor: canRedeem ? C.primary : C.border, opacity: canRedeem ? 1 : 0.55 }]}
-                onPress={() => {
-                  if (!canRedeem) { showToast(`Faltam ${(item.points - userPoints).toLocaleString("pt-BR")} pontos`); return; }
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  showToast(`Resgate de ${item.value} solicitado!`);
-                }}
-              >
-                <View style={[styles.redeemIcon, { backgroundColor: canRedeem ? C.primary : C.backgroundTertiary }]}>
-                  <Feather name="gift" size={22} color="#fff" />
-                </View>
-                <View style={styles.redeemInfo}>
-                  <Text style={[styles.redeemValue, { color: C.text }]}>{item.value}</Text>
-                  <Text style={[styles.redeemPoints, { color: C.primary }]}>{item.points.toLocaleString("pt-BR")} pontos</Text>
-                </View>
-                {canRedeem && (
-                  <View style={[styles.redeemBadge, { backgroundColor: C.primary }]}>
-                    <Text style={styles.redeemBadgeText}>Resgatar</Text>
-                  </View>
-                )}
-              </Pressable>
-            );
-          }}
-          contentContainerStyle={{ padding: 16, paddingBottom: bottomPad, gap: 10 }}
-          ListHeaderComponent={() => (
-            <>
-              {/* Points balance row */}
-              <View style={[styles.redeemHeader, { backgroundColor: isDark ? "#1A0000" : "#FFF8F8", borderColor: C.primary + "30" }]}>
-                <Feather name="dollar-sign" size={15} color={C.primary} />
-                <View>
-                  <Text style={[styles.redeemHeaderTitle, { color: C.text }]}>Seus pontos: {userPoints.toLocaleString("pt-BR")}</Text>
-                  <Text style={[styles.redeemHeaderSub, { color: C.textMuted }]}>Resgate por dinheiro real via PIX</Text>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPad, gap: 12 }}>
+          {/* Points balance row */}
+          <View style={[styles.redeemHeader, { backgroundColor: isDark ? "#1A0000" : "#FFF8F8", borderColor: C.primary + "30" }]}>
+            <Feather name="dollar-sign" size={15} color={C.primary} />
+            <View>
+              <Text style={[styles.redeemHeaderTitle, { color: C.text }]}>Seus pontos: {userPoints.toLocaleString("pt-BR")}</Text>
+              <Text style={[styles.redeemHeaderSub, { color: C.textMuted }]}>Prêmios exclusivos para vencedores do ranking semanal</Text>
+            </View>
+          </View>
+
+          {/* Weekly Prize Card */}
+          {prizeEntry && prizeEntry.status === "pending" ? (
+            <LinearGradient
+              colors={prizeEntry.rank === 1 ? ["#B8860B", "#FFD700"] : prizeEntry.rank <= 3 ? ["#1565C0", "#42A5F5"] : ["#2E7D32", "#66BB6A"]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={styles.weeklyPrizeCard}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <MaterialCommunityIcons name="trophy" size={28} color="#fff" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.weeklyPrizeTitle}>
+                    🏆 Você ficou em {prizeEntry.rank}º lugar!
+                  </Text>
+                  <Text style={styles.weeklyPrizeAmount}>
+                    R$ {prizeEntry.prizeAmount.toFixed(2).replace(".", ",")} via PIX
+                  </Text>
+                  <Text style={styles.weeklyPrizeSub}>
+                    Semana de {prizeEntry.weekStart} · {prizeEntry.weeklyPoints.toLocaleString("pt-BR")} pts
+                  </Text>
                 </View>
               </View>
-
-              {/* Weekly Prize Card */}
-              {prizeEntry && prizeEntry.status === "pending" ? (
-                <LinearGradient
-                  colors={prizeEntry.rank === 1 ? ["#B8860B", "#FFD700"] : prizeEntry.rank <= 3 ? ["#1565C0", "#42A5F5"] : ["#2E7D32", "#66BB6A"]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={styles.weeklyPrizeCard}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <MaterialCommunityIcons name="trophy" size={28} color="#fff" />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.weeklyPrizeTitle}>
-                        🏆 Você ficou em {prizeEntry.rank}º lugar!
-                      </Text>
-                      <Text style={styles.weeklyPrizeAmount}>
-                        R$ {prizeEntry.prizeAmount.toFixed(2).replace(".", ",")} via PIX
-                      </Text>
-                      <Text style={styles.weeklyPrizeSub}>
-                        Semana de {prizeEntry.weekStart} · {prizeEntry.weeklyPoints.toLocaleString("pt-BR")} pts
-                      </Text>
-                    </View>
-                  </View>
-                  <Pressable
-                    style={styles.weeklyPrizeBtn}
-                    onPress={() => { setPixKey(""); setShowPixModal(true); }}
-                  >
-                    <Feather name="send" size={14} color="#fff" />
-                    <Text style={styles.weeklyPrizeBtnText}>Resgatar via PIX</Text>
-                  </Pressable>
-                </LinearGradient>
-              ) : prizeEntry && (prizeEntry.status === "claimed" || prizeEntry.status === "paid") ? (
-                <View style={[styles.weeklyPrizeCard, { backgroundColor: C.success + "18", borderWidth: 1, borderColor: C.success + "50" }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <Feather name="check-circle" size={24} color={C.success} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.weeklyPrizeTitle, { color: C.text }]}>
-                        {prizeEntry.status === "paid" ? "Pagamento realizado! ✓" : "Resgate solicitado!"}
-                      </Text>
-                      <Text style={[styles.weeklyPrizeSub, { color: C.textMuted }]}>
-                        {prizeEntry.status === "paid"
-                          ? `R$ ${prizeEntry.prizeAmount.toFixed(2).replace(".", ",")} enviado via PIX`
-                          : "Pagamento PIX em até 48 horas"}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              ) : (
-                /* No prize or expired — show countdown */
-                <View style={[styles.weeklyCountdownCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <MaterialCommunityIcons name="trophy-outline" size={20} color={C.primary} />
-                    <Text style={[styles.weeklyCountdownTitle, { color: C.text }]}>Prêmio Semanal</Text>
-                  </View>
-                  <Text style={[styles.weeklyCountdownSub, { color: C.textMuted }]}>
-                    Top 10 ganham prêmios em dinheiro toda sexta-feira
+              <Pressable
+                style={styles.weeklyPrizeBtn}
+                onPress={() => { setPixKey(""); setShowPixModal(true); }}
+              >
+                <Feather name="send" size={14} color="#fff" />
+                <Text style={styles.weeklyPrizeBtnText}>Resgatar via PIX</Text>
+              </Pressable>
+            </LinearGradient>
+          ) : prizeEntry && (prizeEntry.status === "claimed" || prizeEntry.status === "paid") ? (
+            <View style={[styles.weeklyPrizeCard, { backgroundColor: C.success + "18", borderWidth: 1, borderColor: C.success + "50" }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Feather name="check-circle" size={24} color={C.success} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.weeklyPrizeTitle, { color: C.text }]}>
+                    {prizeEntry.status === "paid" ? "Pagamento realizado! ✓" : "Resgate solicitado!"}
                   </Text>
-                  <View style={styles.weeklyTiers}>
-                    {[{ pos: "1º", prize: "R$ 500", color: "#FFD700" }, { pos: "2º", prize: "R$ 200", color: "#C0C0C0" }, { pos: "3º", prize: "R$ 100", color: "#CD7F32" }, { pos: "4–10º", prize: "R$ 50", color: C.primary }].map((t) => (
-                      <View key={t.pos} style={styles.weeklyTierItem}>
-                        <Text style={[styles.weeklyTierPos, { color: t.color }]}>{t.pos}</Text>
-                        <Text style={[styles.weeklyTierPrize, { color: C.text }]}>{t.prize}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  <View style={[styles.weeklyCountdownRow, { borderTopColor: C.border }]}>
-                    <Feather name="clock" size={13} color={C.textMuted} />
-                    <Text style={[styles.weeklyCountdownTime, { color: C.textMuted }]}>
-                      Próximo reset em {countdown.days}d {countdown.hours}h {countdown.minutes}m
-                    </Text>
-                  </View>
+                  <Text style={[styles.weeklyPrizeSub, { color: C.textMuted }]}>
+                    {prizeEntry.status === "paid"
+                      ? `R$ ${prizeEntry.prizeAmount.toFixed(2).replace(".", ",")} enviado via PIX`
+                      : "Pagamento PIX em até 48 horas"}
+                  </Text>
                 </View>
-              )}
-
-              <Text style={[styles.sectionLabel, { color: C.textMuted, marginTop: 8 }]}>TROCA POR PONTOS</Text>
-            </>
+              </View>
+            </View>
+          ) : (
+            /* No prize or expired — show countdown */
+            <View style={[styles.weeklyCountdownCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <MaterialCommunityIcons name="trophy-outline" size={20} color={C.primary} />
+                <Text style={[styles.weeklyCountdownTitle, { color: C.text }]}>Prêmio Semanal</Text>
+              </View>
+              <Text style={[styles.weeklyCountdownSub, { color: C.textMuted }]}>
+                Top 10 ganham prêmios em dinheiro toda sexta-feira
+              </Text>
+              <View style={styles.weeklyTiers}>
+                {[{ pos: "1º", prize: "R$ 500", color: "#FFD700" }, { pos: "2º", prize: "R$ 200", color: "#C0C0C0" }, { pos: "3º", prize: "R$ 100", color: "#CD7F32" }, { pos: "4–10º", prize: "R$ 50", color: C.primary }].map((t) => (
+                  <View key={t.pos} style={styles.weeklyTierItem}>
+                    <Text style={[styles.weeklyTierPos, { color: t.color }]}>{t.pos}</Text>
+                    <Text style={[styles.weeklyTierPrize, { color: C.text }]}>{t.prize}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={[styles.weeklyCountdownRow, { borderTopColor: C.border }]}>
+                <Feather name="clock" size={13} color={C.textMuted} />
+                <Text style={[styles.weeklyCountdownTime, { color: C.textMuted }]}>
+                  Próximo reset em {countdown.days}d {countdown.hours}h {countdown.minutes}m
+                </Text>
+              </View>
+            </View>
           )}
-        />
+
+          {/* Info box */}
+          <View style={[styles.redeemInfoBox, { backgroundColor: isDark ? "#0D0D0D" : "#F5F5F5", borderColor: C.border }]}>
+            <Feather name="info" size={14} color={C.textMuted} />
+            <Text style={[styles.redeemInfoText, { color: C.textSecondary }]}>
+              Os prêmios são concedidos automaticamente aos vencedores do Top 10 toda sexta-feira. Acumule pontos atualizando preços e completando missões para entrar no ranking.
+            </Text>
+          </View>
+        </ScrollView>
       )}
 
       {/* PIX Key Redemption Modal */}
@@ -751,8 +724,8 @@ const styles = StyleSheet.create({
   divider: { width: 1, height: 26 },
   sectionTabs: { flexDirection: "row", borderRadius: 12, padding: 4, gap: 3 },
   sectionTabRow: { flexDirection: "row", gap: 3 },
-  sectionTab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 9 },
-  sectionTabText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
+  sectionTab: { flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, paddingVertical: 8, paddingHorizontal: 2, borderRadius: 9 },
+  sectionTabText: { fontFamily: "Inter_600SemiBold", fontSize: 10, textAlign: "center" },
   regionFilter: { flexDirection: "row", borderRadius: 10, padding: 3, gap: 3 },
   regionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 7, borderRadius: 8 },
   regionBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
@@ -803,9 +776,11 @@ const styles = StyleSheet.create({
   redeemPoints: { fontSize: 12, fontFamily: "Inter_500Medium", marginTop: 2 },
   redeemBadge: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
   redeemBadgeText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  redeemHeader: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, padding: 14, borderWidth: 1, marginBottom: 12 },
+  redeemHeader: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, padding: 14, borderWidth: 1 },
   redeemHeaderTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
   redeemHeaderSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  redeemInfoBox: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, padding: 14, borderWidth: 1 },
+  redeemInfoText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
   sheetOverlay: { flex: 1, justifyContent: "flex-end" },
   sheetContainer: {
     position: "absolute",
