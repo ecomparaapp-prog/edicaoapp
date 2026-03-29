@@ -4,16 +4,9 @@ import { priceReportsTable, placesCacheTable } from "@workspace/db/schema";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { isValidUserId } from "../utils/requireUser";
 import { logPoints } from "../services/pointsLogger";
+import { getPointsConfig } from "../services/pointsConfig";
 
 const pricesRouter = Router();
-
-const POINTS = {
-  product_registration: 30,
-  price_validation: 15,
-  price_submission: 10,
-  auto_validated: 30,
-  conflict_pending: 0,
-};
 
 const CONFLICT_THRESHOLD = 0.05; // 5% difference is considered a conflict
 const STALENESS_DAYS = 5;
@@ -180,6 +173,16 @@ pricesRouter.post("/prices", async (req, res) => {
       latestPriceNum != null &&
       Math.abs(priceNum - latestPriceNum) / Math.max(latestPriceNum, 0.01) > CONFLICT_THRESHOLD;
 
+    // Load dynamic points config for this request
+    const cfg = await getPointsConfig();
+    const POINTS = {
+      product_registration: cfg.price_ocr,
+      price_validation: cfg.price_confirmation,
+      price_submission: cfg.price_partner,
+      auto_validated: cfg.price_ocr,
+      conflict_pending: 0,
+    };
+
     let reportType: string;
     let pointsAwarded: number;
     let conflictStatus: string | null = null;
@@ -315,7 +318,7 @@ pricesRouter.post("/prices/:id/partner-validate", async (req, res) => {
       .set({
         conflictStatus: approved ? "partner_validated" : "partner_rejected",
         isVerified: approved ?? false,
-        pointsAwarded: approved ? POINTS.product_registration : 0,
+        pointsAwarded: approved ? (await getPointsConfig()).price_ocr : 0,
         reportType: approved ? "product_registration" : "conflict_rejected",
       })
       .where(eq(priceReportsTable.id, id))

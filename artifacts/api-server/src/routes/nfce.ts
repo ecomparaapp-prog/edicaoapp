@@ -4,6 +4,7 @@ import { nfceRecordsTable, priceReportsTable, eanCacheTable } from "@workspace/d
 import { eq, sql } from "drizzle-orm";
 import { isValidUserId } from "../utils/requireUser";
 import { logPoints } from "../services/pointsLogger";
+import { getPointsConfig } from "../services/pointsConfig";
 
 const nfceRouter = Router();
 
@@ -17,11 +18,10 @@ const STATE_CODES: Record<string, string> = {
   "50": "MS", "51": "MT", "52": "GO", "53": "DF",
 };
 
-// Points logic
-const BASE_POINTS = 150;
-function calcPoints(itemCount: number, isWeekend: boolean): number {
+// Points logic — base read from DB config at runtime
+function calcPoints(basePoints: number, itemCount: number, isWeekend: boolean): number {
   const multiplier = itemCount > 10 ? 2 : isWeekend ? 1.2 : 1;
-  return Math.round(BASE_POINTS * multiplier);
+  return Math.round(basePoints * multiplier);
 }
 
 // Parse 44-digit NF-e access key into its structural fields
@@ -285,7 +285,8 @@ nfceRouter.post("/nfce/validate", async (req, res) => {
   // ── Points calculation ───────────────────────────────────────────────────
   const now = new Date();
   const isWeekend = now.getDay() === 0 || now.getDay() === 6;
-  const points = calcPoints(itemCount, isWeekend);
+  const cfg = await getPointsConfig();
+  const points = calcPoints(cfg.nfce_base, itemCount, isWeekend);
   const bonus = itemCount > 10;
 
   // ── Persist NF-e record FIRST (atomicity: points only awarded if this succeeds) ──

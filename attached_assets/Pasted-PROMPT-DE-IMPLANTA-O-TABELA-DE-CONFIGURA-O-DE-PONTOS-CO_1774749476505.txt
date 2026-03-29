@@ -1,0 +1,28 @@
+PROMPT DE IMPLANTAÇÃO: TABELA DE CONFIGURAÇÃO DE PONTOS COM ATIVAÇÃO PROGRAMADA
+Objetivo: Criar um módulo administrativo para gerenciar os valores de recompensa do Sistema de Pontos, garantindo que as alterações só entrem em vigor no início do novo ciclo semanal (Sexta-feira, 00:00).
+1. ARQUITETURA DO BANCO DE DADOS (CONFIGURAÇÕES)
+O sistema deve suportar duas versões da tabela de pontos simultaneamente:
+•	current_points_config: Os valores que estão sendo usados agora para processar as ações dos usuários.
+•	pending_points_config: Os novos valores salvos pelo administrador no painel, aguardando ativação.
+2. INTERFACE DO PAINEL ADMINISTRATIVO (/ADMIN)
+Criar uma tabela editável e os seguintes itens (ações) e seus respectivos campos de Pontos, (EXEMPLOS): 
+•	Indicar Novo Mercado: [Input]
+•	Indique e Ganhe (Referral): [Input]
+•	Envio de Nota Fiscal (NFC-e): [Input]
+•	Validação de Preço na Gôndola (OCR): [Input]
+•	Confirmação de Preço Existente (Cache): [Input]
+Regra de UI: Ao clicar em "Salvar", o sistema deve exibir um aviso: "Alterações salvas com sucesso. Estes valores entrarão em vigor na próxima Sexta-feira às 00:00".
+3. LÓGICA DE ATIVAÇÃO (O GATILHO DE SEXTA-FEIRA)
+Integrar ao Cron Job de reset semanal (que já ocorre Sexta-feira às 00:00) a seguinte função:
+1.	Reset de Ranking: Zerar a pontuação semanal de todos os usuários.
+2.	Update de Configuração: Copiar todos os valores da tabela pending_points_config para a tabela current_points_config.
+3.	Log de Alteração: Registrar no histórico do sistema quais valores foram alterados e por qual administrador.
+4. REQUISITOS DE BACKEND (API)
+•	O serviço de pontuação (PointsService) deve sempre ler os valores da current_points_config ao processar uma recompensa.
+•	Criar um endpoint GET /admin/points-config que retorne tanto os valores atuais quanto os pendentes para visualização do administrador.
+ 
+🧪 CENÁRIO DE TESTE PARA VALIDAÇÃO
+Para garantir que a lógica está correta, realize o seguinte teste:
+1.	Segunda-feira: O administrador acessa o painel e altera a pontuação de "Indicar Mercado" de 1.000 para 1.500 pontos. O sistema salva na tabela "Pendente".
+2.	Quarta-feira: Um usuário indica um mercado. O sistema deve creditar 1.000 pontos (valor atual), ignorando a mudança pendente.
+3.	Sexta-feira (00:01): Um usuário indica um mercado. O sistema deve creditar 1.500 pontos (o novo valor que foi ativado automaticamente no reset).

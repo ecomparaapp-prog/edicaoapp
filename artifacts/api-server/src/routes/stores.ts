@@ -7,6 +7,7 @@ import {
 import { sql } from "drizzle-orm";
 import { isValidUserId } from "../utils/requireUser";
 import { logPoints } from "../services/pointsLogger";
+import { getPointsConfig } from "../services/pointsConfig";
 
 const storesRouter = Router();
 
@@ -271,7 +272,6 @@ storesRouter.post("/stores/favorite", async (req, res) => {
   res.json({ ok: true });
 });
 
-const INDICATION_POINTS = 1000;
 const FRAUD_REPORT_THRESHOLD = 3;
 
 storesRouter.post("/stores/indicate", async (req, res) => {
@@ -321,27 +321,31 @@ storesRouter.post("/stores/indicate", async (req, res) => {
       ON CONFLICT (google_place_id) DO NOTHING
     `);
 
+    // Load dynamic points config
+    const cfg = await getPointsConfig();
+    const indicationPoints = cfg.store_indication;
+
     // Record indication and award points
     await db.execute(sql`
       INSERT INTO store_indications (user_id, google_place_id, store_name, points_awarded)
-      VALUES (${user_id}, ${placeId}, ${name}, ${INDICATION_POINTS})
+      VALUES (${user_id}, ${placeId}, ${name}, ${indicationPoints})
       ON CONFLICT (user_id, google_place_id) DO NOTHING
     `);
 
-    console.log(`[StoreIndication] User ${user_id} indicated "${name}" (${placeId}) — +${INDICATION_POINTS}pts`);
+    console.log(`[StoreIndication] User ${user_id} indicated "${name}" (${placeId}) — +${indicationPoints}pts`);
 
     // Log to central points_history
     await logPoints({
       userId: user_id,
       actionType: "store_indication",
-      pointsAmount: INDICATION_POINTS,
+      pointsAmount: indicationPoints,
       referenceId: placeId,
       metadata: { storeName: name, address: address ?? null },
     });
 
     res.status(201).json({
       ok: true,
-      points_awarded: INDICATION_POINTS,
+      points_awarded: indicationPoints,
       google_place_id: placeId,
       message: "Parabéns, Explorador! Você mapeou um novo mercado para a comunidade.",
     });

@@ -137,7 +137,7 @@
       <input type="text" id="modal-input" placeholder="Novo valor…" autocomplete="off" spellcheck="false" />
       <div class="modal-actions">
         <button class="btn-gray" onclick="closeConfigModal()">Cancelar</button>
-        <button class="btn-red" id="modal-save-btn" onclick="saveConfig()">Salvar</button>
+        <button class="btn-red" id="modal-save-btn" onclick="handleModalSave()">Salvar</button>
       </div>
     </div>
   </div>
@@ -252,6 +252,21 @@
         </div>
       </div>
 
+      <!-- Points Config -->
+      <div class="card">
+        <div class="card-header">
+          <h2>⭐ Configuração de Pontos</h2>
+          <button class="btn-gray btn-small" onclick="loadPointsConfig()">Atualizar</button>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:#666;margin-bottom:16px">
+            Altere os pontos concedidos por cada ação. Mudanças <strong>pendentes</strong> entram em vigor na próxima virada semanal (sexta-feira às 00:00 BRT). Use "Aplicar Agora" para efeito imediato.
+          </p>
+          <div id="points-config-body"><span class="empty">Carregando…</span></div>
+          <div class="msg" id="points-config-msg"></div>
+        </div>
+      </div>
+
       <!-- Weekly Winners -->
       <div class="card">
         <div class="card-header">
@@ -304,7 +319,7 @@
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-screen').style.display = 'block';
       loadConfig(); loadCredit(); loadZones(); loadMerchantRegistrations(); loadPartnerships();
-      loadPrizeTiers(); loadWeeklyWinners();
+      loadPrizeTiers(); loadPointsConfig(); loadWeeklyWinners();
     }
 
     function showLogin() {
@@ -649,11 +664,22 @@
       }
     }
 
+    let _modalMode = 'config'; // 'config' | 'points'
+
+    function handleModalSave() {
+      if (_modalMode === 'points') savePointsConfig();
+      else saveConfig();
+    }
+
     function openConfigModal(key, label, desc) {
+      _modalMode = 'config';
       _currentConfigKey = key;
       document.getElementById('modal-title').textContent = `Editar: ${label}`;
       document.getElementById('modal-desc').textContent = desc;
       document.getElementById('modal-input').value = '';
+      document.getElementById('modal-input').type = 'text';
+      document.getElementById('modal-input').removeAttribute('min');
+      document.getElementById('modal-input').removeAttribute('step');
       document.getElementById('config-modal').classList.add('open');
       setTimeout(() => document.getElementById('modal-input').focus(), 50);
     }
@@ -662,10 +688,11 @@
       if (e && e.target !== document.getElementById('config-modal')) return;
       document.getElementById('config-modal').classList.remove('open');
       _currentConfigKey = null;
+      _editingPointsKey = null;
     }
 
     document.getElementById('modal-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') saveConfig();
+      if (e.key === 'Enter') handleModalSave();
       if (e.key === 'Escape') closeConfigModal();
     });
 
@@ -850,6 +877,113 @@
         showMsg('winners-msg', err.message, false);
       } finally {
         btn.disabled = false; btn.textContent = 'Snapshot Manual';
+      }
+    }
+
+    // ── Configuração de Pontos ────────────────────────────────────
+    const POINTS_LABELS = {
+      store_indication: { label: 'Indicação de Loja', desc: 'Pontos ao indicar uma nova loja que ainda não está cadastrada.' },
+      referral:         { label: 'Indicação de Usuário', desc: 'Pontos ao convidar um amigo que se cadastra com seu código.' },
+      nfce_base:        { label: 'Leitura NFC-e (base)', desc: 'Pontos base por escanear uma nota fiscal. Bônus para +10 itens ou fins de semana.' },
+      price_ocr:        { label: 'Cadastro de Preço (OCR)', desc: 'Pontos por registrar um produto novo via câmera em loja não-parceira.' },
+      price_confirmation: { label: 'Confirmação de Preço', desc: 'Pontos por validar um preço já existente em loja não-parceira.' },
+      price_partner:    { label: 'Preço em Parceiro', desc: 'Pontos por reportar qualquer preço em loja parceira (sem conflito).' },
+    };
+
+    let _pointsConfigData = null;
+
+    async function loadPointsConfig() {
+      document.getElementById('points-config-body').innerHTML = '<span class="empty">Carregando…</span>';
+      try {
+        const r = await apiFetch(`${BASE}/admin/points-config`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        _pointsConfigData = d;
+        renderPointsConfig(d);
+      } catch(err) {
+        document.getElementById('points-config-body').innerHTML = `<span class="empty" style="color:#b71c1c">${err.message}</span>`;
+      }
+    }
+
+    function renderPointsConfig(d) {
+      const pendingMap = {};
+      for (const p of d.pending) pendingMap[p.key] = p;
+
+      const rows = d.current.map(c => {
+        const pend = pendingMap[c.key];
+        const info = POINTS_LABELS[c.key] || { label: c.key, desc: '' };
+        const pendBadge = pend
+          ? `<span class="badge badge-yellow" title="Entra em vigor na próxima sexta">→ ${Number(pend.value).toLocaleString('pt-BR')} (pendente)</span> <button class="btn-gray btn-small" onclick="cancelPendingPoints('${c.key}', this)">✕</button>`
+          : '';
+        return `<div class="config-row">
+          <div class="config-meta">
+            <strong>${info.label}</strong>
+            <small>${info.desc}</small>
+          </div>
+          <span class="config-value">${Number(c.value).toLocaleString('pt-BR')} pts</span>
+          ${pendBadge}
+          <button class="btn-gray btn-small" onclick="openEditPoints('${c.key}', ${c.value}, false)">Editar</button>
+          <button class="btn-red btn-small" onclick="openEditPoints('${c.key}', ${c.value}, true)">Aplicar Agora</button>
+        </div>`;
+      });
+      document.getElementById('points-config-body').innerHTML = rows.join('') || '<span class="empty">Nenhuma configuração encontrada.</span>';
+    }
+
+    let _editingPointsKey = null;
+    let _editingPointsApplyNow = false;
+
+    function openEditPoints(key, currentValue, applyNow) {
+      _modalMode = 'points';
+      _editingPointsKey = key;
+      _editingPointsApplyNow = applyNow;
+      const info = POINTS_LABELS[key] || { label: key, desc: '' };
+      document.getElementById('modal-title').textContent = (applyNow ? '⚡ Aplicar Agora — ' : '📅 Agendar — ') + info.label;
+      document.getElementById('modal-desc').textContent = applyNow
+        ? 'O novo valor entra em vigor IMEDIATAMENTE em todas as novas ações.'
+        : 'O novo valor será aplicado na próxima virada semanal (sexta-feira 00:00 BRT).';
+      document.getElementById('modal-input').value = currentValue;
+      document.getElementById('modal-input').type = 'number';
+      document.getElementById('modal-input').min = '0';
+      document.getElementById('modal-input').step = '1';
+      document.getElementById('config-modal').classList.add('open');
+      document.getElementById('modal-input').focus();
+    }
+
+    async function savePointsConfig() {
+      const val = document.getElementById('modal-input').value;
+      const btn = document.getElementById('modal-save-btn');
+      btn.disabled = true; btn.textContent = '…';
+      try {
+        const r = await apiFetch(`${BASE}/admin/points-config`, {
+          method: 'PUT',
+          body: JSON.stringify({ key: _editingPointsKey, value: parseInt(val, 10), applyNow: _editingPointsApplyNow }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        closeConfigModal();
+        const msg = _editingPointsApplyNow
+          ? `✓ ${POINTS_LABELS[_editingPointsKey]?.label} atualizado para ${Number(val).toLocaleString('pt-BR')} pts (imediato).`
+          : `✓ Agendado: ${POINTS_LABELS[_editingPointsKey]?.label} → ${Number(val).toLocaleString('pt-BR')} pts na próxima sexta.`;
+        showMsg('points-config-msg', msg, true);
+        loadPointsConfig();
+      } catch(err) {
+        showMsg('points-config-msg', err.message, false);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Salvar';
+      }
+    }
+
+    async function cancelPendingPoints(key, btn) {
+      btn.disabled = true;
+      try {
+        const r = await apiFetch(`${BASE}/admin/points-config/pending/${key}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? 'Erro');
+        showMsg('points-config-msg', `Alteração pendente de "${POINTS_LABELS[key]?.label || key}" cancelada.`, true);
+        loadPointsConfig();
+      } catch(err) {
+        showMsg('points-config-msg', err.message, false);
+        btn.disabled = false;
       }
     }
 

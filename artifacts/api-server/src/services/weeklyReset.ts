@@ -74,6 +74,29 @@ export async function runWeeklySnapshot(): Promise<{ ok: boolean; winnersInserte
         AND created_at < NOW() - INTERVAL '7 days'
     `);
 
+    // Promote pending points config to current (if any pending changes exist)
+    const pendingRows = await client.query<{ key: string; value: string }>(
+      `SELECT key, value FROM pending_points_config`
+    );
+    if (pendingRows.rows.length > 0) {
+      for (const row of pendingRows.rows) {
+        await client.query(
+          `INSERT INTO current_points_config (key, value, updated_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+          [row.key, row.value]
+        );
+        await client.query(
+          `INSERT INTO points_config_log (key, old_value, new_value, changed_at, changed_by)
+           SELECT $1, c.value, $2, NOW(), 'weekly_reset'
+           FROM current_points_config c WHERE c.key = $1`,
+          [row.key, row.value]
+        );
+      }
+      await client.query(`DELETE FROM pending_points_config`);
+      console.log(`[WeeklyReset] Promoted ${pendingRows.rows.length} pending config change(s) to current.`);
+    }
+
     await client.query("COMMIT");
     console.log(`[WeeklyReset] Snapshot for week ${ws}: ${inserted} winners saved.`);
     return { ok: true, winnersInserted: inserted, weekStart: ws };

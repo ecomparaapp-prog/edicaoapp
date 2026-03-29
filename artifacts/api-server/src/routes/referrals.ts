@@ -4,10 +4,10 @@ import { db } from "@workspace/db";
 import { userProfilesTable, referralsTable } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { logPoints } from "../services/pointsLogger";
+import { getPointsConfig } from "../services/pointsConfig";
 
 const referralsRouter = Router();
 
-const REFERRAL_POINTS = 2000;
 const MAX_REFERRALS = 5;
 const APP_DOMAIN = "ecompara.com.br";
 
@@ -64,13 +64,14 @@ referralsRouter.get("/referral/code/:userId", async (req, res) => {
       referralCode = updated.referralCode;
     }
 
+    const cfg = await getPointsConfig();
     res.json({
       referralCode,
       referralCount,
       maxReferrals: MAX_REFERRALS,
       canEarnMore: (referralCount || 0) < MAX_REFERRALS,
       referralLink: `https://${APP_DOMAIN}/invite/${referralCode}`,
-      pointsPerReferral: REFERRAL_POINTS,
+      pointsPerReferral: cfg.referral,
     });
   } catch (err) {
     console.error("GET /referral/code error:", err);
@@ -99,7 +100,8 @@ referralsRouter.get("/referral/stats/:userId", async (req, res) => {
     }
 
     const successful = referrals.filter((r) => r.status === "completed").length;
-    const totalPoints = successful * REFERRAL_POINTS;
+    const cfg = await getPointsConfig();
+    const totalPoints = successful * cfg.referral;
 
     res.json({
       referralCode: profile[0].referralCode,
@@ -108,7 +110,7 @@ referralsRouter.get("/referral/stats/:userId", async (req, res) => {
       canEarnMore: (profile[0].referralCount ?? 0) < MAX_REFERRALS,
       successful,
       totalPoints,
-      pointsPerReferral: REFERRAL_POINTS,
+      pointsPerReferral: cfg.referral,
       referralLink: profile[0].referralCode
         ? `https://${APP_DOMAIN}/invite/${profile[0].referralCode}`
         : null,
@@ -215,6 +217,8 @@ referralsRouter.post("/referral/activate", async (req, res) => {
 
     const currentCount = referrer.referralCount ?? 0;
     const canEarnPoints = currentCount < MAX_REFERRALS;
+    const cfg = await getPointsConfig();
+    const referralPoints = cfg.referral;
 
     // Register referral record
     await db.insert(referralsTable).values({
@@ -222,7 +226,7 @@ referralsRouter.post("/referral/activate", async (req, res) => {
       referredUserId: newUserId,
       referredCpf: cleanCpf,
       referredDeviceId: deviceId || null,
-      pointsAwarded: canEarnPoints ? REFERRAL_POINTS : 0,
+      pointsAwarded: canEarnPoints ? referralPoints : 0,
       status: "completed",
     });
 
@@ -240,7 +244,7 @@ referralsRouter.post("/referral/activate", async (req, res) => {
       await logPoints({
         userId: referrer.userId,
         actionType: "referral",
-        pointsAmount: REFERRAL_POINTS,
+        pointsAmount: referralPoints,
         referenceId: newUserId,
         metadata: { referredCpf: cleanCpf.slice(0, 3) + "***" + cleanCpf.slice(-2), referralCount: currentCount + 1 },
       });
@@ -248,11 +252,11 @@ referralsRouter.post("/referral/activate", async (req, res) => {
 
     res.json({
       ok: true,
-      pointsAwarded: canEarnPoints ? REFERRAL_POINTS : 0,
+      pointsAwarded: canEarnPoints ? referralPoints : 0,
       canEarnMore: currentCount + 1 < MAX_REFERRALS,
       referrerUserId: referrer.userId,
       message: canEarnPoints
-        ? `Indicação validada! ${REFERRAL_POINTS.toLocaleString("pt-BR")} pontos creditados ao indicador.`
+        ? `Indicação validada! ${referralPoints.toLocaleString("pt-BR")} pontos creditados ao indicador.`
         : "Indicação registrada. O indicador já atingiu o limite de recompensas.",
     });
   } catch (err) {

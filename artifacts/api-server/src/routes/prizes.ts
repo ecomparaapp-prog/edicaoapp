@@ -2,6 +2,7 @@ import { Router } from "express";
 import { pool } from "@workspace/db";
 import { isValidUserId } from "../utils/requireUser";
 import { runWeeklySnapshot } from "../services/weeklyReset";
+import { getPointsConfig, invalidatePointsConfigCache } from "../services/pointsConfig";
 
 const prizesRouter = Router();
 
@@ -295,6 +296,110 @@ prizesRouter.post("/admin/ranking/ban/:userId", async (req, res) => {
   } catch (err) {
     console.error("POST /admin/ranking/ban error:", err);
     res.status(500).json({ error: "Erro ao atualizar status de banimento." });
+  }
+});
+
+// ── Admin: points config ────────────────────────────────────────────────────
+
+// GET /api/admin/points-config — returns current + pending config
+prizesRouter.get("/admin/points-config", async (_req, res) => {
+  try {
+    const client = await pool.connect();
+    try {
+      const current = await client.query<{ key: string; value: string; updated_at: string }>(
+        `SELECT key, value, updated_at FROM current_points_config ORDER BY key`
+      );
+      const pending = await client.query<{ key: string; value: string; queued_at: string }>(
+        `SELECT key, value, queued_at FROM pending_points_config ORDER BY key`
+      );
+      res.json({
+        current: current.rows,
+        pending: pending.rows,
+      });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("GET /admin/points-config error:", err);
+    res.status(500).json({ error: "Erro ao carregar configuração de pontos." });
+  }
+});
+
+// PUT /api/admin/points-config — queue a config change (applied at next weekly reset)
+prizesRouter.put("/admin/points-config", async (req, res) => {
+  const { key, value, applyNow } = req.body as { key?: string; value?: unknown; applyNow?: boolean };
+
+  const ALLOWED_KEYS = ["store_indication", "referral", "nfce_base", "price_ocr", "price_confirmation", "price_partner"];
+
+  if (!key || !ALLOWED_KEYS.includes(key)) {
+    res.status(400).json({ error: `Chave inválida. Permitidas: ${ALLOWED_KEYS.join(", ")}` });
+    return;
+  }
+  const numVal = Number(value);
+  if (!Number.isInteger(numVal) || numVal < 0) {
+    res.status(400).json({ error: "Valor deve ser um inteiro não-negativo." });
+    return;
+  }
+
+  try {
+    const client = await pool.connect();
+    try {
+      if (applyNow) {
+        // Apply immediately to current config + log
+        const oldRow = await client.query<{ value: string }>(
+          `SELECT value FROM current_points_config WHERE key = $1`,
+          [key]
+        );
+        const oldValue = oldRow.rows[0]?.value ?? null;
+        await client.query(
+          `INSERT INTO current_points_config (key, value, updated_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+          [key, String(numVal)]
+        );
+        await client.query(
+          `INSERT INTO points_config_log (key, old_value, new_value, changed_at, changed_by)
+           VALUES ($1, $2, $3, NOW(), 'admin_immediate')`,
+          [key, oldValue, String(numVal)]
+        );
+        // Remove from pending if it was there
+        await client.query(`DELETE FROM pending_points_config WHERE key = $1`, [key]);
+        // Bust the in-memory cache
+        invalidatePointsConfigCache();
+        res.json({ ok: true, applied: "immediate", key, value: numVal });
+      } else {
+        // Queue for next weekly reset
+        await client.query(
+          `INSERT INTO pending_points_config (key, value, queued_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, queued_at = NOW()`,
+          [key, String(numVal)]
+        );
+        res.json({ ok: true, applied: "pending", key, value: numVal });
+      }
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("PUT /admin/points-config error:", err);
+    res.status(500).json({ error: "Erro ao atualizar configuração de pontos." });
+  }
+});
+
+// DELETE /api/admin/points-config/pending/:key — cancel a pending change
+prizesRouter.delete("/admin/points-config/pending/:key", async (req, res) => {
+  const { key } = req.params;
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query(`DELETE FROM pending_points_config WHERE key = $1`, [key]);
+      res.json({ ok: true, cancelled: key });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("DELETE /admin/points-config/pending error:", err);
+    res.status(500).json({ error: "Erro ao cancelar configuração pendente." });
   }
 });
 

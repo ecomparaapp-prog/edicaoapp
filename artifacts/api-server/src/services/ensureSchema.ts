@@ -321,6 +321,65 @@ export async function ensureSchema(): Promise<void> {
       ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE;
     `);
 
+    // ── Points configuration system ───────────────────────────────────────────
+    // current_points_config: values currently in use
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS current_points_config (
+        action TEXT PRIMARY KEY,
+        points INTEGER NOT NULL,
+        label TEXT NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // pending_points_config: values saved by admin, applied next Friday
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pending_points_config (
+        action TEXT PRIMARY KEY,
+        points INTEGER NOT NULL,
+        label TEXT NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_by TEXT NOT NULL DEFAULT 'admin'
+      );
+    `);
+
+    // points_config_log: audit trail of every activation
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS points_config_log (
+        id SERIAL PRIMARY KEY,
+        week_start DATE NOT NULL,
+        action TEXT NOT NULL,
+        old_points INTEGER NOT NULL,
+        new_points INTEGER NOT NULL,
+        updated_by TEXT NOT NULL DEFAULT 'admin',
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_points_config_log_week ON points_config_log (week_start DESC);
+    `);
+
+    // Seed current_points_config with default values
+    await client.query(`
+      INSERT INTO current_points_config (action, points, label) VALUES
+        ('store_indication',  1000, 'Indicar Novo Mercado'),
+        ('referral',          2000, 'Indique e Ganhe (Referral)'),
+        ('nfce_base',          150, 'Envio de Nota Fiscal (NFC-e)'),
+        ('price_ocr',           30, 'Validação de Preço na Gôndola (OCR)'),
+        ('price_confirmation',  15, 'Confirmação de Preço Existente (Cache)'),
+        ('price_partner',       10, 'Preço em Mercado Parceiro')
+      ON CONFLICT (action) DO NOTHING;
+    `);
+
+    // Seed pending_points_config with same defaults (keeps them in sync initially)
+    await client.query(`
+      INSERT INTO pending_points_config (action, points, label, updated_by)
+        SELECT action, points, label, 'system'
+        FROM current_points_config
+      ON CONFLICT (action) DO NOTHING;
+    `);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);
