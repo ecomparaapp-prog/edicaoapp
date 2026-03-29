@@ -1,0 +1,29 @@
+Prompt de Otimização e Limpeza
+Atue como um Engenheiro de Software Sênior especializado em Node.js e Refatoração.
+
+Contexto: Estou migrando meu sistema de disparos de e-mail (eCompara) e não utilizarei mais o Mailtrap. Preciso remover todo o "dead code" e configurações que fazem referência a esse serviço para tornar o sistema mais genérico e performático.
+
+Tarefa: Analise o código fornecido e realize as seguintes ações:
+
+Remoção de Credenciais: Identifique e remova qualquer configuração de host, port, user e pass que aponte para sandbox.smtp.mailtrap.io.
+
+Refatoração do Transportador: Transforme a configuração do Nodemailer em uma função genérica que aceite variáveis de ambiente, sem nomes de provedores específicos no corpo do código.
+
+Limpeza de Comentários: Remova comentários que mencionem o Mailtrap ou instruções de teste exclusivas daquela plataforma.
+
+Otimização de Imports: Verifique se existem pacotes ou funções importadas que eram usadas apenas para o Mailtrap e remova-as.
+
+Sugestão de .env: Gere uma lista atualizada de como devem ficar as chaves no meu arquivo de segredos (Secrets/Env) para que o sistema funcione com qualquer provedor SMTP (Host, Port, User, Pass).
+
+Restrição: Não altere a lógica de construção do HTML dos e-mails (como os de Parceria e Boas-vindas), foque apenas na infraestrutura de transporte e envio.
+
+Código para analisar: > [COLE SEU CÓDIGO AQUI]
+
+O que observar após a execução:
+Abstração: O código resultante não deve dizer "Mailtrap" em lugar nenhum. Ele deve usar nomes como process.env.MAIL_HOST.
+
+Segurança: Certifique-se de que a IA não "inventou" senhas reais no código refatorado.
+
+Replit Secrets: No Replit, após rodar esse prompt, você precisará ir na aba de Secrets (Cadeado) e atualizar os valores de MAIL_USER e MAIL_PASS com as novas credenciais do Ethereal que o código gerar.
+
+Dica extra: Se você estiver usando o Replit, peça também para a IA verificar se o arquivo package.json possui dependências desnecessárias que podem ser removidas com um npm uninstall.

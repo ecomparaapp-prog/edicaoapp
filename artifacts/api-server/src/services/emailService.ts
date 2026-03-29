@@ -6,7 +6,6 @@ export interface EmailSendResult {
   previewUrl?: string;
 }
 
-// Conta Ethereal cacheada em memória durante o processo
 let _etherealAccount: { user: string; pass: string } | null = null;
 
 async function getEtherealAccount() {
@@ -21,10 +20,9 @@ async function getEtherealAccount() {
 }
 
 async function createTransporter(): Promise<{ transport: nodemailer.Transporter; isEthereal: boolean }> {
-  const configUser = (await getConfig("MAILTRAP_USER")) ?? process.env["MAILTRAP_USER"];
-  const configPass = (await getConfig("MAILTRAP_PASS")) ?? process.env["MAILTRAP_PASS"];
+  const configUser = (await getConfig("MAIL_USER")) ?? process.env["MAIL_USER"];
+  const configPass = (await getConfig("MAIL_PASS")) ?? process.env["MAIL_PASS"];
 
-  // Sem SMTP configurado → usar Ethereal Email automaticamente
   if (!configUser || !configPass) {
     const eth = await getEtherealAccount();
     const transport = nodemailer.createTransport({
@@ -36,8 +34,8 @@ async function createTransporter(): Promise<{ transport: nodemailer.Transporter;
     return { transport, isEthereal: true };
   }
 
-  const host = (await getConfig("MAILTRAP_HOST")) ?? process.env["MAILTRAP_HOST"] ?? "sandbox.smtp.mailtrap.io";
-  const portStr = (await getConfig("MAILTRAP_PORT")) ?? process.env["MAILTRAP_PORT"] ?? "587";
+  const host = (await getConfig("MAIL_HOST")) ?? process.env["MAIL_HOST"] ?? "smtp.ethereal.email";
+  const portStr = (await getConfig("MAIL_PORT")) ?? process.env["MAIL_PORT"] ?? "587";
   const transport = nodemailer.createTransport({
     host,
     port: parseInt(portStr, 10),
@@ -126,7 +124,6 @@ export async function sendVerificationCode(opts: SendVerificationCodeOptions): P
     });
 
     const previewUrl = isEthereal ? (nodemailer.getTestMessageUrl(info) || undefined) : undefined;
-
     if (previewUrl) {
       console.log(`[Email] ✅ Código de verificação enviado (Ethereal) → ${previewUrl}`);
     } else {
@@ -218,7 +215,6 @@ export async function sendSupportEmail(opts: SendSupportEmailOptions): Promise<E
     });
 
     const previewUrl = isEthereal ? (nodemailer.getTestMessageUrl(info) || undefined) : undefined;
-
     if (previewUrl) {
       console.log(`[Email] ✅ E-mail de suporte enviado (Ethereal) → ${previewUrl}`);
     } else {
@@ -232,7 +228,7 @@ export async function sendSupportEmail(opts: SendSupportEmailOptions): Promise<E
   }
 }
 
-// ── Convite de claim ──────────────────────────────────────────────────────────
+// ── Convite de novo parceiro ───────────────────────────────────────────────────
 
 export interface SendClaimInvitationOptions {
   to: string;
@@ -308,16 +304,15 @@ export async function sendClaimInvitation(opts: SendClaimInvitationOptions): Pro
     });
 
     const previewUrl = isEthereal ? (nodemailer.getTestMessageUrl(info) || undefined) : undefined;
-
     if (previewUrl) {
-      console.log(`[Email] ✅ Convite de claim enviado (Ethereal) → ${previewUrl}`);
+      console.log(`[Email] ✅ Convite de parceria enviado (Ethereal) → ${previewUrl}`);
     } else {
-      console.log(`[Email] ✅ Convite de claim enviado para ${opts.to} — messageId: ${info.messageId}`);
+      console.log(`[Email] ✅ Convite de parceria enviado para ${opts.to} — messageId: ${info.messageId}`);
     }
 
     return { sent: true, previewUrl };
   } catch (err) {
-    console.error("[Email] Falha ao enviar convite de claim:", err);
+    console.error("[Email] Falha ao enviar convite de parceria:", err);
     return { sent: false };
   }
 }

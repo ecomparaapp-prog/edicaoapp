@@ -8,10 +8,10 @@ export const CONFIGURABLE_KEYS = [
   "PLACES_MONTHLY_CALL_LIMIT",
   "MAIL_FROM_NAME",
   "MAIL_FROM_ADDRESS",
-  "MAILTRAP_HOST",
-  "MAILTRAP_PORT",
-  "MAILTRAP_USER",
-  "MAILTRAP_PASS",
+  "MAIL_HOST",
+  "MAIL_PORT",
+  "MAIL_USER",
+  "MAIL_PASS",
 ] as const;
 
 export type ConfigKey = (typeof CONFIGURABLE_KEYS)[number];
@@ -19,7 +19,7 @@ export type ConfigKey = (typeof CONFIGURABLE_KEYS)[number];
 export const CONFIG_GROUPS: Record<string, ConfigKey[]> = {
   "Integrações Externas": ["GOOGLE_PLACES_KEY", "COSMOS_TOKEN", "PLACES_MONTHLY_CALL_LIMIT"],
   "E-mail — Remetente": ["MAIL_FROM_NAME", "MAIL_FROM_ADDRESS"],
-  "E-mail — Servidor SMTP": ["MAILTRAP_HOST", "MAILTRAP_PORT", "MAILTRAP_USER", "MAILTRAP_PASS"],
+  "E-mail — Servidor SMTP": ["MAIL_HOST", "MAIL_PORT", "MAIL_USER", "MAIL_PASS"],
 };
 
 const CONFIG_LABELS: Record<ConfigKey, string> = {
@@ -28,10 +28,10 @@ const CONFIG_LABELS: Record<ConfigKey, string> = {
   PLACES_MONTHLY_CALL_LIMIT: "Limite mensal de chamadas (Google Places)",
   MAIL_FROM_NAME: "Nome do remetente",
   MAIL_FROM_ADDRESS: "E-mail remetente (from)",
-  MAILTRAP_HOST: "Servidor SMTP (host)",
-  MAILTRAP_PORT: "Porta SMTP",
-  MAILTRAP_USER: "Usuário SMTP",
-  MAILTRAP_PASS: "Senha SMTP",
+  MAIL_HOST: "Servidor SMTP (host)",
+  MAIL_PORT: "Porta SMTP",
+  MAIL_USER: "Usuário SMTP",
+  MAIL_PASS: "Senha SMTP",
 };
 
 const CONFIG_DESCRIPTIONS: Record<ConfigKey, string> = {
@@ -39,20 +39,19 @@ const CONFIG_DESCRIPTIONS: Record<ConfigKey, string> = {
   COSMOS_TOKEN: "Token de autenticação para a API Bluesoft Cosmos de busca por código de barras (EAN).",
   PLACES_MONTHLY_CALL_LIMIT: "Número máximo de chamadas mensais à API do Google Places. Padrão: 200.",
   MAIL_FROM_NAME: "Nome exibido como remetente nos e-mails. Ex: eCompara",
-  MAIL_FROM_ADDRESS: "Endereço de e-mail do remetente. Use seu endereço SMTP ou deixe em branco para usar o Ethereal Email automaticamente em testes.",
-  MAILTRAP_HOST: "Host do servidor SMTP. Deixe em branco para usar Ethereal Email (testes automáticos). Ex. de produção: smtp.sendgrid.net",
-  MAILTRAP_PORT: "Porta SMTP. Recomendado: 587 (STARTTLS). Outras opções: 25, 465, 2525.",
-  MAILTRAP_USER: "Usuário de autenticação SMTP. Deixe em branco para usar Ethereal Email automaticamente nos testes.",
-  MAILTRAP_PASS: "Senha de autenticação SMTP. Deixe em branco para usar Ethereal Email automaticamente nos testes.",
+  MAIL_FROM_ADDRESS: "Endereço de e-mail do remetente. Deixe em branco para usar o Ethereal Email automaticamente em testes.",
+  MAIL_HOST: "Host do servidor SMTP. Deixe em branco para usar Ethereal Email automaticamente em testes. Ex. de produção: smtp.sendgrid.net",
+  MAIL_PORT: "Porta SMTP. Recomendado: 587 (STARTTLS). Outras opções: 25, 465, 2525.",
+  MAIL_USER: "Usuário de autenticação SMTP. Deixe em branco para usar Ethereal Email automaticamente em testes.",
+  MAIL_PASS: "Senha de autenticação SMTP. Deixe em branco para usar Ethereal Email automaticamente em testes.",
 };
 
-// Campos não-sensíveis: exibir valor completo no painel
 const PLAIN_TEXT_KEYS: ConfigKey[] = [
   "PLACES_MONTHLY_CALL_LIMIT",
   "MAIL_FROM_NAME",
   "MAIL_FROM_ADDRESS",
-  "MAILTRAP_HOST",
-  "MAILTRAP_PORT",
+  "MAIL_HOST",
+  "MAIL_PORT",
 ];
 
 export async function getConfig(key: ConfigKey): Promise<string | undefined> {
