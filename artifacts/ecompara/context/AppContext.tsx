@@ -14,6 +14,7 @@ import {
   type FetchStoresResult,
 } from "@/services/storesService";
 import { submitPrice } from "@/services/priceService";
+import { fetchPointsHistory, fetchPointsTotal } from "@/services/pointsService";
 
 export type UserRole = "customer" | "retailer" | null;
 
@@ -325,6 +326,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [cosmosCache, setCosmosCache] = useState<Record<string, Product>>({});
   const [stores, setStores] = useState<Store[]>(MOCK_STORES);
   const [storesLoading, setStoresLoading] = useState(false);
+  const [realPointsHistory, setRealPointsHistory] = useState<PointsHistoryEntry[]>(MOCK_POINTS_HISTORY);
 
   const MOCK_RETAILER_STORE: RetailerStore = {
     id: "r1",
@@ -360,6 +362,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadUser();
     loadShoppingList();
   }, []);
+
+  // Load real points history from API whenever user changes
+  useEffect(() => {
+    if (!user?.id) {
+      setRealPointsHistory(MOCK_POINTS_HISTORY);
+      return;
+    }
+    let cancelled = false;
+    fetchPointsHistory(user.id).then((history) => {
+      if (cancelled) return;
+      if (history.length > 0) {
+        setRealPointsHistory(history);
+      } else {
+        setRealPointsHistory(MOCK_POINTS_HISTORY);
+      }
+    });
+    // Also refresh total points from server
+    fetchPointsTotal(user.id).then((totals) => {
+      if (cancelled || !totals || !user) return;
+      setUserState((prev) =>
+        prev ? { ...prev, points: totals.totalPoints } : prev
+      );
+    });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Security gate: retailerStore is ONLY populated for users with role === "retailer".
   // Any other role (customer, null) always gets null — no leakage of merchant data.
@@ -649,7 +676,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         submitStoreClaim,
         banners: MOCK_BANNERS,
         leaderboard: MOCK_GAME_LEADERBOARD,
-        pointsHistory: MOCK_POINTS_HISTORY,
+        pointsHistory: realPointsHistory,
         dailyMissions: MOCK_DAILY_MISSIONS,
         streak: 5,
         finalizedLists,

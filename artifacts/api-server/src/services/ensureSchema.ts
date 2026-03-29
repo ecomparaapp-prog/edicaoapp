@@ -238,6 +238,33 @@ export async function ensureSchema(): Promise<void> {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_referred_cpf ON referrals (referred_cpf);
     `);
 
+    // Central points history — one row per transaction
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS points_history (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        points_amount INTEGER NOT NULL,
+        reference_id TEXT,
+        metadata JSONB,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_points_history_user ON points_history (user_id, created_at DESC);
+    `);
+
+    // Column additions for price_reports (report source + confidence)
+    await client.query(`
+      ALTER TABLE price_reports
+        ADD COLUMN IF NOT EXISTS report_type TEXT,
+        ADD COLUMN IF NOT EXISTS points_awarded INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS conflict_status TEXT,
+        ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual',
+        ADD COLUMN IF NOT EXISTS confidence_score NUMERIC(5,4);
+    `);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);

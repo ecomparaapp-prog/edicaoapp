@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { db } from "@workspace/db";
 import { userProfilesTable, referralsTable } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { logPoints } from "../services/pointsLogger";
 
 const referralsRouter = Router();
 
@@ -233,6 +234,17 @@ referralsRouter.post("/referral/activate", async (req, res) => {
         updatedAt: new Date(),
       })
       .where(eq(userProfilesTable.userId, referrer.userId));
+
+    // Log to central points_history (only if points were actually awarded)
+    if (canEarnPoints) {
+      await logPoints({
+        userId: referrer.userId,
+        actionType: "referral",
+        pointsAmount: REFERRAL_POINTS,
+        referenceId: newUserId,
+        metadata: { referredCpf: cleanCpf.slice(0, 3) + "***" + cleanCpf.slice(-2), referralCount: currentCount + 1 },
+      });
+    }
 
     res.json({
       ok: true,

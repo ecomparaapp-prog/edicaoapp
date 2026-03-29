@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { priceReportsTable, placesCacheTable } from "@workspace/db/schema";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { isValidUserId } from "../utils/requireUser";
+import { logPoints } from "../services/pointsLogger";
 
 const pricesRouter = Router();
 
@@ -18,6 +19,8 @@ const CONFLICT_THRESHOLD = 0.05; // 5% difference is considered a conflict
 const STALENESS_DAYS = 5;
 const AUTO_VALIDATE_THRESHOLD = 3;
 const AUTO_VALIDATE_WINDOW_HOURS = 24;
+const OCR_COOLDOWN_MINUTES = 60;     // anti-spam: same user+ean+place within 1 hour
+const OCR_MIN_CONFIDENCE = 0.70;     // minimum confidence_score for OCR submissions
 
 interface LatestPriceRow {
   id: number;
@@ -95,12 +98,14 @@ async function autoValidateReports(ean: string, placeId: string, price: number, 
 
 // POST /api/prices — submit a price report with smart validation logic
 pricesRouter.post("/prices", async (req, res) => {
-  const { ean, placeId, userId, price, productName } = req.body as {
+  const { ean, placeId, userId, price, productName, source, confidenceScore } = req.body as {
     ean?: string;
     placeId?: string;
     userId?: string;
     price?: number;
     productName?: string;
+    source?: string;          // 'manual' | 'ocr' | 'nfce'
+    confidenceScore?: number; // 0.0 – 1.0, required when source === 'ocr'
   };
 
   if (!ean || !placeId || price == null) {
@@ -112,6 +117,20 @@ pricesRouter.post("/prices", async (req, res) => {
     return;
   }
 
+  // OCR confidence gate: block points if below threshold
+  const reportSource = source ?? "manual";
+  if (reportSource === "ocr") {
+    const score = confidenceScore != null ? Number(confidenceScore) : null;
+    if (score == null || isNaN(score) || score < OCR_MIN_CONFIDENCE) {
+      res.status(422).json({
+        error: `Confiança da leitura OCR abaixo do mínimo (${Math.round(OCR_MIN_CONFIDENCE * 100)}%). Tente novamente com a etiqueta mais nítida.`,
+        confidenceScore: score,
+        minConfidence: OCR_MIN_CONFIDENCE,
+      });
+      return;
+    }
+  }
+
   const priceNum = parseFloat(String(price));
   if (isNaN(priceNum) || priceNum <= 0 || priceNum > 99999) {
     res.status(400).json({ error: "Preço inválido." });
@@ -119,6 +138,26 @@ pricesRouter.post("/prices", async (req, res) => {
   }
 
   try {
+    // Anti-spam cooldown: same user + EAN + place within OCR_COOLDOWN_MINUTES
+    if (reportSource === "ocr" || reportSource === "manual") {
+      const cooldownStart = new Date(Date.now() - OCR_COOLDOWN_MINUTES * 60 * 1000);
+      const recent = await db.execute(sql`
+        SELECT id FROM price_reports
+        WHERE user_id = ${userId!}
+          AND product_ean = ${ean}
+          AND place_id = ${placeId}
+          AND reported_at >= ${cooldownStart}
+        LIMIT 1
+      `);
+      if ((recent.rows as unknown[]).length > 0) {
+        res.status(429).json({
+          error: `Você já registrou este produto neste mercado na última hora. Tente novamente em ${OCR_COOLDOWN_MINUTES} minutos.`,
+          cooldownMinutes: OCR_COOLDOWN_MINUTES,
+        });
+        return;
+      }
+    }
+
     // Fetch store info and latest price in parallel
     const [storeInfo, latestPrice] = await Promise.all([
       getStoreInfo(placeId),
@@ -206,6 +245,24 @@ pricesRouter.post("/prices", async (req, res) => {
         conflictStatus,
       })
       .returning();
+
+    // Log to central points_history (only when points are awarded)
+    if (pointsAwarded > 0) {
+      await logPoints({
+        userId: userId!,
+        actionType: "price_report",
+        pointsAmount: pointsAwarded,
+        referenceId: String(report.id),
+        metadata: {
+          ean,
+          placeId,
+          price: priceNum,
+          reportType,
+          source: reportSource,
+          confidenceScore: reportSource === "ocr" ? confidenceScore : undefined,
+        },
+      });
+    }
 
     res.status(201).json({
       ok: true,

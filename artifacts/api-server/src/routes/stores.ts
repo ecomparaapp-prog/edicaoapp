@@ -6,6 +6,7 @@ import {
 } from "@workspace/db/schema";
 import { sql } from "drizzle-orm";
 import { isValidUserId } from "../utils/requireUser";
+import { logPoints } from "../services/pointsLogger";
 
 const storesRouter = Router();
 
@@ -328,6 +329,15 @@ storesRouter.post("/stores/indicate", async (req, res) => {
     `);
 
     console.log(`[StoreIndication] User ${user_id} indicated "${name}" (${placeId}) — +${INDICATION_POINTS}pts`);
+
+    // Log to central points_history
+    await logPoints({
+      userId: user_id,
+      actionType: "store_indication",
+      pointsAmount: INDICATION_POINTS,
+      referenceId: placeId,
+      metadata: { storeName: name, address: address ?? null },
+    });
 
     res.status(201).json({
       ok: true,

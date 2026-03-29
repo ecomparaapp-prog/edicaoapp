@@ -28,14 +28,15 @@ const REDEEM_OPTIONS = [
 ];
 
 const POINTS_TABLE = [
-  { action: "Indicar App via Link", base: "500 pts", bonus: "+200 pts se indicado validar 1ª nota", trigger: "Cadastro completo do indicado" },
-  { action: "Indicar Supermercado", base: "1.000 pts", bonus: 'Selo "Embaixador" no perfil', trigger: "Após mercado ser verificado/assinar" },
-  { action: "Cadastrar Produto (Individual)", base: "50 pts", bonus: "Máx. 10/dia em mercados Shadow; 35 pts em parceiros", trigger: "Validado pelo mercado/usuários" },
-  { action: "Cadastrar Cupom (NFC-e)", base: "150 pts", bonus: "2x XP se contiver >10 itens", trigger: "Em mercados Shadow (não participantes)" },
-  { action: "Confirmar Preço", base: "5 pts/item", bonus: "Se o preço estiver desatualizado", trigger: "Validação de dados existentes" },
+  { action: "Indicar Amigo (Referral)", base: "2.000 pts", bonus: "Máx. 5 indicações recompensadas · CPF único verificado", trigger: "Amigo completa cadastro com CPF válido" },
+  { action: "Indicar Supermercado", base: "1.000 pts", bonus: "Pontos revertidos se denúncias de fraude (≥3)", trigger: "Mercado ainda não mapeado confirmado" },
+  { action: "Registrar Novo Produto (OCR/manual)", base: "30 pts", bonus: "Produto ainda não cadastrado naquele mercado", trigger: "Preço novo em mercado shadow" },
+  { action: "Confirmar Preço Existente", base: "15 pts", bonus: "Recompensa reduzida — dado já estava no cache", trigger: "Confirmar preço recente (≤5 dias)" },
+  { action: "Envio Preço (mercado parceiro)", base: "10 pts", bonus: "30 pts se auto-validado por 3 usuários em 24 h", trigger: "Registro em mercado parceiro verificado" },
+  { action: "Cadastrar Nota Fiscal (NFC-e)", base: "150 pts", bonus: "2× XP se >10 itens · 1,2× XP no fim de semana", trigger: "Chave de acesso processada com sucesso (sem duplicatas)" },
   { action: "Finalizar Lista no Local", base: "200 pts", bonus: "+100 pts em mercado parceiro", trigger: "Check-out via GPS/Geofencing" },
-  { action: "Finalizar Cadastro", base: "250 pts", bonus: 'Selo "Perfil Verificado"', trigger: "Preenchimento de KYC/Perfil" },
-  { action: "Favoritar Mercado", base: "20 pts", bonus: "Notificações exclusivas da loja", trigger: "Bookmark de estabelecimento" },
+  { action: "Finalizar Cadastro do Perfil", base: "250 pts", bonus: 'Concedido uma única vez · Requer nome, CPF, telefone, endereço e chave PIX', trigger: "Perfil 100% preenchido" },
+  { action: "Favoritar Mercado", base: "20 pts", bonus: "Receba notificações exclusivas da loja", trigger: "Bookmark de estabelecimento" },
   { action: "Combo Diário (Streak)", base: "+50 pts", bonus: "Aumenta progressivamente (7 dias = 500 pts)", trigger: "Login e 1 ação diária" },
 ];
 

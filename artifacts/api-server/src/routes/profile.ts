@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { userProfilesTable } from "@workspace/db/schema";
 import { eq, and, ne, sql } from "drizzle-orm";
+import { logPoints } from "../services/pointsLogger";
 
 const profileRouter = Router();
 
@@ -183,6 +184,15 @@ profileRouter.put("/profile/:userId", async (req, res) => {
         .where(eq(userProfilesTable.userId, userId));
       profile.profileBonusAwarded = true;
       bonusAwarded = true;
+
+      // Log to central points_history
+      await logPoints({
+        userId,
+        actionType: "profile_bonus",
+        pointsAmount: PROFILE_BONUS_POINTS,
+        referenceId: userId,
+        metadata: { nickname: profile.nickname },
+      });
     }
 
     res.json({

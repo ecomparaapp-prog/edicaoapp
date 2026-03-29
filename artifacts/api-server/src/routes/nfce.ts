@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { nfceRecordsTable, priceReportsTable, eanCacheTable } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { isValidUserId } from "../utils/requireUser";
+import { logPoints } from "../services/pointsLogger";
 
 const nfceRouter = Router();
 
@@ -287,11 +288,8 @@ nfceRouter.post("/nfce/validate", async (req, res) => {
   const points = calcPoints(itemCount, isWeekend);
   const bonus = itemCount > 10;
 
-  // ── Insert price reports ─────────────────────────────────────────────────
+  // ── Persist NF-e record FIRST (atomicity: points only awarded if this succeeds) ──
   const effectivePlaceId = placeId ?? `cnpj:${parsed.cnpj}`;
-  const priceReports = await insertPriceReports(enrichedItems, effectivePlaceId, userId);
-
-  // ── Persist NF-e record ───────────────────────────────────────────────────
   try {
     await db.insert(nfceRecordsTable).values({
       chaveAcesso: chave,
@@ -313,6 +311,24 @@ nfceRouter.post("/nfce/validate", async (req, res) => {
     res.status(500).json({ ok: false, error: "Erro ao registrar nota fiscal." });
     return;
   }
+
+  // ── Insert price reports AFTER NF-e record (safe: NF-e already committed) ──
+  const priceReports = await insertPriceReports(enrichedItems, effectivePlaceId, userId);
+
+  // ── Log to central points_history ────────────────────────────────────────
+  await logPoints({
+    userId,
+    actionType: "nfce",
+    pointsAmount: points,
+    referenceId: chave,
+    metadata: {
+      storeName,
+      cnpj: parsed.cnpjFormatted,
+      itemCount,
+      totalValue,
+      bonus: bonus ? "2x (>10 itens)" : isWeekend ? "1.2x (fim de semana)" : null,
+    },
+  });
 
   res.status(201).json({
     ok: true,

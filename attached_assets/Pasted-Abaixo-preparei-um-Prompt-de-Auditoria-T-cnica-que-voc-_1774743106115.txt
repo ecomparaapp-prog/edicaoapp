@@ -1,0 +1,31 @@
+Abaixo, preparei um Prompt de Auditoria Técnica que você pode usar com uma IA de programação (ou para orientar seu desenvolvedor) para validar se o Sistema de Pontos está conectado corretamente a cada "veia" do app.
+ 
+🚀 PROMPT DE AUDITORIA: INTEGRAÇÃO DO SISTEMA DE PONTOS (eCompara)
+Persona: Atue como um Arquiteto de Software e Auditor de Sistemas Senior. Objetivo: Verificar a integridade das conexões entre as funcionalidades core do app eCompara e o Sistema de Pontos, garantindo que os gatilhos (triggers) de pontuação, limites de segurança e regras de negócio estejam aplicados corretamente.
+1. MAPA DE INTEGRAÇÃO (AÇÕES x RECOMPENSAS)
+Analise se o código/lógica implementa os seguintes gatilhos de pontuação no Sistema de Pontos:
+•	A. Indicação de Mercados (Shadow Mapping):
+o	Gatilho: Usuário seleciona mercado inexistente no banco local via Google Maps e confirma a indicação.
+o	Pontuação: +1.000 pontos.
+o	Verificação: O sistema impede pontuação duplicada para o mesmo place_id?
+•	B. Indique e Ganhe (Referral):
+o	Gatilho: Convidado finaliza cadastro com CPF único e válido.
+o	Pontuação: +2.000 pontos para o indicador.
+o	Trava de Segurança: O sistema bloqueia a recompensa após a 5ª indicação bem-sucedida? O CPF do convidado foi verificado como inédito no banco?
+•	C. Envio de Nota Fiscal (NFC-e):
+o	Gatilho: Sucesso no processamento da chave de acesso (API Fiscal ou OCR).
+o	Pontuação: Pontuação base por nota + bônus por item processado.
+o	Deduplicação: O sistema bloqueia pontos se a chNFe (Chave da Nota) já tiver sido processada anteriormente?
+•	D. Validação de Preço na Gôndola (OCR):
+o	Gatilho: Foto de etiqueta enviada e validada via lógica em cascata (ML Kit ou Cloud Vision).
+o	Pontuação Dinâmica: Recompensa cheia para novos preços e recompensa reduzida para "Confirmação de Preço Existente" (Cache).
+o	Verificação: A pontuação é atribuída somente após o Confidence_Score atingir o limite mínimo?
+2. REGRAS DE INTEGRIDADE DO SISTEMA DE PONTOS
+Verifique se a classe/serviço PointsService cumpre os seguintes requisitos técnicos:
+1.	Atomicidade: Em caso de erro no processamento da nota/foto, os pontos não devem ser creditados (Rollback).
+2.	Registro de Log: Cada transação de pontos deve gerar uma entrada na tabela points_history com: user_id, action_type, points_amount e timestamp.
+3.	Anti-Spam: Existe um limite de tempo (Cooldown) entre envios de fotos de gôndola para evitar "farm de pontos" no mesmo produto?
+3. TESTE DE CONCORDÂNCIA
+Simule o seguinte fluxo:
+"Um usuário indica um novo mercado (+1.000), convida 6 amigos (deve ganhar 5x 2.000 e 0 na última), envia uma nota fiscal de 10 itens e valida 2 preços na gôndola que já estavam no cache." Pergunta: O saldo final no Sistema de Pontos reflete exatamente estas travas e bônus?
+4.	Certifique se de que a tabela de pontos esteja atualiza, e diponivel no botao ‘’como pontuar’’e de que este correlacionada com os pontos
