@@ -39,11 +39,11 @@ const CONFIG_DESCRIPTIONS: Record<ConfigKey, string> = {
   COSMOS_TOKEN: "Token de autenticação para a API Bluesoft Cosmos de busca por código de barras (EAN).",
   PLACES_MONTHLY_CALL_LIMIT: "Número máximo de chamadas mensais à API do Google Places. Padrão: 200.",
   MAIL_FROM_NAME: "Nome exibido como remetente nos e-mails. Ex: eCompara",
-  MAIL_FROM_ADDRESS: "Endereço de e-mail do remetente. Use seu e-mail temporário para testes (Gmail, Yahoo etc.) e troque antes da produção.",
-  MAILTRAP_HOST: "Host do servidor SMTP. Mailtrap sandbox: sandbox.smtp.mailtrap.io",
+  MAIL_FROM_ADDRESS: "Endereço de e-mail do remetente. Use seu endereço SMTP ou deixe em branco para usar o Ethereal Email automaticamente em testes.",
+  MAILTRAP_HOST: "Host do servidor SMTP. Deixe em branco para usar Ethereal Email (testes automáticos). Ex. de produção: smtp.sendgrid.net",
   MAILTRAP_PORT: "Porta SMTP. Recomendado: 587 (STARTTLS). Outras opções: 25, 465, 2525.",
-  MAILTRAP_USER: "Usuário de autenticação SMTP fornecido pelo Mailtrap.",
-  MAILTRAP_PASS: "Senha de autenticação SMTP fornecida pelo Mailtrap.",
+  MAILTRAP_USER: "Usuário de autenticação SMTP. Deixe em branco para usar Ethereal Email automaticamente nos testes.",
+  MAILTRAP_PASS: "Senha de autenticação SMTP. Deixe em branco para usar Ethereal Email automaticamente nos testes.",
 };
 
 // Campos não-sensíveis: exibir valor completo no painel

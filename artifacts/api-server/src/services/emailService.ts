@@ -144,6 +144,94 @@ export async function sendResendCode(opts: SendVerificationCodeOptions): Promise
   return sendVerificationCode(opts);
 }
 
+// ── E-mail de suporte ─────────────────────────────────────────────────────────
+
+export interface SendSupportEmailOptions {
+  fromName: string;
+  fromEmail: string;
+  subject: string;
+  message: string;
+}
+
+export async function sendSupportEmail(opts: SendSupportEmailOptions): Promise<EmailSendResult> {
+  const { transport, isEthereal } = await createTransporter();
+  const { name: fromName, addr: fromAddr } = await getFromAddress();
+
+  try {
+    const info = await transport.sendMail({
+      from: `"${fromName}" <${fromAddr}>`,
+      to: "suporte@ecompara.com.br",
+      replyTo: `"${opts.fromName}" <${opts.fromEmail}>`,
+      subject: `[Suporte] ${opts.subject}`,
+      text: [
+        `Nova mensagem de suporte recebida:`,
+        ``,
+        `Nome: ${opts.fromName}`,
+        `E-mail: ${opts.fromEmail}`,
+        ``,
+        `Mensagem:`,
+        opts.message,
+        ``,
+        `---`,
+        `Enviado automaticamente pelo sistema eCompara`,
+      ].join("\n"),
+      html: `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr><td style="background:#CC0000;padding:24px 32px;">
+          <h1 style="margin:0;color:#fff;font-size:22px;letter-spacing:0.5px;">eCompara</h1>
+          <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Nova mensagem de suporte</p>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;background:#f9f9f9;border-radius:10px;padding:16px;border:1px solid #eee;">
+            <tr>
+              <td style="padding:4px 0;color:#888;font-size:12px;width:80px;">Nome</td>
+              <td style="padding:4px 0;color:#333;font-size:14px;font-weight:600;">${opts.fromName}</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0;color:#888;font-size:12px;">E-mail</td>
+              <td style="padding:4px 0;"><a href="mailto:${opts.fromEmail}" style="color:#CC0000;font-size:14px;">${opts.fromEmail}</a></td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0;color:#888;font-size:12px;">Assunto</td>
+              <td style="padding:4px 0;color:#333;font-size:14px;">${opts.subject}</td>
+            </tr>
+          </table>
+          <p style="margin:0 0 8px;color:#555;font-size:13px;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;">Mensagem</p>
+          <div style="background:#f9f9f9;border-left:4px solid #CC0000;border-radius:0 8px 8px 0;padding:16px;color:#333;font-size:14px;line-height:1.7;white-space:pre-wrap;">${opts.message}</div>
+          <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+          <p style="margin:0;color:#999;font-size:12px;">Enviado automaticamente pelo sistema eCompara. Responda diretamente a este e-mail para falar com o usuário.</p>
+        </td></tr>
+        <tr><td style="background:#f9f9f9;padding:16px 32px;border-top:1px solid #eee;">
+          <p style="margin:0;color:#aaa;font-size:11px;text-align:center;">© 2026 eCompara · Todos os direitos reservados</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+    });
+
+    const previewUrl = isEthereal ? (nodemailer.getTestMessageUrl(info) || undefined) : undefined;
+
+    if (previewUrl) {
+      console.log(`[Email] ✅ E-mail de suporte enviado (Ethereal) → ${previewUrl}`);
+    } else {
+      console.log(`[Email] ✅ E-mail de suporte enviado — messageId: ${info.messageId}`);
+    }
+
+    return { sent: true, previewUrl };
+  } catch (err) {
+    console.error("[Email] Falha ao enviar e-mail de suporte:", err);
+    return { sent: false };
+  }
+}
+
 // ── Convite de claim ──────────────────────────────────────────────────────────
 
 export interface SendClaimInvitationOptions {
