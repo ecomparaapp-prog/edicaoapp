@@ -294,6 +294,28 @@ export default function ProfileScreen() {
               </LinearGradient>
             </View>
 
+            {user?.role !== "retailer" && (
+              <View style={{ paddingHorizontal: 16, marginBottom: 20 }}>
+                <Pressable
+                  style={[styles.retailerCTA, { backgroundColor: isDark ? "#1A0000" : "#FFF5F5", borderColor: "#CC000030" }]}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/merchant-register"); }}
+                >
+                  <View style={[styles.retailerCTAIconWrap, { backgroundColor: "#CC000015" }]}>
+                    <Feather name="briefcase" size={20} color="#CC0000" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.retailerCTATitle, { color: C.text }]}>Cadastre seu negócio</Text>
+                    <Text style={[styles.retailerCTASub, { color: C.textMuted }]}>
+                      Seja parceiro eCompara e alcance mais clientes
+                    </Text>
+                  </View>
+                  <View style={{ backgroundColor: "#CC0000", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" }}>Quero ser parceiro</Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+
             <View style={{ paddingHorizontal: 16, gap: 8 }}>
               <MenuItem icon="map-pin" label="Localização" sub="Santa Maria, DF" color={C} onPress={() => router.push("/settings/location")} />
               <MenuItem icon="shield" label="Privacidade" color={C} onPress={() => router.push("/settings/privacy")} />
@@ -995,6 +1017,10 @@ const styles = StyleSheet.create({
   menuItem: { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 14, borderWidth: 1, gap: 12 },
   menuIcon: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   menuLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  retailerCTA: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, borderRadius: 16, borderWidth: 1.5 },
+  retailerCTAIconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  retailerCTATitle: { fontSize: 14, fontFamily: "Inter_700Bold", marginBottom: 2 },
+  retailerCTASub: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
   menuSub: { fontSize: 11, fontFamily: "Inter_400Regular" },
   // Retailer Header
   retailerHeaderGrad: { paddingHorizontal: 16, paddingBottom: 14, flexDirection: "row", alignItems: "flex-end", gap: 10 },
