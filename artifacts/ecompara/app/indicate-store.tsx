@@ -230,9 +230,9 @@ export default function IndicateStoreScreen() {
       {/* Form */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 0 }}
+        style={{ flex: 1 }}
       >
-        <ScrollView style={[styles.form, { backgroundColor: C.background }]} keyboardShouldPersistTaps="handled">
+        <ScrollView style={[styles.form, { backgroundColor: C.background }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Text style={[styles.label, { color: C.textSecondary }]}>Nome do Mercado *</Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.backgroundSecondary, color: C.text, borderColor: C.border }]}

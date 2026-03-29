@@ -94,7 +94,7 @@ function PointsTableSheet({ visible, onClose, C, isDark }: { visible: boolean; o
               <Feather name="x" size={22} color={C.textMuted} />
             </TouchableOpacity>
           </View>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={[styles.ruleBox, { backgroundColor: isDark ? "#1A1A00" : "#FFFBEA", borderColor: "#D4AF37" + "60" }]}>
               <Feather name="info" size={13} color="#D4AF37" />
               <Text style={[styles.ruleText, { color: C.textSecondary }]}>
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   redeemHeaderTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
   redeemHeaderSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
   sheetOverlay: { flex: 1, justifyContent: "flex-end" },
-  sheetContainer: { borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, maxHeight: "88%", paddingBottom: 0 },
+  sheetContainer: { borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, maxHeight: "88%", paddingBottom: 0, flex: 1 },
   sheetHandle: { width: 38, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
   sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   sheetTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
