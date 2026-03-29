@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import {
   searchZonesTable,
   partnershipRequestsTable,
@@ -236,6 +236,88 @@ adminRouter.delete("/admin/config/:key", async (req, res) => {
   } catch (err) {
     console.error(`DELETE /admin/config/${key} error:`, err);
     res.status(500).json({ error: "Erro ao remover configuração do banco." });
+  }
+});
+
+// ── Points Config ─────────────────────────────────────────────────────────────
+
+adminRouter.get("/admin/points-config", async (_req, res) => {
+  const client = await pool.connect();
+  try {
+    const current = await client.query(
+      `SELECT action AS key, points AS value, label FROM current_points_config ORDER BY action`
+    );
+    const pending = await client.query(
+      `SELECT action AS key, points AS value, label FROM pending_points_config ORDER BY action`
+    );
+    // Only return pending rows that differ from current
+    const currentMap: Record<string, number> = {};
+    for (const row of current.rows) currentMap[row.key] = Number(row.value);
+    const pendingFiltered = pending.rows.filter(
+      (p) => Number(p.value) !== currentMap[p.key]
+    );
+    res.json({ current: current.rows, pending: pendingFiltered });
+  } catch (err) {
+    console.error("GET /admin/points-config error:", err);
+    res.status(500).json({ error: "Erro ao carregar configuração de pontos." });
+  } finally {
+    client.release();
+  }
+});
+
+adminRouter.put("/admin/points-config", async (req, res) => {
+  const { key, value, applyNow } = req.body as { key?: string; value?: number; applyNow?: boolean };
+  if (!key || value == null || typeof value !== "number" || value < 0) {
+    res.status(400).json({ error: "Parâmetros inválidos." });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    if (applyNow) {
+      await client.query(
+        `UPDATE current_points_config SET points = $1, updated_at = NOW() WHERE action = $2`,
+        [value, key]
+      );
+      // Also update pending so they stay in sync
+      await client.query(
+        `UPDATE pending_points_config SET points = $1, updated_at = NOW() WHERE action = $2`,
+        [value, key]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO pending_points_config (action, points, label, updated_by, updated_at)
+         SELECT action, $1, label, 'admin', NOW() FROM current_points_config WHERE action = $2
+         ON CONFLICT (action) DO UPDATE SET points = $1, updated_at = NOW(), updated_by = 'admin'`,
+        [value, key]
+      );
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("PUT /admin/points-config error:", err);
+    res.status(500).json({ error: "Erro ao salvar configuração de pontos." });
+  } finally {
+    client.release();
+  }
+});
+
+adminRouter.delete("/admin/points-config/pending/:key", async (req, res) => {
+  const key = req.params.key;
+  const client = await pool.connect();
+  try {
+    // Reset pending to match current (cancel the pending change)
+    await client.query(
+      `UPDATE pending_points_config p
+         SET points = c.points, updated_at = NOW(), updated_by = 'admin'
+         FROM current_points_config c
+         WHERE p.action = c.action AND p.action = $1`,
+      [key]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(`DELETE /admin/points-config/pending/${key} error:`, err);
+    res.status(500).json({ error: "Erro ao cancelar alteração pendente." });
+  } finally {
+    client.release();
   }
 });
 
