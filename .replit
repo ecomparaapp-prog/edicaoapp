@@ -70,3 +70,7 @@ channel = "stable-25_05"
 [userenv.shared]
 PLACES_MONTHLY_CALL_LIMIT = "200"
 NODE_ENV = "production"
+MAILTRAP_HOST = "sandbox.smtp.mailtrap.io"
+MAILTRAP_PORT = "587"
+MAIL_FROM_NAME = "eCompara"
+MAIL_FROM_ADDRESS = "noreply@ecompara.com.br"

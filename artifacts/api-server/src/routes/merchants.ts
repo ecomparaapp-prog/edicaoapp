@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { merchantRegistrationsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import { sendVerificationCode } from "../services/emailService";
 
 const merchantsRouter = Router();
 
@@ -189,11 +190,19 @@ merchantsRouter.post("/merchants/register", async (req, res) => {
       })
       .returning();
 
-    // In production, send the code via email/phone here.
-    // For now we return it in dev mode so testing is possible.
     const isDev = process.env.NODE_ENV === "development";
 
     console.log(`[Merchant] Verification code for registration #${registration.id}: ${code}`);
+
+    // Enviar código por e-mail via Mailtrap (ou outro SMTP configurado)
+    if (verificationMethod === "email") {
+      await sendVerificationCode({
+        to: verificationContact,
+        storeName: nomeFantasia,
+        code,
+        registrationId: registration.id,
+      });
+    }
 
     res.status(201).json({
       ok: true,
@@ -290,6 +299,16 @@ merchantsRouter.post("/merchants/resend", async (req, res) => {
       .where(eq(merchantRegistrationsTable.id, registrationId));
 
     console.log(`[Merchant] Resent verification code for registration #${registrationId}: ${newCode}`);
+
+    // Reenviar por e-mail se o método de verificação for e-mail
+    if (reg.verificationMethod === "email" && reg.verificationContact) {
+      await sendVerificationCode({
+        to: reg.verificationContact,
+        storeName: reg.nomeFantasia,
+        code: newCode,
+        registrationId,
+      });
+    }
 
     const isDev = process.env.NODE_ENV === "development";
     res.json({ ok: true, ...(isDev ? { _devCode: newCode } : {}) });
