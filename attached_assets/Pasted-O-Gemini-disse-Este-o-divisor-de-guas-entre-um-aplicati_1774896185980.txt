@@ -1,0 +1,58 @@
+O Gemini disse
+Este é o divisor de águas entre um "aplicativo de busca" e uma Plataforma de AdTech (Publicidade). Você está separando o Lojista Local (que quer gente dentro da loja dele) da Indústria/Marca (que quer que o consumidor escolha o produto dela em qualquer prateleira de Brasília ou do Brasil).
+
+Para a Indústria (Parmalat, Mabel, Piracanjuba), o app é um canal de Direct-to-Consumer (DTC) e Trade Marketing Digital.
+
+Aqui está o prompt técnico de alto nível para configurar esse Portal do Anunciante Nacional/Regional:
+
+🚀 PROMPT DE IMPLANTAÇÃO: PORTAL DO ANUNCIANTE (INDÚSTRIA & MARCAS)
+Objetivo: Criar um ecossistema B2B independente para grandes marcas, permitindo a gestão de campanhas geolocalizadas sem vínculo a um endereço físico fixo.
+
+1. PERSONA: O ANUNCIANTE ESTRATÉGICO (BRAND MANAGER)
+Perfil: Diferente do lojista, este usuário não possui uma "loja". Ele possui um Catálogo de EANs.
+
+Acesso: Login e senha para um subdomínio exclusivo (ex: ads.ecompara.com.br) ou área logada "Business" dentro do app.
+
+2. MÓDULO DE CRIAÇÃO DE CAMPANHAS (DINÂMICO)
+Implementar um construtor de campanhas onde a Marca define:
+
+Alcance Geográfico:
+
+Opção A (Raio Específico): "Exibir meu anúncio para qualquer usuário em um raio de X km de pontos de venda que tenham meu produto."
+
+Opção B (Regional/Distrital): "Exibir para todos os usuários de Brasília (DF)."
+
+Opção C (Nacional): "Exibir em todas as regiões onde o eCompara atua."
+
+Seleção de SKUs (Produtos): Vincular a campanha aos EANs cadastrados da marca.
+
+Formatos de Ad: Banners na Home, "Produto Sugerido" no topo da busca ou "Destaque de Preço".
+
+3. PAINEL DE DESEMPENHO (ANALYTICS B2B)
+O dashboard deve exibir métricas de Inteligência de Mercado:
+
+Impressões e Cliques (CTR): Quantas vezes o produto foi visto e clicado.
+
+Share of Shelf Digital: Em quantas buscas de categoria (ex: "Leite") a marca apareceu em 1º lugar.
+
+Heatmap de Interesse: Em quais regiões de Brasília (ou do Brasil) o produto está sendo mais buscado.
+
+Conversão de Intenção: Quantos usuários clicaram em "Ver onde encontrar" após ver o anúncio.
+
+4. REQUISITOS TÉCNICOS DE BACKEND
+Entidade Advertiser: Separada da entidade Store. Não possui latitude/longitude fixas, mas sim um Status_Nacional ou Áreas_Ativas.
+
+Engine de Leilão/Exibição: O algoritmo de busca do app deve priorizar o anúncio da Marca com base no plano contratado, sobrepondo-se aos resultados orgânicos, desde que o produto esteja disponível no raio do usuário.
+
+🧪 TESTE DE FUNCIONALIDADE (MOCK SCENARIO)
+Cenário: A Mabel quer lançar uma campanha para uma nova bolacha apenas em Brasília.
+
+Acesso: O gerente da Mabel loga no Portal do Anunciante.
+
+Configuração: Ele seleciona o EAN do produto, define o orçamento e escolhe a região "Distrito Federal".
+
+Execução: O sistema identifica todos os usuários com GPS no DF.
+
+Resultado no App: Quando um usuário em Águas Claras busca por "Biscoito", o produto da Mabel aparece no topo com o selo "Patrocinado", mostrando o mercado mais próximo que validou aquele preço recentemente.
+
+Relatório: No final do dia, a Mabel vê que teve 5.000 visualizações concentradas em Ceilândia e Taguatinga.

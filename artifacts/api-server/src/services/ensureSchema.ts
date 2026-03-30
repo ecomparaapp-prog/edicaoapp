@@ -401,6 +401,31 @@ export async function ensureSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS owner_name TEXT;
     `);
 
+    // ── Advertisers (Portal do Anunciante — Indústria & Marcas) ──────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS advertisers (
+        id SERIAL PRIMARY KEY,
+        company_name TEXT NOT NULL,
+        cnpj TEXT NOT NULL UNIQUE,
+        segment TEXT,
+        website TEXT,
+        contact_name TEXT,
+        role TEXT,
+        email TEXT NOT NULL,
+        whatsapp TEXT,
+        reach TEXT,
+        ad_format TEXT,
+        budget TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        admin_note TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_advertisers_status ON advertisers (status, created_at DESC);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_advertisers_email ON advertisers (email);`);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);

@@ -315,7 +315,7 @@ export default function ProfileScreen() {
                 style={[styles.brandsCard, { backgroundColor: isDark ? "#080820" : "#F0F4FF", borderColor: "#3B4FCC28" }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  router.push("/merchant-register");
+                  router.push("/advertiser-register");
                 }}
               >
                 <View style={[styles.brandsIconWrap, { backgroundColor: "#3B4FCC15" }]}>

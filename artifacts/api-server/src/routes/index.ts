@@ -11,6 +11,7 @@ import nfceRouter from "./nfce";
 import referralsRouter from "./referrals";
 import pointsRouter from "./points";
 import prizesRouter from "./prizes";
+import advertisersRouter from "./advertisers";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(nfceRouter);
 router.use(referralsRouter);
 router.use(pointsRouter);
 router.use(prizesRouter);
+router.use(advertisersRouter);
 
 export default router;
