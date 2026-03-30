@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { timeoutSignal } from "@/lib/fetchWithTimeout";
 
 export interface NfceItem {
   ean: string;
@@ -106,7 +107,7 @@ export async function checkNfceDuplicate(chaveAcesso: string): Promise<boolean> 
   const base = getApiBaseUrl();
   try {
     const res = await fetch(`${base}/nfce/${chaveAcesso}`, {
-      signal: AbortSignal.timeout(5000),
+      signal: timeoutSignal(5000),
     });
     if (!res.ok) return false;
     const data = await res.json() as { found: boolean };
@@ -129,7 +130,7 @@ export async function fetchMerchantNfceStats(cnpj: string): Promise<{
   const cleanCnpj = cnpj.replace(/\D/g, "");
   try {
     const res = await fetch(`${base}/nfce/merchant/${cleanCnpj}`, {
-      signal: AbortSignal.timeout(8000),
+      signal: timeoutSignal(8000),
     });
     if (!res.ok) return null;
     return await res.json();

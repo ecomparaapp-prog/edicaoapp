@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { timeoutSignal } from "@/lib/fetchWithTimeout";
 
 export interface CnpjLookupResult {
   cnpj: string;
@@ -17,7 +18,7 @@ export async function lookupCNPJ(
   const base = getApiBaseUrl();
   try {
     const res = await fetch(`${base}/merchants/cnpj/${clean}`, {
-      signal: AbortSignal.timeout(12000),
+      signal: timeoutSignal(12000),
     });
     const json = await res.json() as CnpjLookupResult & { error?: string };
     if (!res.ok) return { error: json.error ?? "Erro ao consultar CNPJ." };
@@ -74,7 +75,7 @@ export async function registerMerchant(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000),
+      signal: timeoutSignal(15000),
     });
     const json = await res.json() as {
       ok?: boolean;
@@ -99,7 +100,7 @@ export async function verifyMerchantCode(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ registrationId, code }),
-      signal: AbortSignal.timeout(10000),
+      signal: timeoutSignal(10000),
     });
     const json = await res.json() as { ok?: boolean; message?: string; error?: string };
     if (!res.ok) return { error: json.error ?? "Erro ao verificar código." };
@@ -118,7 +119,7 @@ export async function resendVerificationCode(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ registrationId }),
-      signal: AbortSignal.timeout(10000),
+      signal: timeoutSignal(10000),
     });
     const json = await res.json() as { ok?: boolean; _devCode?: string; error?: string };
     if (!res.ok) return { error: json.error ?? "Erro ao reenviar código." };

@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { timeoutSignal } from "@/lib/fetchWithTimeout";
 
 export interface NearbyMission {
   googlePlaceId: string;
@@ -51,7 +52,7 @@ export async function fetchNearbyMissions(
   try {
     const res = await fetch(
       `${base}/prices/missions?lat=${lat}&lng=${lng}&radius_km=${radiusKm}&limit=10`,
-      { signal: AbortSignal.timeout(8000) },
+      { signal: timeoutSignal(8000) },
     );
     if (!res.ok) return [];
     const data = (await res.json()) as { missions?: NearbyMission[] };
@@ -67,7 +68,7 @@ export async function fetchMissionQueue(
   const base = getApiBaseUrl();
   try {
     const res = await fetch(`${base}/prices/missions/${placeId}/queue`, {
-      signal: AbortSignal.timeout(8000),
+      signal: timeoutSignal(8000),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as { queue?: MissionQueueItem[] };
@@ -88,7 +89,7 @@ export async function validatePrice(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ vote, fromMission }),
-      signal: AbortSignal.timeout(8000),
+      signal: timeoutSignal(8000),
     });
     const json = (await res.json()) as ValidateResult;
     if (!res.ok) return { ok: false, error: (json as any).error ?? "Erro ao validar." };

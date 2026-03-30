@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { timeoutSignal } from "@/lib/fetchWithTimeout";
 
 const BASE = getApiBaseUrl();
 
@@ -24,7 +25,7 @@ export interface SaveProfileResult extends UserProfile {
 export async function fetchProfile(userId: string): Promise<UserProfile | null> {
   try {
     const res = await fetch(`${BASE}/profile/${userId}`, {
-      signal: AbortSignal.timeout(8000),
+      signal: timeoutSignal(8000),
     });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -41,7 +42,7 @@ export async function checkNickname(
   try {
     const params = new URLSearchParams({ nickname, userId });
     const res = await fetch(`${BASE}/profile/check-nickname?${params}`, {
-      signal: AbortSignal.timeout(5000),
+      signal: timeoutSignal(5000),
     });
     if (!res.ok) return { available: false, suggestion: null };
     return await res.json();
@@ -59,7 +60,7 @@ export async function saveProfile(
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-      signal: AbortSignal.timeout(10000),
+      signal: timeoutSignal(15000),
     });
     const json = await res.json();
     if (res.status === 409) {
@@ -69,15 +70,16 @@ export async function saveProfile(
       return { ok: false, error: json.error ?? "Erro ao salvar." };
     }
     return { ok: true, profile: json };
-  } catch {
-    return { ok: false, error: "Sem conexão com o servidor." };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: `Sem conexão com o servidor. (${msg})` };
   }
 }
 
 export async function exportUserData(userId: string): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
   try {
     const res = await fetch(`${BASE}/profile/${userId}/export`, {
-      signal: AbortSignal.timeout(15000),
+      signal: timeoutSignal(15000),
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
@@ -94,7 +96,7 @@ export async function deleteAccount(userId: string): Promise<{ ok: true } | { ok
   try {
     const res = await fetch(`${BASE}/profile/${userId}`, {
       method: "DELETE",
-      signal: AbortSignal.timeout(15000),
+      signal: timeoutSignal(15000),
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
