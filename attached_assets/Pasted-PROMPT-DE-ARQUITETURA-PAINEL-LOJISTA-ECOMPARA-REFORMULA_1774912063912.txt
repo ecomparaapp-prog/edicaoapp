@@ -1,0 +1,64 @@
+PROMPT DE ARQUITETURA: PAINEL LOJISTA ECOMPARA (REFORMULAÇÃO UI/UX)
+Objetivo: Desenvolver o Painel Lojista com identidade visual coesa ao Painel Administrativo, garantindo que todas as funcionalidades de gestão, relatórios e planos sejam clicáveis, testáveis e profissionais.
+
+1. IDENTIDADE VISUAL E ACESSIBILIDADE (UI/UX)
+Conceito de Design: Utilize o "SaaS Enterprise Style". Cores sóbrias baseadas na logo oficial (sem fundo), tipografia Inter ou Roboto, ausência total de emojis e uso de ícones minimalistas (Lucide/Material Design).
+
+Responsividade: O layout deve ser adaptável para visualização em App (Mobile) e Dashboard Web, mantendo a mesma hierarquia de informações.
+
+Fluxo de Acesso:
+
+Entrada A: Botão "Meu Negócio" (visível no perfil de usuários logados).
+
+Entrada B: Ativação via Painel Admin (Aprovação de solicitação de parceria).
+
+2. ESTRUTURA DO DASHBOARD (CARDS CLICÁVEIS)
+O painel deve ser organizado em blocos funcionais e testáveis:
+
+Ações Rápidas: Atalhos para "Atualizar Preço Hoje", "Lançar Oferta Relâmpago" e "Ver QR Code da Loja".
+
+Campanha Ativa: Gráfico visual simples mostrando o desempenho da campanha atual (Alcance e Cliques no raio de 5km/10km).
+
+Produtos Mais Vistos da Semana: Lista Top 5 com EAN, Nome e quantidade de visualizações únicas por usuários da região.
+
+Atividade Recente: Feed em tempo real de notas fiscais validadas na loja e novos seguidores do estabelecimento.
+
+Relatório Plus: Seção com "Blur" (desfoque) ou aviso de bloqueio para usuários do plano Normal, liberada apenas para assinantes Plus.
+
+3. GESTÃO DE PLANOS E ASSINATURAS
+Implementar a interface de seleção de planos com os seguintes valores:
+
+Plano Normal (R$ 299,90/mês):
+
+Raio de busca padrão (5km).
+
+Gestão de estoque básica.
+
+Relatórios semanais simplificados.
+
+Plano Plus (R$ 599,90/mês):
+
+Raio de busca estendido (10km).
+
+Destaque prioritário nos resultados de busca.
+
+Acesso ao Relatório Plus (Análise de concorrência e comportamento de compra).
+
+Configuração de Botões: Os botões de "Assinar" ou "Fazer Upgrade" devem ser funcionais (redirecionar para tela de Checkout ou Placeholder de pagamento).
+
+4. ÁREAS COMPLEMENTARES
+Área de Alertas: Central de notificações sobre preços defasados (reportados por usuários) ou queda no ranking de preços da região.
+
+Produtos: Gestão do catálogo da loja, permitindo ativar/desativar produtos em oferta.
+
+5. REGRAS DE LINGUAGEM
+Substituir termos genéricos por: Indicadores de Performance (KPIs), Gestão de Inventário, Conversão de Tráfego Local e Posicionamento de Mercado.
+
+🧪 ROTEIRO DE TESTE (SIMULAÇÃO DE OPERAÇÃO)
+Para validar a funcionalidade real, peça à IA para simular:
+
+Migração de Perfil: Um usuário comum clica em "Meu Negócio", preenche o CNPJ de um mercado em Ceilândia e o admin aprova no painel central.
+
+Upgrade de Plano: O lojista está no plano Normal e clica para ver o "Relatório Plus". O sistema deve exibir um Paywall profissional oferecendo o upgrade para R$ 599,90.
+
+Ação em Tempo Real: O lojista altera o preço do "Leite" no painel e o sistema simula a atualização imediata para todos os usuários num raio de 10km (Plano Plus).
