@@ -294,33 +294,50 @@ export default function ProfileScreen() {
               </LinearGradient>
             </View>
 
-            {user?.role !== "retailer" && (
-              <View style={{ paddingHorizontal: 16, marginBottom: 20 }}>
-                <Pressable
-                  style={[styles.retailerCTA, { backgroundColor: isDark ? "#1A0000" : "#FFF5F5", borderColor: "#CC000030" }]}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/merchant-register"); }}
-                >
-                  <View style={[styles.retailerCTAIconWrap, { backgroundColor: "#CC000015" }]}>
-                    <Feather name="briefcase" size={20} color="#CC0000" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.retailerCTATitle, { color: C.text }]}>Cadastre seu negócio</Text>
-                    <Text style={[styles.retailerCTASub, { color: C.textMuted }]}>
-                      Seja parceiro eCompara e alcance mais clientes
-                    </Text>
-                  </View>
-                  <View style={{ backgroundColor: "#CC0000", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <Text style={{ color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" }}>Quero ser parceiro</Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
+            {/* Configurações */}
             <View style={{ paddingHorizontal: 16, gap: 8 }}>
               <MenuItem icon="map-pin" label="Localização" sub="Santa Maria, DF" color={C} onPress={() => router.push("/settings/location")} />
               <MenuItem icon="shield" label="Privacidade" color={C} onPress={() => router.push("/settings/privacy")} />
               <MenuItem icon="bell" label="Notificações" color={C} onPress={() => router.push("/settings/notifications")} />
               <MenuItem icon="help-circle" label="Ajuda" color={C} onPress={() => router.push("/settings/help")} />
+            </View>
+
+            {/* Para Empresas & Marcas */}
+            <View style={{ paddingHorizontal: 16, marginTop: 24, marginBottom: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+                <Text style={{ fontSize: 10, fontFamily: "Inter_700Bold", color: C.textMuted, letterSpacing: 1.2 }}>
+                  PARA EMPRESAS & MARCAS
+                </Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+              </View>
+              <Pressable
+                style={[styles.brandsCard, { backgroundColor: isDark ? "#080820" : "#F0F4FF", borderColor: "#3B4FCC28" }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push("/merchant-register");
+                }}
+              >
+                <View style={[styles.brandsIconWrap, { backgroundColor: "#3B4FCC15" }]}>
+                  <MaterialCommunityIcons name="bullhorn-outline" size={26} color="#3B4FCC" />
+                </View>
+                <View style={{ flex: 1, gap: 3 }}>
+                  <Text style={[styles.brandsTitle, { color: C.text }]}>Anuncie no eCompara</Text>
+                  <Text style={[styles.brandsSub, { color: C.textMuted }]}>
+                    Destaque sua marca para milhares de consumidores. Parmalat, Trident, Piracanjuba e outras já anunciam.
+                  </Text>
+                </View>
+                <View style={styles.brandsArrow}>
+                  <Feather name="arrow-right" size={14} color="#fff" />
+                </View>
+              </Pressable>
+              <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", marginTop: 8 }}>
+                Área exclusiva para indústrias e marcas parceiras
+              </Text>
+            </View>
+
+            {/* Sair */}
+            <View style={{ paddingHorizontal: 16, marginTop: 8, gap: 8 }}>
               <Pressable style={[styles.menuItem, { backgroundColor: C.surfaceElevated, borderColor: "#CC0000" + "40" }]} onPress={handleLogout}>
                 <View style={[styles.menuIcon, { backgroundColor: "#CC000020" }]}>
                   <Feather name="log-out" size={16} color="#CC0000" />
@@ -1017,10 +1034,11 @@ const styles = StyleSheet.create({
   menuItem: { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 14, borderWidth: 1, gap: 12 },
   menuIcon: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   menuLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  retailerCTA: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, borderRadius: 16, borderWidth: 1.5 },
-  retailerCTAIconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  retailerCTATitle: { fontSize: 14, fontFamily: "Inter_700Bold", marginBottom: 2 },
-  retailerCTASub: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  brandsCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, borderRadius: 16, borderWidth: 1.5 },
+  brandsIconWrap: { width: 46, height: 46, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  brandsTitle: { fontSize: 14, fontFamily: "Inter_700Bold", marginBottom: 2 },
+  brandsSub: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  brandsArrow: { width: 30, height: 30, borderRadius: 9, backgroundColor: "#3B4FCC", alignItems: "center", justifyContent: "center" },
   menuSub: { fontSize: 11, fontFamily: "Inter_400Regular" },
   // Retailer Header
   retailerHeaderGrad: { paddingHorizontal: 16, paddingBottom: 14, flexDirection: "row", alignItems: "flex-end", gap: 10 },

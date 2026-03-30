@@ -1,0 +1,39 @@
+Aqui está o prompt técnico para realocar essa função com foco em UX/UI profissional:
+
+🚀 PROMPT DE REESTRUTURAÇÃO: PORTAL DE MARCAS E INDÚSTRIA (B2B)
+Objetivo: Realocar a função "Cadastre seu Negócio / Área da Indústria" para uma zona de alta conversão B2B, sem prejudicar a experiência de compra do usuário final.
+
+1. REPOSICIONAMENTO ESTRATÉGICO (UX)
+Em vez de um botão solto na Home, a funcionalidade deve ser movida para os seguintes pontos:
+
+Ponto A (Menu de Perfil): Dentro da aba "Perfil/Conta", criar uma seção destacada: "Para Empresas & Marcas".
+
+Ponto B (Footer/Configurações): Um link fixo no final das configurações: "Anuncie sua Marca no eCompara".
+
+Visual: O botão deve usar uma identidade visual ligeiramente diferente (ex: uma cor sólida ou borda elegante) para sinalizar que é uma área corporativa, separada da gamificação dos usuários.
+
+2. FLUXO DE CONVERSÃO PARA MARCAS (UI)
+Ao clicar, o sistema não deve abrir um cadastro comum, mas sim um Landing Flow simplificado:
+
+Tela 1: "Destaque sua marca para milhares de consumidores em Brasília." (Logos de exemplo: Parmalat, Mabel, Piracanjuba).
+
+Campos Reais: Nome da Empresa, CNPJ, E-mail Corporativo e Categoria (Indústria/Lojista).
+
+CTA Final: "Solicitar Acesso ao Painel de Ads".
+
+3. INTEGRAÇÃO COM O SISTEMA DE PONTOS (BACKEND)
+Importante: Cadastros realizados através desta área NÃO geram pontos de indicação automática para evitar abusos. Eles entram em uma fila de "Aprovação Pendente" no Painel Admin.
+
+4. TESTE DE USABILIDADE (A/B TESTING)
+Implementar dois gatilhos para teste:
+
+Variação 1: Link "Seja um Parceiro" visível apenas no topo da tela de Perfil.
+
+Variação 2: Banner discreto (estilo card) ao final dos resultados de busca: "Sua marca não está aqui? Clique e anuncie."
+
+🧠 Por que fazer assim? (Visão de Negócio)
+Para a Indústria: Passa credibilidade. Um gerente da Piracanjuba sente que o app é profissional ao ver uma área dedicada a "Business".
+
+Para o Usuário: O app continua limpo, focado em comparar preços e ganhar pontos, sem botões que não fazem sentido para a dona de casa ou para o jovem de Águas Claras.
+
+Para Você: Organiza o seu funil de vendas. Você saberá exatamente quem entrou para economizar e quem entrou para investir em publicidade.

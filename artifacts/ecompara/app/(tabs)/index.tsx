@@ -455,32 +455,6 @@ export default function HomeScreen() {
           }}
         />
 
-        {/* Para Lojistas Banner */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <Pressable
-            style={[styles.retailerBanner, { backgroundColor: isDark ? "#1A0000" : "#FFF5F5", borderColor: "#CC000030" }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push("/merchant-register");
-            }}
-          >
-            <View style={[styles.retailerBannerIcon, { backgroundColor: "#CC000015" }]}>
-              <Feather name="briefcase" size={22} color="#CC0000" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.retailerBannerTitle, { color: C.text }]}>
-                Você é dono de uma loja?
-              </Text>
-              <Text style={[styles.retailerBannerSub, { color: C.textMuted }]}>
-                Cadastre seu negócio e apareça para clientes próximos
-              </Text>
-            </View>
-            <View style={[styles.retailerBannerArrow, { backgroundColor: "#CC0000" }]}>
-              <Feather name="chevron-right" size={16} color="#fff" />
-            </View>
-          </Pressable>
-        </View>
-
         {/* Quick Actions */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <Text style={[styles.sectionTitle, { color: C.text, marginBottom: 12 }]}>
@@ -684,11 +658,6 @@ const styles = StyleSheet.create({
   quickActions: { flexDirection: "row", gap: 10 },
   quickCard: { flex: 1, borderRadius: 14, padding: 16, alignItems: "center", gap: 8 },
   quickCardText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  retailerBanner: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 14, borderWidth: 1.5 },
-  retailerBannerIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  retailerBannerTitle: { fontSize: 14, fontFamily: "Inter_700Bold", marginBottom: 2 },
-  retailerBannerSub: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 16 },
-  retailerBannerArrow: { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   qaRegister: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14 },
   qaRegisterTitle: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
   qaRegisterSub: { color: "rgba(255,255,255,0.75)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
