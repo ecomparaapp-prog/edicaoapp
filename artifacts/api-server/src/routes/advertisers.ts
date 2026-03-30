@@ -136,13 +136,22 @@ router.post("/advertisers/login", async (req, res) => {
   }
 });
 
-// GET /api/admin/advertisers — lista todos os anunciantes (admin)
-router.get("/admin/advertisers", async (_req, res) => {
+// GET /api/admin/advertisers — lista todos os anunciantes (admin), suporta ?status=
+router.get("/admin/advertisers", async (req, res) => {
   const client = await pool.connect();
   try {
+    const { status } = req.query as { status?: string };
+    const params: string[] = [];
+    let where = "";
+    if (status) {
+      params.push(status);
+      where = `WHERE status = $1`;
+    }
     const result = await client.query(
-      `SELECT id, company_name, cnpj, contact_name, email, segment, status, created_at
-       FROM advertisers ORDER BY created_at DESC`,
+      `SELECT id, company_name, cnpj, segment, website, contact_name, role, email,
+              whatsapp, reach, ad_format, budget, status, admin_note, created_at
+       FROM advertisers ${where} ORDER BY created_at DESC`,
+      params,
     );
     return res.json({ advertisers: result.rows });
   } catch (err) {
@@ -175,12 +184,13 @@ router.post("/admin/advertisers/:id/approve", async (req, res) => {
       return res.status(409).json({ error: "Anunciante já está ativo." });
     }
 
+    const { note } = req.body as { note?: string };
     const tempPassword = generateTempPassword();
     const passwordHash = hashPassword(tempPassword);
 
     await client.query(
-      "UPDATE advertisers SET status='active', password_hash=$1, updated_at=NOW() WHERE id=$2",
-      [passwordHash, id],
+      "UPDATE advertisers SET status='active', password_hash=$1, admin_note=$3, updated_at=NOW() WHERE id=$2",
+      [passwordHash, id, note ?? null],
     );
 
     const emailResult = await sendAdvertiserApproval({
@@ -213,11 +223,12 @@ router.post("/admin/advertisers/:id/reject", async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) return res.status(400).json({ error: "ID inválido." });
 
+  const { note } = req.body as { note?: string };
   const client = await pool.connect();
   try {
     const result = await client.query(
-      "UPDATE advertisers SET status='rejected', updated_at=NOW() WHERE id=$1 RETURNING id, company_name",
-      [id],
+      "UPDATE advertisers SET status='rejected', admin_note=$2, updated_at=NOW() WHERE id=$1 RETURNING id, company_name",
+      [id, note ?? null],
     );
     if (!result.rows.length) {
       return res.status(404).json({ error: "Anunciante não encontrado." });

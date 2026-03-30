@@ -402,6 +402,15 @@ export async function ensureSchema(): Promise<void> {
     `);
 
     // ── Advertisers (Portal do Anunciante — Indústria & Marcas) ──────────────
+    // Limpar sequência órfã caso a tabela não exista mas a sequência sim
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'advertisers') THEN
+          DROP SEQUENCE IF EXISTS advertisers_id_seq;
+        END IF;
+      END $$;
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS advertisers (
         id SERIAL PRIMARY KEY,
@@ -418,11 +427,13 @@ export async function ensureSchema(): Promise<void> {
         budget TEXT,
         status TEXT NOT NULL DEFAULT 'pending',
         admin_note TEXT,
+        password_hash TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
 
+    await client.query(`ALTER TABLE advertisers ADD COLUMN IF NOT EXISTS password_hash TEXT;`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_advertisers_status ON advertisers (status, created_at DESC);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_advertisers_email ON advertisers (email);`);
 

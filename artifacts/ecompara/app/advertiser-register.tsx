@@ -22,9 +22,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 
-const BRAND_COLOR = "#3B4FCC";
-const BRAND_DARK = "#2A3BAA";
-const BRAND_LIGHT = "#EEF1FF";
+const BRAND_COLOR = "#CC0000";
+const BRAND_DARK = "#A30000";
+const BRAND_LIGHT = "#FFF1F2";
 
 const SEGMENTS = [
   "Indústria / Fabricante",

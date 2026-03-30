@@ -17,8 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
 
-const BRAND_COLOR = "#3B4FCC";
-const BRAND_DARK = "#2A3BAA";
+const BRAND_COLOR = "#CC0000";
+const BRAND_DARK = "#A30000";
 
 type Tab = "dashboard" | "campanhas" | "produtos" | "relatorio";
 
