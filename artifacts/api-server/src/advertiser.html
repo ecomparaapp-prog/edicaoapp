@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal do Anunciante — eCompara</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #CC0000; --primary-dark: #a30000;
+      --bg: #f3f4f6; --surface: #ffffff; --border: #e5e7eb;
+      --text: #111827; --muted: #6b7280; --light: #9ca3af;
+      --success: #16a34a; --success-bg: #dcfce7;
+      --warn: #d97706; --warn-bg: #fef3c7;
+      --danger: #dc2626; --danger-bg: #fee2e2;
+      --sidebar-bg: #111827;
+    }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
+
+    /* ── Login ── */
+    #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background: linear-gradient(135deg, #111827 0%, #1f2937 60%, #370000 100%); }
+    .login-card { background:#fff; border-radius:20px; padding:48px 40px; width:100%; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:20px; }
+    .login-logo { text-align:center; }
+    .login-logo h1 { font-size:26px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; }
+    .login-logo p { font-size:12px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:1.5px; font-weight:600; }
+    .fgroup { display:flex; flex-direction:column; gap:6px; }
+    .fgroup label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; }
+    .fgroup input { border:1.5px solid var(--border); border-radius:10px; padding:13px 14px; font-size:15px; outline:none; transition:border-color .15s; background:#f9fafb; width:100%; }
+    .fgroup input:focus { border-color:var(--primary); background:#fff; }
+    .btn-primary { background:var(--primary); color:#fff; border:none; border-radius:10px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; width:100%; transition:background .15s; }
+    .btn-primary:hover { background:var(--primary-dark); }
+    .btn-primary:disabled { opacity:.55; cursor:not-allowed; }
+    .login-err { background:var(--danger-bg); color:var(--danger); border-radius:8px; padding:10px 14px; font-size:13px; display:none; }
+    .divider { text-align:center; color:var(--light); font-size:12px; }
+    .link-register { text-align:center; font-size:13px; color:var(--muted); }
+    .link-register a { color:var(--primary); text-decoration:none; font-weight:600; }
+    .link-register a:hover { text-decoration:underline; }
+
+    /* ── App ── */
+    #app-screen { display:none; }
+    .layout { display:flex; min-height:100vh; }
+
+    /* Sidebar */
+    .sidebar { width:240px; min-width:240px; background:var(--sidebar-bg); display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:50; }
+    .sb-logo { padding:22px 20px 18px; border-bottom:1px solid rgba(255,255,255,.07); }
+    .sb-logo h2 { color:#fff; font-size:18px; font-weight:800; letter-spacing:-0.3px; }
+    .sb-logo span { color:rgba(255,255,255,.45); font-size:11px; }
+    .sb-group { font-size:9px; font-weight:700; color:rgba(255,255,255,.3); letter-spacing:1.5px; text-transform:uppercase; padding:16px 20px 5px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:9px 20px; color:rgba(255,255,255,.6); font-size:13px; font-weight:500; cursor:pointer; transition:background .1s, color .1s; border-left:3px solid transparent; user-select:none; }
+    .nav-item:hover { background:#1f2937; color:#fff; }
+    .nav-item.active { background:rgba(204,0,0,.15); color:#fff; border-left-color:var(--primary); }
+    .nav-icon { width:18px; text-align:center; }
+    .sb-bottom { margin-top:auto; padding:16px 20px; border-top:1px solid rgba(255,255,255,.07); }
+    .sb-user { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .sb-avatar { width:36px; height:36px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:14px; flex-shrink:0; }
+    .sb-user-info { flex:1; min-width:0; }
+    .sb-user-name { color:#fff; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sb-user-role { color:rgba(255,255,255,.4); font-size:11px; }
+    .btn-logout { width:100%; background:rgba(255,255,255,.07); border:none; color:rgba(255,255,255,.6); border-radius:8px; padding:8px; font-size:13px; cursor:pointer; transition:background .15s; }
+    .btn-logout:hover { background:rgba(255,255,255,.12); color:#fff; }
+
+    /* Main */
+    .main { margin-left:240px; flex:1; display:flex; flex-direction:column; }
+    .topbar { background:#fff; border-bottom:1px solid var(--border); padding:0 28px; height:60px; display:flex; align-items:center; justify-content:space-between; }
+    .topbar-title { font-size:17px; font-weight:700; }
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-active { background:var(--success-bg); color:var(--success); }
+    .badge-pending { background:var(--warn-bg); color:var(--warn); }
+    .content { padding:28px; display:flex; flex-direction:column; gap:24px; }
+
+    /* Cards */
+    .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+    .card { background:#fff; border-radius:14px; padding:20px; border:1px solid var(--border); }
+    .card-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:8px; }
+    .card-value { font-size:28px; font-weight:800; color:var(--text); }
+    .card-sub { font-size:12px; color:var(--light); margin-top:4px; }
+    .card-icon { font-size:24px; margin-bottom:8px; }
+
+    /* Section */
+    .section { background:#fff; border-radius:14px; border:1px solid var(--border); overflow:hidden; }
+    .section-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .section-title { font-size:15px; font-weight:700; }
+    .section-body { padding:20px; }
+
+    /* Table */
+    .table { width:100%; border-collapse:collapse; font-size:13px; }
+    .table th { text-align:left; padding:8px 12px; color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; border-bottom:1px solid var(--border); }
+    .table td { padding:12px; border-bottom:1px solid #f3f4f6; vertical-align:middle; }
+    .table tr:last-child td { border-bottom:none; }
+
+    /* Coming soon */
+    .coming-soon { text-align:center; padding:60px 20px; }
+    .coming-soon-icon { font-size:48px; margin-bottom:16px; }
+    .coming-soon h3 { font-size:18px; font-weight:700; margin-bottom:8px; }
+    .coming-soon p { color:var(--muted); font-size:14px; max-width:360px; margin:0 auto; }
+
+    /* Register form */
+    #register-screen { display:none; align-items:center; justify-content:center; min-height:100vh; background: linear-gradient(135deg, #111827 0%, #1f2937 60%, #370000 100%); }
+    .register-card { background:#fff; border-radius:20px; padding:40px; width:100%; max-width:520px; box-shadow:0 20px 60px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:16px; max-height:90vh; overflow-y:auto; }
+    .register-card h2 { font-size:22px; font-weight:800; color:var(--primary); }
+    .register-card p { color:var(--muted); font-size:14px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .register-err { background:var(--danger-bg); color:var(--danger); border-radius:8px; padding:10px 14px; font-size:13px; display:none; }
+    .register-ok { background:var(--success-bg); color:var(--success); border-radius:8px; padding:10px 14px; font-size:13px; display:none; }
+
+    @media(max-width:640px) { .form-row { grid-template-columns:1fr; } .sidebar { display:none; } .main { margin-left:0; } }
+  </style>
+</head>
+<body>
+
+<!-- ── TELA DE LOGIN ─────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>eCompara</h1>
+      <p>Portal do Anunciante</p>
+    </div>
+    <div class="fgroup">
+      <label>E-mail corporativo</label>
+      <input type="email" id="login-email" placeholder="voce@empresa.com.br" />
+    </div>
+    <div class="fgroup">
+      <label>Senha</label>
+      <input type="password" id="login-password" placeholder="Sua senha" />
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn-primary" id="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="divider">— ou —</div>
+    <div class="link-register">
+      Ainda não tem conta? <a href="#" onclick="showRegister()">Solicitar acesso</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── TELA DE CADASTRO ──────────────────────────── -->
+<div id="register-screen" style="display:none; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#111827 0%,#1f2937 60%,#370000 100%);">
+  <div class="register-card">
+    <div>
+      <h2>Solicitar Acesso como Anunciante</h2>
+      <p>Preencha os dados abaixo. Nossa equipe analisará e entrará em contato em até 24h úteis.</p>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Nome da Empresa *</label>
+        <input type="text" id="r-company" placeholder="Indústria Exemplo Ltda" />
+      </div>
+      <div class="fgroup">
+        <label>CNPJ *</label>
+        <input type="text" id="r-cnpj" placeholder="00.000.000/0001-00" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Nome do Responsável</label>
+        <input type="text" id="r-contact" placeholder="Carlos Silva" />
+      </div>
+      <div class="fgroup">
+        <label>Cargo</label>
+        <input type="text" id="r-role" placeholder="Diretor de Marketing" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>E-mail Corporativo *</label>
+        <input type="email" id="r-email" placeholder="carlos@empresa.com.br" />
+      </div>
+      <div class="fgroup">
+        <label>WhatsApp</label>
+        <input type="text" id="r-whatsapp" placeholder="(11) 99999-0000" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fgroup">
+        <label>Segmento</label>
+        <input type="text" id="r-segment" placeholder="Alimentos, Bebidas, Higiene..." />
+      </div>
+      <div class="fgroup">
+        <label>Site</label>
+        <input type="text" id="r-website" placeholder="https://empresa.com.br" />
+      </div>
+    </div>
+    <div class="fgroup">
+      <label>Orçamento estimado / mês</label>
+      <input type="text" id="r-budget" placeholder="Ex: R$ 2.000/mês" />
+    </div>
+    <div class="register-err" id="register-err"></div>
+    <div class="register-ok" id="register-ok"></div>
+    <button class="btn-primary" id="btn-register" onclick="doRegister()">Enviar Solicitação</button>
+    <div class="link-register">Já tem conta? <a href="#" onclick="showLogin()">Fazer login</a></div>
+  </div>
+</div>
+
+<!-- ── APP (pós-login) ───────────────────────────── -->
+<div id="app-screen">
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sb-logo">
+        <h2>eCompara</h2>
+        <span>Portal do Anunciante</span>
+      </div>
+      <div class="sb-group">Principal</div>
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('campanhas')">
+        <span class="nav-icon">📢</span> Campanhas
+      </div>
+      <div class="nav-item" onclick="showSection('produtos')">
+        <span class="nav-icon">🏷️</span> Produtos
+      </div>
+      <div class="nav-item" onclick="showSection('metricas')">
+        <span class="nav-icon">📈</span> Métricas
+      </div>
+      <div class="sb-group">Conta</div>
+      <div class="nav-item" onclick="showSection('perfil')">
+        <span class="nav-icon">🏢</span> Perfil da Marca
+      </div>
+      <div class="sb-bottom">
+        <div class="sb-user">
+          <div class="sb-avatar" id="sb-avatar">M</div>
+          <div class="sb-user-info">
+            <div class="sb-user-name" id="sb-username">Marca</div>
+            <div class="sb-user-role">Anunciante</div>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">Sair</button>
+      </div>
+    </nav>
+
+    <!-- Conteúdo principal -->
+    <div class="main">
+      <div class="topbar">
+        <span class="topbar-title" id="topbar-title">Dashboard</span>
+        <span class="badge badge-active" id="status-badge">● Ativo</span>
+      </div>
+
+      <div class="content">
+
+        <!-- DASHBOARD -->
+        <div id="section-dashboard">
+          <div class="cards-grid">
+            <div class="card">
+              <div class="card-icon">👁️</div>
+              <div class="card-label">Impressões</div>
+              <div class="card-value">—</div>
+              <div class="card-sub">Nenhuma campanha ativa</div>
+            </div>
+            <div class="card">
+              <div class="card-icon">🖱️</div>
+              <div class="card-label">Cliques</div>
+              <div class="card-value">—</div>
+              <div class="card-sub">CTR indisponível</div>
+            </div>
+            <div class="card">
+              <div class="card-icon">💰</div>
+              <div class="card-label">Saldo disponível</div>
+              <div class="card-value">—</div>
+              <div class="card-sub">Nenhum crédito carregado</div>
+            </div>
+            <div class="card">
+              <div class="card-icon">📦</div>
+              <div class="card-label">Produtos ativos</div>
+              <div class="card-value">0</div>
+              <div class="card-sub">Nenhum SKU cadastrado</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">Bem-vindo ao Portal do Anunciante</span>
+            </div>
+            <div class="section-body">
+              <p style="color:var(--muted);font-size:14px;line-height:1.7;">
+                Sua conta está ativa. Use o menu lateral para gerenciar suas campanhas, 
+                cadastrar produtos (SKUs) e acompanhar métricas de desempenho como 
+                impressões, cliques e alcance por região no Distrito Federal.
+              </p>
+              <div style="margin-top:16px;padding:14px 16px;background:#f9fafb;border-radius:10px;border:1px solid var(--border);">
+                <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">PRÓXIMOS PASSOS</div>
+                <div style="font-size:13px;color:var(--text);line-height:2;">
+                  1️⃣ Cadastre os EANs dos seus produtos em <strong>Produtos</strong><br>
+                  2️⃣ Configure uma campanha em <strong>Campanhas</strong><br>
+                  3️⃣ Acompanhe os resultados em <strong>Métricas</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMPANHAS -->
+        <div id="section-campanhas" style="display:none">
+          <div class="coming-soon">
+            <div class="coming-soon-icon">📢</div>
+            <h3>Gerenciamento de Campanhas</h3>
+            <p>Configure geofencing, defina orçamento por clique, escolha formatos de anúncio (banner home, produto patrocinado) e defina o público por região.</p>
+            <p style="margin-top:12px;font-size:12px;color:var(--light);">Em desenvolvimento — disponível em breve.</p>
+          </div>
+        </div>
+
+        <!-- PRODUTOS -->
+        <div id="section-produtos" style="display:none">
+          <div class="coming-soon">
+            <div class="coming-soon-icon">🏷️</div>
+            <h3>Cadastro de Produtos (SKU/EAN)</h3>
+            <p>Vincule os EANs dos seus produtos para que o sistema possa monitorar preços e acionar campanhas automaticamente quando o produto estiver disponível em lojas próximas.</p>
+            <p style="margin-top:12px;font-size:12px;color:var(--light);">Em desenvolvimento — disponível em breve.</p>
+          </div>
+        </div>
+
+        <!-- MÉTRICAS -->
+        <div id="section-metricas" style="display:none">
+          <div class="coming-soon">
+            <div class="coming-soon-icon">📈</div>
+            <h3>Relatórios e Métricas</h3>
+            <p>Acompanhe impressões, CTR, CPC e mapa de calor por Regiões Administrativas do DF. Visualize quais bairros geram mais interesse nos seus produtos.</p>
+            <p style="margin-top:12px;font-size:12px;color:var(--light);">Em desenvolvimento — disponível em breve.</p>
+          </div>
+        </div>
+
+        <!-- PERFIL -->
+        <div id="section-perfil" style="display:none">
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">Perfil da Marca</span>
+            </div>
+            <div class="section-body">
+              <table class="table">
+                <tbody id="profile-table">
+                  <tr><td colspan="2" style="color:var(--muted)">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const BASE = '/api';
+  let currentAdv = null;
+
+  // ── Utilitários ──────────────────────────────────────────────
+  function showScreen(id) {
+    ['login-screen','register-screen','app-screen'].forEach(s => {
+      const el = document.getElementById(s);
+      if (el) el.style.display = (s === id) ? (id === 'app-screen' ? 'block' : 'flex') : 'none';
+    });
+  }
+  function showSection(name) {
+    ['dashboard','campanhas','produtos','metricas','perfil'].forEach(s => {
+      document.getElementById('section-' + s).style.display = (s === name) ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    const titles = { dashboard:'Dashboard', campanhas:'Campanhas', produtos:'Produtos', metricas:'Métricas', perfil:'Perfil da Marca' };
+    document.getElementById('topbar-title').textContent = titles[name] || name;
+    if (name === 'perfil') loadProfile();
+  }
+  function showLogin() { showScreen('login-screen'); }
+  function showRegister() { showScreen('register-screen'); }
+
+  // ── Login ────────────────────────────────────────────────────
+  async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-err');
+    const btn = document.getElementById('btn-login');
+    errEl.style.display = 'none';
+    if (!email || !password) { errEl.textContent = 'Preencha e-mail e senha.'; errEl.style.display = 'block'; return; }
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    try {
+      const res = await fetch(BASE + '/advertisers/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Erro ao fazer login.'; errEl.style.display = 'block'; return; }
+      currentAdv = data.advertiser;
+      localStorage.setItem('adv_session', JSON.stringify(currentAdv));
+      loadApp();
+    } catch(e) {
+      errEl.textContent = 'Erro de conexão. Tente novamente.'; errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  }
+
+  // ── Cadastro ─────────────────────────────────────────────────
+  async function doRegister() {
+    const errEl = document.getElementById('register-err');
+    const okEl = document.getElementById('register-ok');
+    const btn = document.getElementById('btn-register');
+    errEl.style.display = 'none'; okEl.style.display = 'none';
+    const body = {
+      companyName: document.getElementById('r-company').value.trim(),
+      cnpj: document.getElementById('r-cnpj').value.trim(),
+      contactName: document.getElementById('r-contact').value.trim(),
+      role: document.getElementById('r-role').value.trim(),
+      email: document.getElementById('r-email').value.trim(),
+      whatsapp: document.getElementById('r-whatsapp').value.trim(),
+      segment: document.getElementById('r-segment').value.trim(),
+      website: document.getElementById('r-website').value.trim(),
+      budget: document.getElementById('r-budget').value.trim(),
+    };
+    if (!body.companyName || !body.cnpj || !body.email) {
+      errEl.textContent = 'Preencha os campos obrigatórios: Empresa, CNPJ e E-mail.';
+      errEl.style.display = 'block'; return;
+    }
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    try {
+      const res = await fetch(BASE + '/advertisers/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Erro ao enviar.'; errEl.style.display = 'block'; return; }
+      okEl.textContent = '✅ Solicitação enviada! Você receberá um e-mail quando for aprovado.';
+      okEl.style.display = 'block';
+      btn.textContent = 'Solicitação enviada';
+    } catch(e) {
+      errEl.textContent = 'Erro de conexão.'; errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── App ──────────────────────────────────────────────────────
+  function loadApp() {
+    if (!currentAdv) return;
+    const initials = (currentAdv.companyName || 'M').charAt(0).toUpperCase();
+    document.getElementById('sb-avatar').textContent = initials;
+    document.getElementById('sb-username').textContent = currentAdv.companyName;
+    const badge = document.getElementById('status-badge');
+    if (currentAdv.status === 'active') {
+      badge.className = 'badge badge-active'; badge.textContent = '● Ativo';
+    } else {
+      badge.className = 'badge badge-pending'; badge.textContent = '● Pendente';
+    }
+    showScreen('app-screen');
+  }
+
+  function loadProfile() {
+    if (!currentAdv) return;
+    const tbody = document.getElementById('profile-table');
+    const rows = [
+      ['Empresa', currentAdv.companyName],
+      ['Responsável', currentAdv.contactName || '—'],
+      ['E-mail', currentAdv.email],
+      ['Status', currentAdv.status === 'active' ? '✅ Ativo' : '⏳ Pendente'],
+      ['Perfil de acesso', currentAdv.role || 'ROLE_ADVERTISER'],
+    ];
+    tbody.innerHTML = rows.map(([k,v]) =>
+      `<tr><td style="color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;width:160px;">${k}</td><td style="font-size:14px;">${v}</td></tr>`
+    ).join('');
+  }
+
+  function doLogout() {
+    currentAdv = null;
+    localStorage.removeItem('adv_session');
+    showScreen('login-screen');
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-err').style.display = 'none';
+  }
+
+  // Enter no login
+  document.addEventListener('DOMContentLoaded', () => {
+    ['login-email','login-password'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+    });
+    // Restaurar sessão
+    try {
+      const saved = localStorage.getItem('adv_session');
+      if (saved) { currentAdv = JSON.parse(saved); loadApp(); return; }
+    } catch(e) {}
+    showScreen('login-screen');
+  });
+</script>
+</body>
+</html>

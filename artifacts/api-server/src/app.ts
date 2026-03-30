@@ -54,6 +54,10 @@ app.get("/api/admin", (_req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
 });
 
+app.get("/api/anunciantes", (_req, res) => {
+  res.sendFile(path.join(__dirname, "advertiser.html"));
+});
+
 app.post("/api/admin/login", (req: Request, res: Response) => {
   const { password } = req.body as { password?: string };
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
