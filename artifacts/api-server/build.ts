@@ -77,11 +77,20 @@ async function buildAll() {
   });
 
   await mkdir(distDir, { recursive: true });
-  await copyFile(
-    path.resolve(__dirname, "src/admin.html"),
-    path.resolve(distDir, "admin.html"),
-  );
-  console.log("copied admin.html to dist/");
+
+  const staticFiles = [
+    "admin.html",
+    "advertiser.html",
+    "logo-dark.png",
+    "logo-light.png",
+  ];
+  for (const file of staticFiles) {
+    await copyFile(
+      path.resolve(__dirname, "src", file),
+      path.resolve(distDir, file),
+    );
+    console.log(`copied ${file} to dist/`);
+  }
 }
 
 buildAll().catch((err) => {
