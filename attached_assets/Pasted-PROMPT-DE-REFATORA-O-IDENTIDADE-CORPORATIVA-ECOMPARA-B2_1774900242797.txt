@@ -1,0 +1,47 @@
+PROMPT DE REFATORAÇÃO: IDENTIDADE CORPORATIVA ECOMPARA (B2B & ADMIN)
+Objetivo: Refatorar a interface (UI), a experiência (UX) e o tom de voz (Copy) do Painel Administrativo e do Portal de Marcas, adotando uma estética "Enterprise Grade" (Nível Corporativo).
+
+1. DIRETRIZES DE IDENTIDADE VISUAL (UI)
+Minimalismo Executivo: Adote um design limpo, com alto uso de espaços em branco, tipografia sem serifa de peso variável (ex: Inter ou Roboto) e bordas levemente arredondadas.
+
+Logotipo: Utilize o logotipo oficial do eCompara (versão sem fundo) de forma fixa no canto superior esquerdo (Sidebar ou Topbar). O logo deve ditar a paleta de cores primária e secundária do sistema.
+
+Proibição de Emojis: Remova todos os emojis de botões, títulos e mensagens. Substitua-os por ícones vetoriais sóbrios e minimalistas (Linha Lucide ou Material Design Icons em estilo Outline).
+
+Componentes Coesos: Utilize tabelas com linhas finas, gráficos de desempenho (Charts) em cores sólidas ou gradientes sutis, e cards de métricas com sombras suaves (soft shadows).
+
+2. REVISÃO DE LINGUAGEM E TONE OF VOICE (COPYWRITING)
+Substitua termos informais por terminologia de mercado (Business English/Português Corporativo):
+
+Sistema de Pontos → Gestão de Gamificação e Engajamento.
+
+Indique e Ganhe → Programa de Aquisição de Usuários (Referral).
+
+Botão de Salvar → Confirmar Alterações / Atualizar Configurações.
+
+Aprovar Marca → Validar Credenciamento de Parceiro.
+
+Fazer Campanha → Configurar Ativo Publicitário / Lançar Campanha de Trade Marketing.
+
+Respostas de Desempenho → Analytics e KPIs de Performance.
+
+3. ESTRUTURA ESPECÍFICA: PORTAL DE MARCAS
+A interface para indústrias (Mabel, Piracanjuba) deve focar em Dados e Resultados:
+
+Dashboard: Focar em ROI (Retorno sobre Investimento), CTR (Taxa de Clique) e Alcance Geográfico.
+
+Gerenciador de Campanhas: Layout em estilo "Passo a Passo" (Stepper) profissional.
+
+Segurança: Mensagens claras de "Ambiente Criptografado" e "Dados de Mercado Protegidos".
+
+4. ESTRUTURA ESPECÍFICA: PAINEL ADMIN
+A interface para o proprietário deve focar em Controle e Governança:
+
+Log de Auditoria: Registro técnico de quem alterou o quê e quando.
+
+Agendamento de Pontos: Interface clara mostrando "Configuração Ativa" vs. "Configuração Agendada (Próxima Sexta-feira)".
+
+🧪 Exemplo de como a IA deve transformar uma frase:
+Antes (Informal): "Oi! Aqui você vê quantos pontos a galera tá ganhando 🚀"
+
+Depois (Profissional): "Painel de Controle: Monitoramento de distribuição de créditos e métricas de engajamento da base de usuários."

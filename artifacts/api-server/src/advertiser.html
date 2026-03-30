@@ -3,146 +3,179 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portal do Anunciante — eCompara</title>
+  <title>Portal de Anunciantes — eCompara</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --primary: #CC0000; --primary-dark: #a30000;
-      --bg: #f3f4f6; --surface: #ffffff; --border: #e5e7eb;
-      --text: #111827; --muted: #6b7280; --light: #9ca3af;
-      --success: #16a34a; --success-bg: #dcfce7;
-      --warn: #d97706; --warn-bg: #fef3c7;
-      --danger: #dc2626; --danger-bg: #fee2e2;
-      --sidebar-bg: #111827;
+      --bg: #F7F7F8;
+      --surface: #FFFFFF;
+      --border: #E4E4E7;
+      --sidebar-bg: #0A0A0A;
+      --sidebar-hover: rgba(255,255,255,0.05);
+      --sidebar-active-bg: rgba(204,0,0,0.1);
+      --sidebar-active-border: #CC0000;
+      --primary: #CC0000;
+      --primary-dark: #A30000;
+      --text: #09090B;
+      --muted: #71717A;
+      --light: #A1A1AA;
+      --success: #16A34A;
+      --success-bg: #F0FDF4;
+      --success-border: #BBF7D0;
+      --warn: #B45309;
+      --warn-bg: #FFFBEB;
+      --warn-border: #FDE68A;
+      --danger: #CC0000;
+      --danger-bg: #FFF1F2;
+      --danger-border: #FECDD3;
+      --blue: #1D4ED8;
+      --blue-bg: #EFF6FF;
     }
-    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    html, body { height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
 
     /* ── Login ── */
-    #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background: linear-gradient(135deg, #111827 0%, #1f2937 60%, #370000 100%); }
-    .login-card { background:#fff; border-radius:20px; padding:48px 40px; width:100%; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:20px; }
-    .login-logo { text-align:center; }
-    .login-logo h1 { font-size:26px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; }
-    .login-logo p { font-size:12px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:1.5px; font-weight:600; }
+    #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background: linear-gradient(160deg, #0A0A0A 0%, #111111 55%, #1A0000 100%); }
+    .login-card { background:#fff; border-radius:12px; padding:44px 40px; width:100%; max-width:400px; box-shadow:0 24px 64px rgba(0,0,0,0.4); display:flex; flex-direction:column; gap:20px; }
+    .login-logo { display:flex; flex-direction:column; align-items:center; gap:14px; }
+    .login-logo img { height:36px; width:auto; object-fit:contain; }
+    .login-logo-label { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:2.5px; text-transform:uppercase; }
+    .login-divider { height:1px; background:var(--border); }
     .fgroup { display:flex; flex-direction:column; gap:6px; }
-    .fgroup label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; }
-    .fgroup input { border:1.5px solid var(--border); border-radius:10px; padding:13px 14px; font-size:15px; outline:none; transition:border-color .15s; background:#f9fafb; width:100%; }
-    .fgroup input:focus { border-color:var(--primary); background:#fff; }
-    .btn-primary { background:var(--primary); color:#fff; border:none; border-radius:10px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; width:100%; transition:background .15s; }
+    .fgroup label { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; }
+    .fgroup input { border:1.5px solid var(--border); border-radius:8px; padding:11px 13px; font-size:14px; outline:none; transition:border-color .15s, box-shadow .15s; width:100%; background:#FAFAFA; font-family:inherit; color:var(--text); }
+    .fgroup input:focus { border-color:var(--primary); background:#fff; box-shadow:0 0 0 3px rgba(204,0,0,0.08); }
+    .btn-primary { background:var(--primary); color:#fff; border:none; border-radius:8px; padding:12px; font-size:14px; font-weight:600; cursor:pointer; width:100%; transition:background .15s; font-family:inherit; }
     .btn-primary:hover { background:var(--primary-dark); }
     .btn-primary:disabled { opacity:.55; cursor:not-allowed; }
-    .login-err { background:var(--danger-bg); color:var(--danger); border-radius:8px; padding:10px 14px; font-size:13px; display:none; }
-    .divider { text-align:center; color:var(--light); font-size:12px; }
-    .link-register { text-align:center; font-size:13px; color:var(--muted); }
-    .link-register a { color:var(--primary); text-decoration:none; font-weight:600; }
-    .link-register a:hover { text-decoration:underline; }
+    .login-err { background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger-border); border-radius:8px; padding:10px 14px; font-size:13px; display:none; }
+    .login-info { background:var(--blue-bg); color:var(--blue); border:1px solid #BFDBFE; border-radius:8px; padding:10px 14px; font-size:12.5px; line-height:1.6; }
+    .login-link { text-align:center; font-size:13px; color:var(--muted); }
+    .login-link a { color:var(--primary); text-decoration:none; font-weight:600; }
+    .login-link a:hover { text-decoration:underline; }
 
-    /* ── App ── */
+    /* ── Register ── */
+    #register-screen { display:none; align-items:center; justify-content:center; min-height:100vh; padding:32px 16px; background: linear-gradient(160deg, #0A0A0A 0%, #111111 55%, #1A0000 100%); }
+    .register-card { background:#fff; border-radius:12px; padding:40px; width:100%; max-width:540px; box-shadow:0 24px 64px rgba(0,0,0,0.4); display:flex; flex-direction:column; gap:16px; max-height:90vh; overflow-y:auto; }
+    .register-card h2 { font-size:20px; font-weight:800; letter-spacing:-0.3px; }
+    .register-card .register-sub { font-size:13px; color:var(--muted); line-height:1.6; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .register-err { background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger-border); border-radius:8px; padding:10px 14px; font-size:13px; display:none; }
+    .register-ok { background:var(--success-bg); color:var(--success); border:1px solid var(--success-border); border-radius:8px; padding:12px 14px; font-size:13px; display:none; line-height:1.6; }
+
+    /* ── App Layout ── */
     #app-screen { display:none; }
     .layout { display:flex; min-height:100vh; }
 
-    /* Sidebar */
-    .sidebar { width:240px; min-width:240px; background:var(--sidebar-bg); display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:50; }
-    .sb-logo { padding:22px 20px 18px; border-bottom:1px solid rgba(255,255,255,.07); }
-    .sb-logo h2 { color:#fff; font-size:18px; font-weight:800; letter-spacing:-0.3px; }
-    .sb-logo span { color:rgba(255,255,255,.45); font-size:11px; }
-    .sb-group { font-size:9px; font-weight:700; color:rgba(255,255,255,.3); letter-spacing:1.5px; text-transform:uppercase; padding:16px 20px 5px; }
-    .nav-item { display:flex; align-items:center; gap:10px; padding:9px 20px; color:rgba(255,255,255,.6); font-size:13px; font-weight:500; cursor:pointer; transition:background .1s, color .1s; border-left:3px solid transparent; user-select:none; }
-    .nav-item:hover { background:#1f2937; color:#fff; }
-    .nav-item.active { background:rgba(204,0,0,.15); color:#fff; border-left-color:var(--primary); }
-    .nav-icon { width:18px; text-align:center; }
-    .sb-bottom { margin-top:auto; padding:16px 20px; border-top:1px solid rgba(255,255,255,.07); }
+    /* ── Sidebar ── */
+    .sidebar { width:236px; min-width:236px; background:var(--sidebar-bg); display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:50; border-right:1px solid rgba(255,255,255,0.04); }
+    .sb-logo { padding:20px 18px 16px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .sb-logo img { height:28px; width:auto; object-fit:contain; display:block; }
+    .sb-section { font-size:9px; font-weight:700; color:rgba(255,255,255,0.2); letter-spacing:1.8px; text-transform:uppercase; padding:14px 14px 4px; }
+    .nav-item { display:flex; align-items:center; gap:9px; padding:8px 14px; color:rgba(255,255,255,0.5); font-size:13px; font-weight:500; cursor:pointer; transition:all .12s; border-left:2px solid transparent; user-select:none; }
+    .nav-item:hover { background:var(--sidebar-hover); color:rgba(255,255,255,0.85); }
+    .nav-item.active { background:var(--sidebar-active-bg); color:#fff; border-left-color:var(--sidebar-active-border); }
+    .nav-icon { width:16px; flex-shrink:0; opacity:0.65; display:flex; align-items:center; }
+    .nav-item.active .nav-icon, .nav-item:hover .nav-icon { opacity:1; }
+    .sb-bottom { margin-top:auto; padding:16px 14px; border-top:1px solid rgba(255,255,255,0.06); }
     .sb-user { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-    .sb-avatar { width:36px; height:36px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:14px; flex-shrink:0; }
-    .sb-user-info { flex:1; min-width:0; }
-    .sb-user-name { color:#fff; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .sb-user-role { color:rgba(255,255,255,.4); font-size:11px; }
-    .btn-logout { width:100%; background:rgba(255,255,255,.07); border:none; color:rgba(255,255,255,.6); border-radius:8px; padding:8px; font-size:13px; cursor:pointer; transition:background .15s; }
-    .btn-logout:hover { background:rgba(255,255,255,.12); color:#fff; }
+    .sb-avatar { width:34px; height:34px; border-radius:6px; background:var(--primary); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:13px; flex-shrink:0; }
+    .sb-user-name { color:#fff; font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sb-user-role { color:rgba(255,255,255,0.35); font-size:10.5px; margin-top:1px; }
+    .btn-logout { width:100%; background:rgba(255,255,255,0.06); border:none; color:rgba(255,255,255,0.4); border-radius:7px; padding:8px 10px; font-size:12px; cursor:pointer; transition:all .15s; text-align:left; display:flex; align-items:center; gap:7px; font-family:inherit; }
+    .btn-logout:hover { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); }
 
-    /* Main */
-    .main { margin-left:240px; flex:1; display:flex; flex-direction:column; }
-    .topbar { background:#fff; border-bottom:1px solid var(--border); padding:0 28px; height:60px; display:flex; align-items:center; justify-content:space-between; }
-    .topbar-title { font-size:17px; font-weight:700; }
-    .badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-    .badge-active { background:var(--success-bg); color:var(--success); }
-    .badge-pending { background:var(--warn-bg); color:var(--warn); }
-    .content { padding:28px; display:flex; flex-direction:column; gap:24px; }
+    /* ── Main ── */
+    .main { margin-left:236px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+    .topbar { background:#fff; border-bottom:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:40; }
+    .topbar-title { font-size:15px; font-weight:700; letter-spacing:-0.2px; }
+    .topbar-sub { font-size:11px; color:var(--muted); margin-top:1px; }
+    .badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:4px; font-size:11px; font-weight:600; letter-spacing:0.2px; }
+    .badge-active { background:var(--success-bg); color:var(--success); border:1px solid var(--success-border); }
+    .badge-pending { background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-border); }
+    .content { padding:24px 28px; flex:1; display:flex; flex-direction:column; gap:20px; }
 
-    /* Cards */
-    .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
-    .card { background:#fff; border-radius:14px; padding:20px; border:1px solid var(--border); }
-    .card-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:8px; }
-    .card-value { font-size:28px; font-weight:800; color:var(--text); }
-    .card-sub { font-size:12px; color:var(--light); margin-top:4px; }
-    .card-icon { font-size:24px; margin-bottom:8px; }
+    /* ── KPI Cards ── */
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
+    .kpi-card { background:#fff; border-radius:10px; border:1px solid var(--border); padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+    .kpi-label { font-size:10.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; }
+    .kpi-value { font-size:28px; font-weight:800; color:var(--text); letter-spacing:-1px; line-height:1; }
+    .kpi-sub { font-size:11.5px; color:var(--light); margin-top:6px; }
 
-    /* Section */
-    .section { background:#fff; border-radius:14px; border:1px solid var(--border); overflow:hidden; }
-    .section-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-    .section-title { font-size:15px; font-weight:700; }
+    /* ── Section Cards ── */
+    .section-card { background:#fff; border-radius:10px; border:1px solid var(--border); overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+    .section-header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:#FAFAFA; }
+    .section-title { font-size:13px; font-weight:600; }
     .section-body { padding:20px; }
 
-    /* Table */
-    .table { width:100%; border-collapse:collapse; font-size:13px; }
-    .table th { text-align:left; padding:8px 12px; color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; border-bottom:1px solid var(--border); }
-    .table td { padding:12px; border-bottom:1px solid #f3f4f6; vertical-align:middle; }
-    .table tr:last-child td { border-bottom:none; }
+    /* ── Profile table ── */
+    .profile-table { width:100%; border-collapse:collapse; }
+    .profile-table td { padding:10px 0; border-bottom:1px solid #F4F4F5; font-size:13px; vertical-align:top; }
+    .profile-table tr:last-child td { border-bottom:none; }
+    .profile-table td:first-child { color:var(--muted); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.7px; width:160px; padding-right:16px; padding-top:12px; }
 
-    /* Coming soon */
-    .coming-soon { text-align:center; padding:60px 20px; }
-    .coming-soon-icon { font-size:48px; margin-bottom:16px; }
-    .coming-soon h3 { font-size:18px; font-weight:700; margin-bottom:8px; }
-    .coming-soon p { color:var(--muted); font-size:14px; max-width:360px; margin:0 auto; }
+    /* ── Coming soon ── */
+    .coming-soon { text-align:center; padding:64px 20px; background:#FAFAFA; border:2px dashed var(--border); border-radius:10px; }
+    .coming-soon-icon { margin-bottom:16px; opacity:0.3; display:flex; align-items:center; justify-content:center; }
+    .coming-soon h3 { font-size:15px; font-weight:700; margin-bottom:8px; }
+    .coming-soon p { color:var(--muted); font-size:13px; max-width:380px; margin:0 auto 16px; line-height:1.7; }
 
-    /* Register form */
-    #register-screen { display:none; align-items:center; justify-content:center; min-height:100vh; background: linear-gradient(135deg, #111827 0%, #1f2937 60%, #370000 100%); }
-    .register-card { background:#fff; border-radius:20px; padding:40px; width:100%; max-width:520px; box-shadow:0 20px 60px rgba(0,0,0,.35); display:flex; flex-direction:column; gap:16px; max-height:90vh; overflow-y:auto; }
-    .register-card h2 { font-size:22px; font-weight:800; color:var(--primary); }
-    .register-card p { color:var(--muted); font-size:14px; }
-    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .register-err { background:var(--danger-bg); color:var(--danger); border-radius:8px; padding:10px 14px; font-size:13px; display:none; }
-    .register-ok { background:var(--success-bg); color:var(--success); border-radius:8px; padding:10px 14px; font-size:13px; display:none; }
+    /* ── Security bar ── */
+    .security-bar { display:flex; align-items:center; gap:8px; padding:9px 14px; background:#F0FDF4; border:1px solid var(--success-border); border-radius:8px; font-size:11.5px; color:var(--success); font-weight:500; }
 
-    @media(max-width:640px) { .form-row { grid-template-columns:1fr; } .sidebar { display:none; } .main { margin-left:0; } }
+    /* ── Steps ── */
+    .steps { display:flex; flex-direction:column; gap:0; }
+    .step { display:flex; gap:16px; padding:16px 0; border-bottom:1px solid #F4F4F5; }
+    .step:last-child { border-bottom:none; }
+    .step-num { width:28px; height:28px; border-radius:6px; background:var(--bg); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--muted); flex-shrink:0; }
+    .step-body strong { font-size:13px; font-weight:600; display:block; margin-bottom:2px; }
+    .step-body span { font-size:12px; color:var(--muted); line-height:1.6; }
+
+    @media(max-width:680px) { .form-row { grid-template-columns:1fr; } .sidebar { display:none; } .main { margin-left:0; } }
   </style>
 </head>
 <body>
 
-<!-- ── TELA DE LOGIN ─────────────────────────────── -->
+<!-- ── LOGIN ───────────────────────────────────────── -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <h1>eCompara</h1>
-      <p>Portal do Anunciante</p>
+      <img src="/api/logo-dark.png" alt="eCompara" />
+      <span class="login-logo-label">Portal de Anunciantes</span>
+    </div>
+    <div class="login-divider"></div>
+    <div class="fgroup">
+      <label>E-mail Corporativo</label>
+      <input type="email" id="login-email" placeholder="contato@empresa.com.br" autocomplete="email" />
     </div>
     <div class="fgroup">
-      <label>E-mail corporativo</label>
-      <input type="email" id="login-email" placeholder="voce@empresa.com.br" />
-    </div>
-    <div class="fgroup">
-      <label>Senha</label>
-      <input type="password" id="login-password" placeholder="Sua senha" />
+      <label>Senha de Acesso</label>
+      <input type="password" id="login-password" placeholder="Sua senha" autocomplete="current-password" />
     </div>
     <div class="login-err" id="login-err"></div>
-    <button class="btn-primary" id="btn-login" onclick="doLogin()">Entrar</button>
-    <div class="divider">— ou —</div>
-    <div class="link-register">
-      Ainda não tem conta? <a href="#" onclick="showRegister()">Solicitar acesso</a>
+    <button class="btn-primary" id="btn-login" onclick="doLogin()">Acessar o Portal</button>
+    <div class="login-info">
+      <strong>Acesso restrito.</strong> Este portal é exclusivo para marcas e indústrias credenciadas na plataforma eCompara.
+    </div>
+    <div class="login-link">
+      Ainda não é credenciado? <a href="#" onclick="showRegister()">Solicitar acesso</a>
     </div>
   </div>
 </div>
 
-<!-- ── TELA DE CADASTRO ──────────────────────────── -->
-<div id="register-screen" style="display:none; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#111827 0%,#1f2937 60%,#370000 100%);">
+<!-- ── SOLICITAÇÃO DE ACESSO ────────────────────────── -->
+<div id="register-screen">
   <div class="register-card">
     <div>
-      <h2>Solicitar Acesso como Anunciante</h2>
-      <p>Preencha os dados abaixo. Nossa equipe analisará e entrará em contato em até 24h úteis.</p>
+      <h2>Solicitação de Credenciamento</h2>
+      <p class="register-sub">Preencha os dados da sua empresa. Nossa equipe comercial analisará a solicitação e entrará em contato em até 24 horas úteis.</p>
     </div>
+    <div style="height:1px;background:var(--border);"></div>
     <div class="form-row">
       <div class="fgroup">
-        <label>Nome da Empresa *</label>
-        <input type="text" id="r-company" placeholder="Indústria Exemplo Ltda" />
+        <label>Razão Social / Nome da Empresa *</label>
+        <input type="text" id="r-company" placeholder="Empresa Exemplo S.A." />
       </div>
       <div class="fgroup">
         <label>CNPJ *</label>
@@ -152,185 +185,227 @@
     <div class="form-row">
       <div class="fgroup">
         <label>Nome do Responsável</label>
-        <input type="text" id="r-contact" placeholder="Carlos Silva" />
+        <input type="text" id="r-contact" placeholder="Nome completo" />
       </div>
       <div class="fgroup">
-        <label>Cargo</label>
-        <input type="text" id="r-role" placeholder="Diretor de Marketing" />
+        <label>Cargo / Função</label>
+        <input type="text" id="r-role" placeholder="Diretor de Trade Marketing" />
       </div>
     </div>
     <div class="form-row">
       <div class="fgroup">
         <label>E-mail Corporativo *</label>
-        <input type="email" id="r-email" placeholder="carlos@empresa.com.br" />
+        <input type="email" id="r-email" placeholder="responsavel@empresa.com.br" />
       </div>
       <div class="fgroup">
-        <label>WhatsApp</label>
-        <input type="text" id="r-whatsapp" placeholder="(11) 99999-0000" />
+        <label>WhatsApp Comercial</label>
+        <input type="text" id="r-whatsapp" placeholder="(00) 00000-0000" />
       </div>
     </div>
     <div class="form-row">
       <div class="fgroup">
-        <label>Segmento</label>
-        <input type="text" id="r-segment" placeholder="Alimentos, Bebidas, Higiene..." />
+        <label>Segmento de Atuação</label>
+        <input type="text" id="r-segment" placeholder="Ex: Alimentos, Bebidas, Higiene" />
       </div>
       <div class="fgroup">
-        <label>Site</label>
+        <label>Site Corporativo</label>
         <input type="text" id="r-website" placeholder="https://empresa.com.br" />
       </div>
     </div>
     <div class="fgroup">
-      <label>Orçamento estimado / mês</label>
-      <input type="text" id="r-budget" placeholder="Ex: R$ 2.000/mês" />
+      <label>Investimento estimado em mídia / mês</label>
+      <input type="text" id="r-budget" placeholder="Ex: R$ 5.000/mês" />
     </div>
     <div class="register-err" id="register-err"></div>
     <div class="register-ok" id="register-ok"></div>
-    <button class="btn-primary" id="btn-register" onclick="doRegister()">Enviar Solicitação</button>
-    <div class="link-register">Já tem conta? <a href="#" onclick="showLogin()">Fazer login</a></div>
+    <button class="btn-primary" id="btn-register" onclick="doRegister()">Enviar Solicitação de Credenciamento</button>
+    <div class="login-link" style="text-align:center;font-size:13px;color:var(--muted)">
+      Já possui credenciamento? <a href="#" onclick="showLogin()">Acessar o Portal</a>
+    </div>
   </div>
 </div>
 
-<!-- ── APP (pós-login) ───────────────────────────── -->
+<!-- ── PORTAL (pós-login) ───────────────────────────── -->
 <div id="app-screen">
   <div class="layout">
 
-    <!-- Sidebar -->
     <nav class="sidebar">
       <div class="sb-logo">
-        <h2>eCompara</h2>
-        <span>Portal do Anunciante</span>
+        <img src="/api/logo-light.png" alt="eCompara" />
       </div>
-      <div class="sb-group">Principal</div>
-      <div class="nav-item active" onclick="showSection('dashboard')">
-        <span class="nav-icon">📊</span> Dashboard
+
+      <div class="sb-section">Principal</div>
+      <div class="nav-item active" onclick="showSection('dashboard', this)">
+        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+        Dashboard de Performance
       </div>
-      <div class="nav-item" onclick="showSection('campanhas')">
-        <span class="nav-icon">📢</span> Campanhas
+      <div class="nav-item" onclick="showSection('campanhas', this)">
+        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+        Ativos Publicitários
       </div>
-      <div class="nav-item" onclick="showSection('produtos')">
-        <span class="nav-icon">🏷️</span> Produtos
+      <div class="nav-item" onclick="showSection('produtos', this)">
+        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>
+        Portfólio de Produtos
       </div>
-      <div class="nav-item" onclick="showSection('metricas')">
-        <span class="nav-icon">📈</span> Métricas
+      <div class="nav-item" onclick="showSection('metricas', this)">
+        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+        Analytics e KPIs
       </div>
-      <div class="sb-group">Conta</div>
-      <div class="nav-item" onclick="showSection('perfil')">
-        <span class="nav-icon">🏢</span> Perfil da Marca
+
+      <div class="sb-section">Conta</div>
+      <div class="nav-item" onclick="showSection('perfil', this)">
+        <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6"/><path d="M9 12h6"/><path d="M9 15h4"/></svg></span>
+        Perfil da Organização
       </div>
+
       <div class="sb-bottom">
         <div class="sb-user">
           <div class="sb-avatar" id="sb-avatar">M</div>
-          <div class="sb-user-info">
-            <div class="sb-user-name" id="sb-username">Marca</div>
-            <div class="sb-user-role">Anunciante</div>
+          <div>
+            <div class="sb-user-name" id="sb-username">Anunciante</div>
+            <div class="sb-user-role">Acesso Anunciante</div>
           </div>
         </div>
-        <button class="btn-logout" onclick="doLogout()">Sair</button>
+        <button class="btn-logout" onclick="doLogout()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Encerrar Sessão
+        </button>
       </div>
     </nav>
 
-    <!-- Conteúdo principal -->
     <div class="main">
       <div class="topbar">
-        <span class="topbar-title" id="topbar-title">Dashboard</span>
-        <span class="badge badge-active" id="status-badge">● Ativo</span>
+        <div>
+          <div class="topbar-title" id="topbar-title">Dashboard de Performance</div>
+          <div class="topbar-sub" id="topbar-sub">Monitoramento de ROI, CTR e alcance geográfico</div>
+        </div>
+        <span class="badge badge-active" id="status-badge">Conta Ativa</span>
       </div>
 
       <div class="content">
 
         <!-- DASHBOARD -->
         <div id="section-dashboard">
-          <div class="cards-grid">
-            <div class="card">
-              <div class="card-icon">👁️</div>
-              <div class="card-label">Impressões</div>
-              <div class="card-value">—</div>
-              <div class="card-sub">Nenhuma campanha ativa</div>
+          <div class="security-bar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Ambiente de dados criptografado e protegido — Dados de mercado confidenciais
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">Impressões Totais</div>
+              <div class="kpi-value">—</div>
+              <div class="kpi-sub">Nenhuma campanha ativa</div>
             </div>
-            <div class="card">
-              <div class="card-icon">🖱️</div>
-              <div class="card-label">Cliques</div>
-              <div class="card-value">—</div>
-              <div class="card-sub">CTR indisponível</div>
+            <div class="kpi-card">
+              <div class="kpi-label">CTR (Taxa de Clique)</div>
+              <div class="kpi-value">—</div>
+              <div class="kpi-sub">Indisponível</div>
             </div>
-            <div class="card">
-              <div class="card-icon">💰</div>
-              <div class="card-label">Saldo disponível</div>
-              <div class="card-value">—</div>
-              <div class="card-sub">Nenhum crédito carregado</div>
+            <div class="kpi-card">
+              <div class="kpi-label">Saldo de Mídia</div>
+              <div class="kpi-value">—</div>
+              <div class="kpi-sub">Nenhum crédito alocado</div>
             </div>
-            <div class="card">
-              <div class="card-icon">📦</div>
-              <div class="card-label">Produtos ativos</div>
-              <div class="card-value">0</div>
-              <div class="card-sub">Nenhum SKU cadastrado</div>
+            <div class="kpi-card">
+              <div class="kpi-label">SKUs Cadastrados</div>
+              <div class="kpi-value">0</div>
+              <div class="kpi-sub">Nenhum produto vinculado</div>
             </div>
           </div>
 
-          <div class="section">
+          <div class="section-card">
             <div class="section-header">
-              <span class="section-title">Bem-vindo ao Portal do Anunciante</span>
+              <span class="section-title">Próximos Passos para Ativação</span>
             </div>
             <div class="section-body">
-              <p style="color:var(--muted);font-size:14px;line-height:1.7;">
-                Sua conta está ativa. Use o menu lateral para gerenciar suas campanhas, 
-                cadastrar produtos (SKUs) e acompanhar métricas de desempenho como 
-                impressões, cliques e alcance por região no Distrito Federal.
-              </p>
-              <div style="margin-top:16px;padding:14px 16px;background:#f9fafb;border-radius:10px;border:1px solid var(--border);">
-                <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">PRÓXIMOS PASSOS</div>
-                <div style="font-size:13px;color:var(--text);line-height:2;">
-                  1️⃣ Cadastre os EANs dos seus produtos em <strong>Produtos</strong><br>
-                  2️⃣ Configure uma campanha em <strong>Campanhas</strong><br>
-                  3️⃣ Acompanhe os resultados em <strong>Métricas</strong>
+              <div class="steps">
+                <div class="step">
+                  <div class="step-num">01</div>
+                  <div class="step-body">
+                    <strong>Cadastrar Portfólio de Produtos</strong>
+                    <span>Acesse "Portfólio de Produtos" e vincule os EANs dos seus produtos para monitoramento de preços e disponibilidade em varejistas parceiros.</span>
+                  </div>
+                </div>
+                <div class="step">
+                  <div class="step-num">02</div>
+                  <div class="step-body">
+                    <strong>Configurar Ativo Publicitário</strong>
+                    <span>Defina geofencing, teto de cliques, formato de exibição (banner home / produto patrocinado) e regiões de atuação no Distrito Federal.</span>
+                  </div>
+                </div>
+                <div class="step">
+                  <div class="step-num">03</div>
+                  <div class="step-body">
+                    <strong>Monitorar Analytics e KPIs</strong>
+                    <span>Acompanhe impressões, CTR, CPC e mapa de calor por Regiões Administrativas do DF para otimizar o retorno sobre investimento.</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- CAMPANHAS -->
+        <!-- ATIVOS PUBLICITÁRIOS -->
         <div id="section-campanhas" style="display:none">
           <div class="coming-soon">
-            <div class="coming-soon-icon">📢</div>
-            <h3>Gerenciamento de Campanhas</h3>
-            <p>Configure geofencing, defina orçamento por clique, escolha formatos de anúncio (banner home, produto patrocinado) e defina o público por região.</p>
-            <p style="margin-top:12px;font-size:12px;color:var(--light);">Em desenvolvimento — disponível em breve.</p>
+            <div class="coming-soon-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            </div>
+            <h3>Gerenciador de Ativos Publicitários</h3>
+            <p>Configure campanhas de Trade Marketing com geofencing, defina orçamento por clique (CPC), escolha formatos de exibição e delimite o alcance geográfico por Regiões Administrativas.</p>
+            <span class="badge" style="background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border);padding:5px 14px;">Em Desenvolvimento</span>
           </div>
         </div>
 
-        <!-- PRODUTOS -->
+        <!-- PORTFÓLIO DE PRODUTOS -->
         <div id="section-produtos" style="display:none">
           <div class="coming-soon">
-            <div class="coming-soon-icon">🏷️</div>
-            <h3>Cadastro de Produtos (SKU/EAN)</h3>
-            <p>Vincule os EANs dos seus produtos para que o sistema possa monitorar preços e acionar campanhas automaticamente quando o produto estiver disponível em lojas próximas.</p>
-            <p style="margin-top:12px;font-size:12px;color:var(--light);">Em desenvolvimento — disponível em breve.</p>
+            <div class="coming-soon-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <h3>Portfólio de Produtos (SKU/EAN)</h3>
+            <p>Vincule os EANs dos seus produtos para que o sistema monitore preços e acione campanhas automaticamente quando o produto estiver disponível em varejistas com preço validado.</p>
+            <span class="badge" style="background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border);padding:5px 14px;">Em Desenvolvimento</span>
           </div>
         </div>
 
-        <!-- MÉTRICAS -->
+        <!-- ANALYTICS E KPIs -->
         <div id="section-metricas" style="display:none">
           <div class="coming-soon">
-            <div class="coming-soon-icon">📈</div>
-            <h3>Relatórios e Métricas</h3>
-            <p>Acompanhe impressões, CTR, CPC e mapa de calor por Regiões Administrativas do DF. Visualize quais bairros geram mais interesse nos seus produtos.</p>
-            <p style="margin-top:12px;font-size:12px;color:var(--light);">Em desenvolvimento — disponível em breve.</p>
+            <div class="coming-soon-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <h3>Analytics e KPIs de Performance</h3>
+            <p>Relatórios de impressões únicas, taxa de clique (CTR), custo por clique (CPC) e mapa de calor por Regiões Administrativas do Distrito Federal. Visualize o retorno sobre investimento (ROI) de cada campanha ativa.</p>
+            <span class="badge" style="background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border);padding:5px 14px;">Em Desenvolvimento</span>
           </div>
         </div>
 
-        <!-- PERFIL -->
+        <!-- PERFIL DA ORGANIZAÇÃO -->
         <div id="section-perfil" style="display:none">
-          <div class="section">
+          <div class="section-card">
             <div class="section-header">
-              <span class="section-title">Perfil da Marca</span>
+              <span class="section-title">Dados Cadastrais da Organização</span>
             </div>
             <div class="section-body">
-              <table class="table">
+              <table class="profile-table">
                 <tbody id="profile-table">
-                  <tr><td colspan="2" style="color:var(--muted)">Carregando...</td></tr>
+                  <tr><td>Carregando...</td><td></td></tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+          <div class="section-card" style="margin-top:0">
+            <div class="section-header">
+              <span class="section-title">Segurança e Acesso</span>
+            </div>
+            <div class="section-body">
+              <div class="security-bar" style="margin-bottom:12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Conexão criptografada — Dados de mercado protegidos por protocolo de segurança
+              </div>
+              <p style="font-size:13px;color:var(--muted);line-height:1.7;">Para solicitar alteração de senha, atualização de dados cadastrais ou revogação de acesso, entre em contato com o time de suporte pelo e-mail <a href="mailto:suporte@ecompara.com.br" style="color:var(--primary);font-weight:600;">suporte@ecompara.com.br</a>.</p>
             </div>
           </div>
         </div>
@@ -344,35 +419,48 @@
   const BASE = '/api';
   let currentAdv = null;
 
-  // ── Utilitários ──────────────────────────────────────────────
+  const SECTIONS = {
+    dashboard: ['Dashboard de Performance', 'Monitoramento de ROI, CTR e alcance geográfico'],
+    campanhas: ['Ativos Publicitários', 'Gerenciamento de campanhas de Trade Marketing'],
+    produtos: ['Portfólio de Produtos', 'Cadastro e vinculação de SKUs por EAN'],
+    metricas: ['Analytics e KPIs de Performance', 'Relatórios de impressões, CTR, CPC e alcance geográfico'],
+    perfil: ['Perfil da Organização', 'Dados cadastrais e configurações de acesso'],
+  };
+
   function showScreen(id) {
-    ['login-screen','register-screen','app-screen'].forEach(s => {
-      const el = document.getElementById(s);
-      if (el) el.style.display = (s === id) ? (id === 'app-screen' ? 'block' : 'flex') : 'none';
-    });
+    document.getElementById('login-screen').style.display = (id === 'login-screen') ? 'flex' : 'none';
+    document.getElementById('register-screen').style.display = (id === 'register-screen') ? 'flex' : 'none';
+    document.getElementById('app-screen').style.display = (id === 'app-screen') ? 'block' : 'none';
   }
-  function showSection(name) {
-    ['dashboard','campanhas','produtos','metricas','perfil'].forEach(s => {
-      document.getElementById('section-' + s).style.display = (s === name) ? '' : 'none';
+
+  function showSection(name, el) {
+    Object.keys(SECTIONS).forEach(s => {
+      const sec = document.getElementById('section-' + s);
+      if (sec) sec.style.display = (s === name) ? '' : 'none';
     });
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    event.currentTarget.classList.add('active');
-    const titles = { dashboard:'Dashboard', campanhas:'Campanhas', produtos:'Produtos', metricas:'Métricas', perfil:'Perfil da Marca' };
-    document.getElementById('topbar-title').textContent = titles[name] || name;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (el) el.classList.add('active');
+    const [title, sub] = SECTIONS[name] || [name, ''];
+    document.getElementById('topbar-title').textContent = title;
+    document.getElementById('topbar-sub').textContent = sub;
     if (name === 'perfil') loadProfile();
   }
+
   function showLogin() { showScreen('login-screen'); }
   function showRegister() { showScreen('register-screen'); }
 
-  // ── Login ────────────────────────────────────────────────────
   async function doLogin() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-err');
     const btn = document.getElementById('btn-login');
     errEl.style.display = 'none';
-    if (!email || !password) { errEl.textContent = 'Preencha e-mail e senha.'; errEl.style.display = 'block'; return; }
-    btn.disabled = true; btn.textContent = 'Entrando...';
+    if (!email || !password) {
+      errEl.textContent = 'Informe e-mail e senha para continuar.';
+      errEl.style.display = 'block';
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Autenticando...';
     try {
       const res = await fetch(BASE + '/advertisers/login', {
         method: 'POST',
@@ -380,18 +468,17 @@
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || 'Erro ao fazer login.'; errEl.style.display = 'block'; return; }
+      if (!res.ok) { errEl.textContent = data.error || 'Falha na autenticação.'; errEl.style.display = 'block'; return; }
       currentAdv = data.advertiser;
       localStorage.setItem('adv_session', JSON.stringify(currentAdv));
       loadApp();
     } catch(e) {
-      errEl.textContent = 'Erro de conexão. Tente novamente.'; errEl.style.display = 'block';
+      errEl.textContent = 'Erro de conectividade. Tente novamente.'; errEl.style.display = 'block';
     } finally {
-      btn.disabled = false; btn.textContent = 'Entrar';
+      btn.disabled = false; btn.textContent = 'Acessar o Portal';
     }
   }
 
-  // ── Cadastro ─────────────────────────────────────────────────
   async function doRegister() {
     const errEl = document.getElementById('register-err');
     const okEl = document.getElementById('register-ok');
@@ -409,37 +496,35 @@
       budget: document.getElementById('r-budget').value.trim(),
     };
     if (!body.companyName || !body.cnpj || !body.email) {
-      errEl.textContent = 'Preencha os campos obrigatórios: Empresa, CNPJ e E-mail.';
+      errEl.textContent = 'Campos obrigatórios: Razão Social, CNPJ e E-mail Corporativo.';
       errEl.style.display = 'block'; return;
     }
-    btn.disabled = true; btn.textContent = 'Enviando...';
+    btn.disabled = true; btn.textContent = 'Enviando solicitação...';
     try {
       const res = await fetch(BASE + '/advertisers/register', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
       });
       const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || 'Erro ao enviar.'; errEl.style.display = 'block'; return; }
-      okEl.textContent = '✅ Solicitação enviada! Você receberá um e-mail quando for aprovado.';
+      if (!res.ok) { errEl.textContent = data.error || 'Erro ao processar solicitação.'; errEl.style.display = 'block'; return; }
+      okEl.textContent = 'Solicitação de credenciamento enviada com sucesso. Nossa equipe entrará em contato em até 24 horas úteis pelo e-mail informado.';
       okEl.style.display = 'block';
       btn.textContent = 'Solicitação enviada';
     } catch(e) {
-      errEl.textContent = 'Erro de conexão.'; errEl.style.display = 'block';
-    } finally {
-      btn.disabled = false;
+      errEl.textContent = 'Erro de conectividade. Verifique sua conexão e tente novamente.'; errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Enviar Solicitação de Credenciamento';
     }
   }
 
-  // ── App ──────────────────────────────────────────────────────
   function loadApp() {
     if (!currentAdv) return;
-    const initials = (currentAdv.companyName || 'M').charAt(0).toUpperCase();
+    const initials = (currentAdv.companyName || 'A').charAt(0).toUpperCase();
     document.getElementById('sb-avatar').textContent = initials;
     document.getElementById('sb-username').textContent = currentAdv.companyName;
     const badge = document.getElementById('status-badge');
     if (currentAdv.status === 'active') {
-      badge.className = 'badge badge-active'; badge.textContent = '● Ativo';
+      badge.className = 'badge badge-active'; badge.textContent = 'Conta Ativa';
     } else {
-      badge.className = 'badge badge-pending'; badge.textContent = '● Pendente';
+      badge.className = 'badge badge-pending'; badge.textContent = 'Pendente de Validação';
     }
     showScreen('app-screen');
   }
@@ -448,32 +533,30 @@
     if (!currentAdv) return;
     const tbody = document.getElementById('profile-table');
     const rows = [
-      ['Empresa', currentAdv.companyName],
+      ['Razão Social', currentAdv.companyName || '—'],
       ['Responsável', currentAdv.contactName || '—'],
-      ['E-mail', currentAdv.email],
-      ['Status', currentAdv.status === 'active' ? '✅ Ativo' : '⏳ Pendente'],
-      ['Perfil de acesso', currentAdv.role || 'ROLE_ADVERTISER'],
+      ['E-mail Corporativo', currentAdv.email || '—'],
+      ['Status da Conta', currentAdv.status === 'active' ? 'Ativo — Credenciado' : 'Pendente de Validação'],
+      ['Perfil de Acesso', 'ROLE_ADVERTISER — Portal do Anunciante'],
     ];
-    tbody.innerHTML = rows.map(([k,v]) =>
-      `<tr><td style="color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;width:160px;">${k}</td><td style="font-size:14px;">${v}</td></tr>`
+    tbody.innerHTML = rows.map(([k, v]) =>
+      `<tr><td>${k}</td><td style="font-size:13px;font-weight:500;">${v}</td></tr>`
     ).join('');
   }
 
   function doLogout() {
     currentAdv = null;
     localStorage.removeItem('adv_session');
-    showScreen('login-screen');
     document.getElementById('login-email').value = '';
     document.getElementById('login-password').value = '';
     document.getElementById('login-err').style.display = 'none';
+    showScreen('login-screen');
   }
 
-  // Enter no login
   document.addEventListener('DOMContentLoaded', () => {
-    ['login-email','login-password'].forEach(id => {
-      document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+    ['login-email', 'login-password'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
     });
-    // Restaurar sessão
     try {
       const saved = localStorage.getItem('adv_session');
       if (saved) { currentAdv = JSON.parse(saved); loadApp(); return; }
