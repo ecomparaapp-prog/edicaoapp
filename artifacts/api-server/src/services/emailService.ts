@@ -327,6 +327,190 @@ export async function sendAdvertiserApproval(opts: SendAdvertiserApprovalOptions
   }
 }
 
+// ── Boas-vindas ao Lojista ────────────────────────────────────────────────────
+
+export interface SendMerchantWelcomeOptions {
+  to: string;
+  ownerName: string;
+  storeName: string;
+  tempPassword: string;
+  portalUrl?: string;
+}
+
+export async function sendMerchantWelcome(opts: SendMerchantWelcomeOptions): Promise<EmailSendResult> {
+  const { transport, isEthereal } = await createTransporter();
+  const { name: fromName, addr: fromAddr } = await getFromAddress();
+  const portalUrl = opts.portalUrl ?? "https://lojistas.ecompara.com.br/login";
+
+  try {
+    const info = await transport.sendMail({
+      from: `"${fromName}" <${fromAddr}>`,
+      to: opts.to,
+      subject: `Acesso liberado — Portal Lojista eCompara`,
+      text: [
+        `Prezado(a) ${opts.ownerName},`,
+        ``,
+        `Seu cadastro para o estabelecimento "${opts.storeName}" foi aprovado.`,
+        `Segue abaixo suas credenciais de acesso ao Portal Lojista eCompara:`,
+        ``,
+        `  E-mail: ${opts.to}`,
+        `  Senha temporária: ${opts.tempPassword}`,
+        ``,
+        `Acesse: ${portalUrl}`,
+        ``,
+        `Por segurança, você será solicitado a definir uma nova senha no primeiro acesso.`,
+        ``,
+        `Equipe eCompara`,
+      ].join("\n"),
+      html: `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:540px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr><td style="background:#0F172A;padding:28px 36px;">
+          <h1 style="margin:0;color:#fff;font-size:20px;letter-spacing:0.5px;font-family:Arial,sans-serif;">eCompara</h1>
+          <p style="margin:6px 0 0;color:#94A3B8;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Portal do Lojista</p>
+        </td></tr>
+        <tr><td style="padding:36px;">
+          <p style="margin:0 0 6px;color:#64748B;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;">Credenciais de Acesso</p>
+          <h2 style="margin:0 0 20px;color:#0F172A;font-size:22px;">Acesso ao Painel Liberado</h2>
+          <p style="margin:0 0 20px;color:#475569;font-size:14px;line-height:1.7;">
+            Prezado(a) <strong>${opts.ownerName}</strong>, o cadastro de
+            <strong>${opts.storeName}</strong> foi aprovado. Utilize as credenciais abaixo para acessar sua plataforma de gestao.
+          </p>
+          <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:24px;margin:0 0 24px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="color:#64748B;font-size:12px;text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;width:130px;">E-mail</td>
+                <td style="color:#0F172A;font-size:14px;font-weight:600;padding:8px 0 4px;">${opts.to}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748B;font-size:12px;text-transform:uppercase;letter-spacing:1px;padding:4px 0 8px;">Senha Temporaria</td>
+                <td style="color:#CC0000;font-size:20px;font-weight:700;letter-spacing:3px;padding:4px 0 8px;">${opts.tempPassword}</td>
+              </tr>
+            </table>
+          </div>
+          <div style="text-align:center;margin:28px 0 8px;">
+            <a href="${portalUrl}" style="background:#CC0000;color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:14px;font-weight:700;display:inline-block;letter-spacing:0.5px;">
+              Acessar Plataforma
+            </a>
+          </div>
+          <p style="margin:20px 0 0;color:#94A3B8;font-size:12px;text-align:center;">
+            Voce sera solicitado a redefinir sua senha no primeiro acesso.
+          </p>
+          <hr style="border:none;border-top:1px solid #E2E8F0;margin:28px 0;">
+          <p style="margin:0;color:#94A3B8;font-size:11px;">Duvidas? Entre em contato: suporte@ecompara.com.br</p>
+        </td></tr>
+        <tr><td style="background:#F8FAFC;padding:16px 36px;border-top:1px solid #E2E8F0;">
+          <p style="margin:0;color:#94A3B8;font-size:11px;text-align:center;">© 2026 eCompara · Todos os direitos reservados</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+    });
+
+    const previewUrl = isEthereal ? (nodemailer.getTestMessageUrl(info) || undefined) : undefined;
+    if (previewUrl) {
+      console.log(`[Email] Boas-vindas lojista enviado (Ethereal) → ${previewUrl}`);
+    } else {
+      console.log(`[Email] Boas-vindas lojista enviado para ${opts.to} — messageId: ${info.messageId}`);
+    }
+    return { sent: true, previewUrl };
+  } catch (err) {
+    console.error("[Email] Falha ao enviar boas-vindas lojista:", err);
+    return { sent: false };
+  }
+}
+
+// ── Reset de senha do lojista ─────────────────────────────────────────────────
+
+export interface SendPasswordResetOptions {
+  to: string;
+  ownerName: string;
+  resetLink: string;
+}
+
+export async function sendPasswordReset(opts: SendPasswordResetOptions): Promise<EmailSendResult> {
+  const { transport, isEthereal } = await createTransporter();
+  const { name: fromName, addr: fromAddr } = await getFromAddress();
+
+  try {
+    const info = await transport.sendMail({
+      from: `"${fromName}" <${fromAddr}>`,
+      to: opts.to,
+      subject: `Redefinicao de senha — Portal Lojista eCompara`,
+      text: [
+        `Prezado(a) ${opts.ownerName},`,
+        ``,
+        `Recebemos uma solicitacao de redefinicao de senha para sua conta.`,
+        ``,
+        `Clique no link abaixo para criar uma nova senha (valido por 30 minutos):`,
+        `${opts.resetLink}`,
+        ``,
+        `Se voce nao solicitou essa alteracao, ignore este e-mail.`,
+        ``,
+        `Equipe eCompara`,
+      ].join("\n"),
+      html: `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:540px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr><td style="background:#0F172A;padding:28px 36px;">
+          <h1 style="margin:0;color:#fff;font-size:20px;letter-spacing:0.5px;">eCompara</h1>
+          <p style="margin:6px 0 0;color:#94A3B8;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Portal do Lojista</p>
+        </td></tr>
+        <tr><td style="padding:36px;">
+          <p style="margin:0 0 6px;color:#64748B;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;">Seguranca da Conta</p>
+          <h2 style="margin:0 0 20px;color:#0F172A;font-size:22px;">Redefinicao de Senha</h2>
+          <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.7;">
+            Prezado(a) <strong>${opts.ownerName}</strong>, recebemos uma solicitacao de redefinicao de senha.
+            Clique no botao abaixo para criar uma nova senha. Este link expira em <strong>30 minutos</strong>.
+          </p>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${opts.resetLink}" style="background:#CC0000;color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:14px;font-weight:700;display:inline-block;letter-spacing:0.5px;">
+              Redefinir Senha
+            </a>
+          </div>
+          <p style="margin:20px 0 0;color:#94A3B8;font-size:12px;text-align:center;">
+            Ou acesse diretamente: <a href="${opts.resetLink}" style="color:#CC0000;">${opts.resetLink}</a>
+          </p>
+          <hr style="border:none;border-top:1px solid #E2E8F0;margin:28px 0;">
+          <p style="margin:0;color:#94A3B8;font-size:11px;">
+            Se voce nao solicitou esta alteracao, ignore este e-mail. Sua senha permanecera a mesma.
+          </p>
+        </td></tr>
+        <tr><td style="background:#F8FAFC;padding:16px 36px;border-top:1px solid #E2E8F0;">
+          <p style="margin:0;color:#94A3B8;font-size:11px;text-align:center;">© 2026 eCompara · Todos os direitos reservados</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+    });
+
+    const previewUrl = isEthereal ? (nodemailer.getTestMessageUrl(info) || undefined) : undefined;
+    if (previewUrl) {
+      console.log(`[Email] Reset de senha enviado (Ethereal) → ${previewUrl}`);
+    } else {
+      console.log(`[Email] Reset de senha enviado para ${opts.to} — messageId: ${info.messageId}`);
+    }
+    return { sent: true, previewUrl };
+  } catch (err) {
+    console.error("[Email] Falha ao enviar reset de senha:", err);
+    return { sent: false };
+  }
+}
+
 // ── Convite de novo parceiro ───────────────────────────────────────────────────
 
 export interface SendClaimInvitationOptions {

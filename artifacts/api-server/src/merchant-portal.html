@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal do Lojista — eCompara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --navy:#0F172A;--navy2:#1E293B;--navy3:#334155;
+    --red:#CC0000;--red2:#A00000;
+    --slate:#64748B;--slate2:#94A3B8;--slate3:#CBD5E1;
+    --bg:#F1F5F9;--white:#fff;--border:#E2E8F0;
+    --text:#0F172A;--text2:#475569;
+    --green:#16A34A;--amber:#D97706;
+    --font:'Inter',system-ui,sans-serif;
+    --sidebar:240px;
+  }
+  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+
+  /* ── Auth Screens ── */
+  .auth-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0F172A 0%,#1E293B 60%,#0F172A 100%)}
+  .auth-card{background:var(--white);border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+  .auth-logo{text-align:center;margin-bottom:32px}
+  .auth-logo-wordmark{font-size:28px;font-weight:700;color:var(--navy);letter-spacing:-0.5px}
+  .auth-logo-wordmark span{color:var(--red)}
+  .auth-logo-sub{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--slate);margin-top:4px}
+  .auth-title{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:4px}
+  .auth-sub{font-size:13px;color:var(--slate);margin-bottom:28px}
+  .field-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--slate);margin-bottom:6px;display:block}
+  .field-input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:14px;color:var(--text);background:var(--white);transition:.15s}
+  .field-input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(204,0,0,.1)}
+  .field-group{margin-bottom:18px}
+  .btn-primary{width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:.15s;margin-top:4px}
+  .btn-primary:hover{background:var(--red2)}
+  .btn-primary:disabled{opacity:.5;cursor:default}
+  .auth-footer{text-align:center;margin-top:20px}
+  .auth-link{color:var(--red);text-decoration:none;font-size:13px;font-weight:500;cursor:pointer;background:none;border:none;font-family:var(--font)}
+  .auth-link:hover{text-decoration:underline}
+  .auth-error{background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
+  .auth-error.show{display:block}
+  .auth-success{background:#F0FDF4;border:1px solid #BBF7D0;color:#166534;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
+  .auth-success.show{display:block}
+
+  /* ── Layout ── */
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar);background:var(--navy);flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .sidebar-logo-wordmark{font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.3px}
+  .sidebar-logo-wordmark span{color:var(--red)}
+  .sidebar-logo-sub{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--slate2);margin-top:3px}
+  .sidebar-nav{flex:1;padding:16px 0;overflow-y:auto}
+  .nav-group-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--slate);padding:14px 20px 6px;margin-top:4px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--slate2);font-size:13px;font-weight:500;cursor:pointer;transition:.15s;border-left:3px solid transparent}
+  .nav-item:hover{background:rgba(255,255,255,.05);color:#fff}
+  .nav-item.active{background:rgba(204,0,0,.15);color:#fff;border-left-color:var(--red)}
+  .nav-icon{width:18px;height:18px;flex-shrink:0;opacity:.7}
+  .nav-item.active .nav-icon{opacity:1}
+  .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+  .sidebar-user{display:flex;align-items:center;gap:10px}
+  .sidebar-avatar{width:32px;height:32px;border-radius:8px;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+  .sidebar-user-info{flex:1;min-width:0}
+  .sidebar-user-name{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sidebar-user-plan{font-size:10px;color:var(--slate2);text-transform:uppercase;letter-spacing:.8px}
+  .logout-btn{background:none;border:none;color:var(--slate2);cursor:pointer;padding:4px;display:flex;align-items:center;flex-shrink:0}
+  .logout-btn:hover{color:#fff}
+
+  .main{margin-left:var(--sidebar);flex:1;min-height:100vh;display:flex;flex-direction:column}
+  .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .topbar-title{font-size:15px;font-weight:700;color:var(--navy)}
+  .topbar-breadcrumb{font-size:11px;color:var(--slate);margin-top:2px}
+  .topbar-right{display:flex;align-items:center;gap:12px}
+  .plan-badge{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+  .plan-badge.normal{background:#F1F5F9;color:var(--slate)}
+  .plan-badge.plus{background:var(--red);color:#fff}
+  .notif-btn{width:34px;height:34px;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+  .notif-dot{width:7px;height:7px;background:var(--red);border-radius:50%;position:absolute;top:7px;right:7px;border:1.5px solid #fff}
+
+  .content{flex:1;padding:28px;overflow-x:hidden}
+
+  /* ── Cards ── */
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .section-title{font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.8px}
+  .section-sub{font-size:12px;color:var(--slate);margin-top:2px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .kpi-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:.15s}
+  .kpi-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
+  .kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate);margin-bottom:10px}
+  .kpi-value{font-size:28px;font-weight:700;color:var(--navy);margin-bottom:6px;line-height:1}
+  .kpi-delta{font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px}
+  .kpi-delta.up{color:var(--green)}
+  .kpi-delta.down{color:var(--red)}
+  .kpi-delta.neutral{color:var(--slate)}
+  .kpi-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+
+  /* ── Grid 2 cols ── */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+  .grid-3-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px}
+  .card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:22px}
+  .card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+
+  /* ── Campaign Chart ── */
+  .chart-bar-group{display:flex;flex-direction:column;gap:10px}
+  .chart-row{display:flex;align-items:center;gap:10px}
+  .chart-label{font-size:12px;color:var(--text2);width:80px;flex-shrink:0}
+  .chart-bar-wrap{flex:1;background:var(--bg);border-radius:4px;height:20px;overflow:hidden}
+  .chart-bar{height:100%;border-radius:4px;transition:width .4s}
+  .chart-val{font-size:12px;font-weight:600;color:var(--navy);width:50px;text-align:right;flex-shrink:0}
+
+  /* ── Top Products ── */
+  .product-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .product-row:last-child{border-bottom:none}
+  .product-rank{width:22px;height:22px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--slate);flex-shrink:0}
+  .product-rank.top{background:var(--red);color:#fff}
+  .product-name{flex:1;font-size:13px;font-weight:500;color:var(--navy)}
+  .product-ean{font-size:10px;color:var(--slate);margin-top:1px}
+  .product-views{font-size:12px;font-weight:700;color:var(--navy)}
+  .product-views-label{font-size:10px;color:var(--slate)}
+
+  /* ── Activity Feed ── */
+  .activity-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .activity-item:last-child{border-bottom:none}
+  .activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+  .activity-text{font-size:13px;color:var(--text2);flex:1}
+  .activity-text strong{color:var(--navy)}
+  .activity-time{font-size:11px;color:var(--slate);flex-shrink:0}
+
+  /* ── Plan Section ── */
+  .plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+  .plan-card{border-radius:12px;padding:28px;border:2px solid var(--border);background:var(--white);position:relative}
+  .plan-card.current{border-color:var(--red)}
+  .plan-card.plus-card{background:var(--navy);border-color:var(--navy)}
+  .current-badge{position:absolute;top:-11px;left:20px;background:var(--red);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:20px}
+  .plan-name{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px}
+  .plan-card.plus-card .plan-name{color:#fff}
+  .plan-price{font-size:32px;font-weight:700;color:var(--navy);margin-bottom:4px;line-height:1.1}
+  .plan-card.plus-card .plan-price{color:#fff}
+  .plan-price span{font-size:14px;font-weight:400;color:var(--slate)}
+  .plan-card.plus-card .plan-price span{color:var(--slate2)}
+  .plan-period{font-size:12px;color:var(--slate);margin-bottom:20px}
+  .plan-card.plus-card .plan-period{color:var(--slate2)}
+  .plan-feature{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:var(--text2)}
+  .plan-card.plus-card .plan-feature{color:var(--slate2)}
+  .plan-feature-check{width:16px;height:16px;border-radius:4px;background:rgba(22,163,74,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .plan-card.plus-card .plan-feature-check{background:rgba(255,255,255,.15)}
+  .plan-btn{width:100%;padding:12px;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;margin-top:20px;transition:.15s;border:none}
+  .plan-btn.upgrade{background:var(--red);color:#fff}
+  .plan-btn.upgrade:hover{background:var(--red2)}
+  .plan-btn.current-plan{background:var(--bg);color:var(--slate);cursor:default}
+  .plan-btn.get-plus{background:#fff;color:var(--navy)}
+  .plan-btn.get-plus:hover{background:var(--slate3)}
+
+  /* ── Plus Paywall ── */
+  .paywall-wrap{position:relative}
+  .paywall-blur{filter:blur(6px);pointer-events:none;user-select:none}
+  .paywall-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.7);backdrop-filter:blur(2px);border-radius:12px;z-index:10;padding:32px}
+  .paywall-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;text-align:center}
+  .paywall-sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:20px;max-width:280px;line-height:1.5}
+  .paywall-btn{background:var(--red);color:#fff;padding:12px 28px;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s}
+  .paywall-btn:hover{background:var(--red2)}
+
+  /* ── Products Page ── */
+  .product-table{width:100%;border-collapse:collapse}
+  .product-table th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--slate);padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border)}
+  .product-table td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2)}
+  .product-table tr:last-child td{border-bottom:none}
+  .product-table tr:hover td{background:#FAFAFA}
+  .status-badge{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:inline-block}
+  .status-badge.active{background:#DCFCE7;color:#166534}
+  .status-badge.inactive{background:#F1F5F9;color:var(--slate)}
+  .toggle-btn{width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;position:relative;transition:.3s}
+  .toggle-btn.on{background:var(--green)}
+  .toggle-btn.off{background:var(--slate3)}
+  .toggle-knob{width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:3px;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .toggle-btn.on .toggle-knob{right:3px}
+  .toggle-btn.off .toggle-knob{left:3px}
+
+  /* ── Alerts Page ── */
+  .alert-item{display:flex;align-items:flex-start;gap:14px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;cursor:pointer;transition:.15s}
+  .alert-item:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .alert-item.unread{border-left:3px solid var(--red)}
+  .alert-icon-wrap{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .alert-body{flex:1}
+  .alert-title{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:3px}
+  .alert-desc{font-size:12px;color:var(--text2);line-height:1.5}
+  .alert-time{font-size:11px;color:var(--slate);flex-shrink:0}
+
+  /* ── Settings Page ── */
+  .settings-section{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+  .settings-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--navy);margin-bottom:18px}
+  .settings-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .settings-field{display:flex;flex-direction:column;gap:5px}
+  .divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+
+  /* ── Change Password Modal ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;display:none}
+  .modal-overlay.show{display:flex}
+  .modal{background:#fff;border-radius:16px;padding:36px;width:440px;max-width:calc(100vw - 32px)}
+  .modal-title{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:4px}
+  .modal-sub{font-size:13px;color:var(--slate);margin-bottom:24px}
+
+  /* Quick Action Buttons */
+  .action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+  .action-btn{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:12px}
+  .action-btn:hover{border-color:var(--red);box-shadow:0 2px 8px rgba(204,0,0,.1)}
+  .action-btn-icon{width:36px;height:36px;border-radius:10px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .action-btn-label{font-size:13px;font-weight:600;color:var(--navy)}
+  .action-btn-sub{font-size:11px;color:var(--slate);margin-top:1px}
+
+  svg{display:block}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ AUTH SCREENS ═══════════════ -->
+
+<div id="authWrap" class="auth-wrap">
+  <!-- Login -->
+  <div id="loginCard" class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-wordmark">e<span>Compara</span></div>
+      <div class="auth-logo-sub">Portal do Lojista</div>
+    </div>
+    <div class="auth-title">Autenticacao Segura</div>
+    <div class="auth-sub">Insira suas credenciais de acesso para continuar</div>
+    <div id="loginError" class="auth-error"></div>
+    <div class="field-group">
+      <label class="field-label" for="loginEmail">E-mail</label>
+      <input class="field-input" id="loginEmail" type="email" placeholder="seuemail@empresa.com.br" autocomplete="username">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="loginPassword">Senha</label>
+      <input class="field-input" id="loginPassword" type="password" placeholder="Senha de acesso" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="loginBtn" onclick="doLogin()">Acessar Plataforma</button>
+    <div class="auth-footer">
+      <button class="auth-link" onclick="showForgot()">Esqueci minha senha</button>
+    </div>
+  </div>
+
+  <!-- Forgot Password -->
+  <div id="forgotCard" class="auth-card" hidden>
+    <div class="auth-logo">
+      <div class="auth-logo-wordmark">e<span>Compara</span></div>
+      <div class="auth-logo-sub">Recuperacao de Acesso</div>
+    </div>
+    <div class="auth-title">Redefinicao de Senha</div>
+    <div class="auth-sub">Informe seu e-mail cadastrado para receber o link de redefinicao</div>
+    <div id="forgotError" class="auth-error"></div>
+    <div id="forgotSuccess" class="auth-success"></div>
+    <div class="field-group">
+      <label class="field-label" for="forgotEmail">E-mail cadastrado</label>
+      <input class="field-input" id="forgotEmail" type="email" placeholder="seuemail@empresa.com.br">
+    </div>
+    <button class="btn-primary" id="forgotBtn" onclick="doForgot()">Enviar Link de Redefinicao</button>
+    <div class="auth-footer">
+      <button class="auth-link" onclick="showLogin()">Voltar ao login</button>
+    </div>
+  </div>
+
+  <!-- Reset Password -->
+  <div id="resetCard" class="auth-card" hidden>
+    <div class="auth-logo">
+      <div class="auth-logo-wordmark">e<span>Compara</span></div>
+      <div class="auth-logo-sub">Nova Senha</div>
+    </div>
+    <div class="auth-title">Criar Nova Senha</div>
+    <div class="auth-sub">Defina uma nova senha segura para sua conta</div>
+    <div id="resetError" class="auth-error"></div>
+    <div id="resetSuccess" class="auth-success"></div>
+    <div class="field-group">
+      <label class="field-label" for="resetPassword">Nova Senha</label>
+      <input class="field-input" id="resetPassword" type="password" placeholder="Minimo 8 caracteres">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="resetPassword2">Confirmar Nova Senha</label>
+      <input class="field-input" id="resetPassword2" type="password" placeholder="Repita a nova senha">
+    </div>
+    <button class="btn-primary" id="resetBtn" onclick="doReset()">Salvar Nova Senha</button>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN APP ═══════════════ -->
+
+<div id="appWrap" class="layout" hidden>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-wordmark">e<span style="color:var(--red)">Compara</span></div>
+      <div class="sidebar-logo-sub">Portal do Lojista</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Gestao</div>
+      <div class="nav-item active" data-section="dashboard" onclick="nav(this,'dashboard')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" data-section="produtos" onclick="nav(this,'produtos')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Gestao de Inventario
+      </div>
+      <div class="nav-item" data-section="alertas" onclick="nav(this,'alertas')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Central de Alertas
+        <span id="alertBadge" style="margin-left:auto;background:var(--red);color:#fff;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700">3</span>
+      </div>
+      <div class="nav-group-label">Plano</div>
+      <div class="nav-item" data-section="plano" onclick="nav(this,'plano')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Plano & Assinatura
+      </div>
+      <div class="nav-group-label">Conta</div>
+      <div class="nav-item" data-section="config" onclick="nav(this,'config')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Configuracoes
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebarInitial">L</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebarStoreName">Carregando...</div>
+          <div class="sidebar-user-plan" id="sidebarPlan">Plano Normal</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Sair">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+        <div class="topbar-breadcrumb" id="topbarBreadcrumb">Visao Geral de Indicadores</div>
+      </div>
+      <div class="topbar-right">
+        <span class="plan-badge" id="topbarPlanBadge">Normal</span>
+        <div class="notif-btn" onclick="nav(document.querySelector('[data-section=alertas]'),'alertas')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="notif-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" id="contentArea">
+      <!-- Dynamic content injected here -->
+    </div>
+  </main>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay" id="changePwdModal">
+  <div class="modal">
+    <div class="modal-title">Definir Senha de Acesso</div>
+    <div class="modal-sub">Por seguranca, e necessario definir uma senha propria antes de continuar.</div>
+    <div id="changePwdError" class="auth-error"></div>
+    <div class="field-group">
+      <label class="field-label" for="oldPwd">Senha Temporaria Recebida</label>
+      <input class="field-input" id="oldPwd" type="password" placeholder="Senha enviada por e-mail">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="newPwd">Nova Senha</label>
+      <input class="field-input" id="newPwd" type="password" placeholder="Minimo 8 caracteres">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="newPwd2">Confirmar Nova Senha</label>
+      <input class="field-input" id="newPwd2" type="password" placeholder="Repita a nova senha">
+    </div>
+    <button class="btn-primary" onclick="doChangePassword()">Salvar e Continuar</button>
+  </div>
+</div>
+
+<script>
+const BASE = window.location.pathname.replace(/\/[^/]*$/, '');
+const API = BASE.endsWith('/api') ? BASE : BASE + '/api';
+
+let session = { token: null, user: null, registration: null };
+let currentPlan = 'normal';
+
+/* ═══ Router ═══ */
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const resetToken = params.get('reset');
+  if (resetToken) { showReset(resetToken); return; }
+
+  const saved = sessionStorage.getItem('merchantToken');
+  if (saved) {
+    try {
+      const r = await fetch(`${API}/merchant/auth/me`, { headers: { Authorization: `Bearer ${saved}` } });
+      if (r.ok) {
+        const data = await r.json();
+        session = { token: saved, user: data.merchantUser, registration: data.registration };
+        startApp();
+        return;
+      }
+    } catch {}
+    sessionStorage.removeItem('merchantToken');
+  }
+  showLogin();
+}
+
+/* ═══ Auth ═══ */
+function showLogin() {
+  document.getElementById('authWrap').hidden = false;
+  document.getElementById('appWrap').hidden = true;
+  document.getElementById('loginCard').hidden = false;
+  document.getElementById('forgotCard').hidden = true;
+  document.getElementById('resetCard').hidden = true;
+}
+function showForgot() {
+  document.getElementById('loginCard').hidden = true;
+  document.getElementById('forgotCard').hidden = false;
+  document.getElementById('forgotError').className = 'auth-error';
+  document.getElementById('forgotSuccess').className = 'auth-success';
+}
+function showReset(token) {
+  document.getElementById('authWrap').hidden = false;
+  document.getElementById('appWrap').hidden = true;
+  document.getElementById('loginCard').hidden = true;
+  document.getElementById('forgotCard').hidden = true;
+  document.getElementById('resetCard').hidden = false;
+  document.getElementById('resetCard')._token = token;
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  if (!email || !password) { showErr(err, 'Preencha todos os campos.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  try {
+    const r = await fetch(`${API}/merchant/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await r.json();
+    if (!r.ok) { showErr(err, data.error || 'Credenciais invalidas.'); return; }
+
+    session = { token: data.token, user: data.merchantUser, registration: data.registration };
+    sessionStorage.setItem('merchantToken', data.token);
+    startApp();
+  } catch { showErr(err, 'Falha de conexao. Tente novamente.'); }
+  finally { btn.disabled = false; btn.textContent = 'Acessar Plataforma'; }
+}
+
+async function doForgot() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  const btn = document.getElementById('forgotBtn');
+  const err = document.getElementById('forgotError');
+  const suc = document.getElementById('forgotSuccess');
+  if (!email) { showErr(err, 'Informe seu e-mail.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const r = await fetch(`${API}/merchant/auth/forgot-password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await r.json();
+    if (!r.ok) { showErr(err, data.error); return; }
+    err.className = 'auth-error';
+    suc.className = 'auth-success show';
+    suc.textContent = 'Link de redefinicao enviado! Verifique seu e-mail (tambem a pasta de spam).';
+    if (data.emailPreviewUrl) {
+      suc.innerHTML += ` <a href="${data.emailPreviewUrl}" target="_blank" style="color:var(--green);font-weight:700">Ver e-mail (teste)</a>`;
+    }
+  } catch { showErr(err, 'Falha de conexao.'); }
+  finally { btn.disabled = false; btn.textContent = 'Enviar Link de Redefinicao'; }
+}
+
+async function doReset() {
+  const token = document.getElementById('resetCard')._token;
+  const pwd = document.getElementById('resetPassword').value;
+  const pwd2 = document.getElementById('resetPassword2').value;
+  const btn = document.getElementById('resetBtn');
+  const err = document.getElementById('resetError');
+  const suc = document.getElementById('resetSuccess');
+  if (!pwd || pwd.length < 8) { showErr(err, 'A senha deve ter pelo menos 8 caracteres.'); return; }
+  if (pwd !== pwd2) { showErr(err, 'As senhas nao coincidem.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    const r = await fetch(`${API}/merchant/auth/reset-password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword: pwd })
+    });
+    const data = await r.json();
+    if (!r.ok) { showErr(err, data.error); return; }
+    err.className = 'auth-error';
+    suc.className = 'auth-success show';
+    suc.textContent = 'Senha alterada com sucesso! Redirecionando para o login...';
+    setTimeout(() => { window.location.search = ''; }, 2000);
+  } catch { showErr(err, 'Falha de conexao.'); }
+  finally { btn.disabled = false; btn.textContent = 'Salvar Nova Senha'; }
+}
+
+async function doChangePassword() {
+  const old = document.getElementById('oldPwd').value;
+  const nw = document.getElementById('newPwd').value;
+  const nw2 = document.getElementById('newPwd2').value;
+  const err = document.getElementById('changePwdError');
+  if (!old || !nw) { showErr(err, 'Preencha todos os campos.'); return; }
+  if (nw.length < 8) { showErr(err, 'A nova senha deve ter pelo menos 8 caracteres.'); return; }
+  if (nw !== nw2) { showErr(err, 'As senhas nao coincidem.'); return; }
+
+  try {
+    const r = await fetch(`${API}/merchant/auth/change-password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ currentPassword: old, newPassword: nw })
+    });
+    const data = await r.json();
+    if (!r.ok) { showErr(err, data.error); return; }
+    session.user.mustChangePassword = false;
+    document.getElementById('changePwdModal').className = 'modal-overlay';
+    renderSection(currentSection);
+  } catch { showErr(err, 'Falha de conexao.'); }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('merchantToken');
+  session = { token: null, user: null, registration: null };
+  showLogin();
+}
+
+function showErr(el, msg) { el.textContent = msg; el.className = 'auth-error show'; }
+
+/* ═══ App ═══ */
+let currentSection = 'dashboard';
+
+function startApp() {
+  document.getElementById('authWrap').hidden = true;
+  document.getElementById('appWrap').hidden = false;
+
+  const reg = session.registration;
+  const storeName = reg?.nome_fantasia || reg?.razao_social || 'Minha Loja';
+  currentPlan = session.user?.plan || 'normal';
+
+  document.getElementById('sidebarStoreName').textContent = storeName;
+  document.getElementById('sidebarInitial').textContent = storeName[0]?.toUpperCase() || 'L';
+  document.getElementById('sidebarPlan').textContent = currentPlan === 'plus' ? 'Plano Plus' : 'Plano Normal';
+  document.getElementById('topbarPlanBadge').textContent = currentPlan === 'plus' ? 'Plus' : 'Normal';
+  document.getElementById('topbarPlanBadge').className = `plan-badge ${currentPlan}`;
+
+  if (session.user?.mustChangePassword) {
+    document.getElementById('changePwdModal').className = 'modal-overlay show';
+  }
+
+  renderSection('dashboard');
+}
+
+const NAV_META = {
+  dashboard: { title: 'Dashboard', breadcrumb: 'Visao Geral de Indicadores de Performance' },
+  produtos:  { title: 'Gestao de Inventario', breadcrumb: 'Catalogo de produtos e ofertas ativas' },
+  alertas:   { title: 'Central de Alertas', breadcrumb: 'Notificacoes e avisos de performance' },
+  plano:     { title: 'Plano & Assinatura', breadcrumb: 'Gerenciamento de plano e cobranca' },
+  config:    { title: 'Configuracoes', breadcrumb: 'Dados do estabelecimento e seguranca' },
+};
+
+function nav(el, section) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  currentSection = section;
+  document.getElementById('topbarTitle').textContent = NAV_META[section].title;
+  document.getElementById('topbarBreadcrumb').textContent = NAV_META[section].breadcrumb;
+  renderSection(section);
+}
+
+function renderSection(section) {
+  const el = document.getElementById('contentArea');
+  switch(section) {
+    case 'dashboard': el.innerHTML = renderDashboard(); break;
+    case 'produtos':  el.innerHTML = renderProdutos(); break;
+    case 'alertas':   el.innerHTML = renderAlertas(); break;
+    case 'plano':     el.innerHTML = renderPlano(); break;
+    case 'config':    el.innerHTML = renderConfig(); break;
+  }
+}
+
+/* ═══ Dashboard ═══ */
+function renderDashboard() {
+  const isPlus = currentPlan === 'plus';
+  return `
+  <!-- Acoes Rapidas -->
+  <div style="margin-bottom:20px">
+    <div class="section-header"><div><div class="section-title">Acoes Rapidas</div><div class="section-sub">Operacoes de alta prioridade</div></div></div>
+    <div class="action-grid">
+      <div class="action-btn" onclick="showToast('Atualizacao de preco iniciada')">
+        <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div>
+        <div>
+          <div class="action-btn-label">Atualizar Preco</div>
+          <div class="action-btn-sub">Registrar preco hoje</div>
+        </div>
+      </div>
+      <div class="action-btn" onclick="showToast('Oferta relampago criada com sucesso')">
+        <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div>
+          <div class="action-btn-label">Oferta Relampago</div>
+          <div class="action-btn-sub">Lancamento imediato</div>
+        </div>
+      </div>
+      <div class="action-btn" onclick="showQRCode()">
+        <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-3v2h3"/><path d="M21 21h-3v-2h3"/><path d="M14 21v-2h2"/><path d="M14 16v2h2"/></svg></div>
+        <div>
+          <div class="action-btn-label">QR Code da Loja</div>
+          <div class="action-btn-sub">Exibir codigo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card" onclick="showToast('Trafego Local: usuarios unicos que visualizaram sua loja')">
+      <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="kpi-label">Trafego Local (7d)</div>
+      <div class="kpi-value">1.847</div>
+      <div class="kpi-delta up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> +12,3% vs semana anterior</div>
+    </div>
+    <div class="kpi-card" onclick="showToast('Conversao de Trafego Local: usuarios que clicaram em produtos')">
+      <div class="kpi-icon" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+      <div class="kpi-label">Conversao de Trafego</div>
+      <div class="kpi-value">8,4%</div>
+      <div class="kpi-delta up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> +2,1pp este mes</div>
+    </div>
+    <div class="kpi-card" onclick="showToast('Posicionamento: sua posicao media nos resultados de busca da regiao')">
+      <div class="kpi-icon" style="background:#FFF7ED"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <div class="kpi-label">Posicionamento de Mercado</div>
+      <div class="kpi-value">#3</div>
+      <div class="kpi-delta neutral">na regiao de 5km</div>
+    </div>
+    <div class="kpi-card" onclick="nav(document.querySelector('[data-section=alertas]'),'alertas')">
+      <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="kpi-label">Alertas Ativos</div>
+      <div class="kpi-value">3</div>
+      <div class="kpi-delta down"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg> 2 criticos, 1 informativo</div>
+    </div>
+  </div>
+
+  <div class="grid-3-1">
+    <!-- Campanha Ativa -->
+    <div class="card">
+      <div class="card-title">
+        <span>Campanha Ativa — Alcance & Cliques</span>
+        <span style="font-size:11px;color:var(--slate);font-weight:400;text-transform:none">${isPlus ? 'Raio 10km' : 'Raio 5km'}</span>
+      </div>
+      <div class="chart-bar-group">
+        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">SEG</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:72%;background:var(--red)"></div></div><div class="chart-val">1.240</div></div>
+        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">TER</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:58%;background:var(--red)"></div></div><div class="chart-val">998</div></div>
+        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">QUA</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:85%;background:var(--red)"></div></div><div class="chart-val">1.463</div></div>
+        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">QUI</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:91%;background:var(--red)"></div></div><div class="chart-val">1.566</div></div>
+        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">SEX</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:100%;background:var(--red)"></div></div><div class="chart-val">1.720</div></div>
+        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">SAB</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:65%;background:var(--slate3)"></div></div><div class="chart-val">1.118</div></div>
+        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">DOM</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:43%;background:var(--slate3)"></div></div><div class="chart-val">740</div></div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:20px">
+        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Total Alcance</div><div style="font-size:18px;font-weight:700;color:var(--navy)">8.845</div></div>
+        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Total Cliques</div><div style="font-size:18px;font-weight:700;color:var(--red)">743</div></div>
+        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CTR</div><div style="font-size:18px;font-weight:700;color:var(--green)">8,4%</div></div>
+      </div>
+    </div>
+
+    <!-- Atividade Recente -->
+    <div class="card">
+      <div class="card-title">Atividade Recente</div>
+      <div class="activity-item"><div class="activity-dot" style="background:var(--green)"></div><div class="activity-text"><strong>NF-e validada</strong> — Compra de R$ 127,40</div><div class="activity-time">14min</div></div>
+      <div class="activity-item"><div class="activity-dot" style="background:var(--red)"></div><div class="activity-text"><strong>Novo seguidor</strong> — usuario #4821</div><div class="activity-time">41min</div></div>
+      <div class="activity-item"><div class="activity-dot" style="background:var(--green)"></div><div class="activity-text"><strong>NF-e validada</strong> — Compra de R$ 89,90</div><div class="activity-time">1h</div></div>
+      <div class="activity-item"><div class="activity-dot" style="background:var(--amber)"></div><div class="activity-text"><strong>Alerta</strong> — Preco do Leite defasado ha 26h</div><div class="activity-time">2h</div></div>
+      <div class="activity-item"><div class="activity-dot" style="background:var(--green)"></div><div class="activity-text"><strong>Novo seguidor</strong> — usuario #3902</div><div class="activity-time">3h</div></div>
+    </div>
+  </div>
+
+  <!-- Top Produtos + Relatorio Plus -->
+  <div class="grid-2">
+    <!-- Top Produtos -->
+    <div class="card">
+      <div class="card-title">Indicadores de Performance — Produtos</div>
+      <div class="product-row">
+        <div class="product-rank top">1</div>
+        <div style="flex:1"><div class="product-name">Leite Parmalat 1L</div><div class="product-ean">EAN 7891025123417</div></div>
+        <div style="text-align:right"><div class="product-views">2.341</div><div class="product-views-label">visualizacoes</div></div>
+      </div>
+      <div class="product-row">
+        <div class="product-rank top">2</div>
+        <div style="flex:1"><div class="product-name">Arroz Tio Joao 5kg</div><div class="product-ean">EAN 7896006716015</div></div>
+        <div style="text-align:right"><div class="product-views">1.892</div><div class="product-views-label">visualizacoes</div></div>
+      </div>
+      <div class="product-row">
+        <div class="product-rank">3</div>
+        <div style="flex:1"><div class="product-name">Feijao Camil 1kg</div><div class="product-ean">EAN 7896006716220</div></div>
+        <div style="text-align:right"><div class="product-views">1.441</div><div class="product-views-label">visualizacoes</div></div>
+      </div>
+      <div class="product-row">
+        <div class="product-rank">4</div>
+        <div style="flex:1"><div class="product-name">Oleo Liza 900ml</div><div class="product-ean">EAN 7891108116007</div></div>
+        <div style="text-align:right"><div class="product-views">1.088</div><div class="product-views-label">visualizacoes</div></div>
+      </div>
+      <div class="product-row">
+        <div class="product-rank">5</div>
+        <div style="flex:1"><div class="product-name">Coca-Cola 2L</div><div class="product-ean">EAN 7894900011517</div></div>
+        <div style="text-align:right"><div class="product-views">876</div><div class="product-views-label">visualizacoes</div></div>
+      </div>
+    </div>
+
+    <!-- Relatorio Plus -->
+    <div>
+      ${isPlus ? `
+      <div class="card">
+        <div class="card-title">Relatorio Plus — Analise de Concorrencia</div>
+        <div style="margin-bottom:14px;padding:14px;background:var(--bg);border-radius:10px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--slate);margin-bottom:8px">Comportamento de Compra</div>
+          <div class="chart-row" style="margin-bottom:6px"><div class="chart-label" style="font-size:11px;color:var(--text2)">Sabado</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:90%;background:var(--navy)"></div></div><div class="chart-val" style="font-size:11px">+34%</div></div>
+          <div class="chart-row" style="margin-bottom:6px"><div class="chart-label" style="font-size:11px;color:var(--text2)">Segunda</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:70%;background:var(--navy)"></div></div><div class="chart-val" style="font-size:11px">+22%</div></div>
+          <div class="chart-row"><div class="chart-label" style="font-size:11px;color:var(--text2)">Domingo</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:45%;background:var(--slate3)"></div></div><div class="chart-val" style="font-size:11px">-8%</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">
+          <strong style="color:var(--navy)">Oportunidade identificada:</strong> Sua concorrencia registra pico de trafego nas quintas-feiras. Ajuste precos estrategicos nesse periodo para capturar maior participacao de mercado.
+        </div>
+      </div>
+      ` : `
+      <div class="paywall-wrap">
+        <div class="card paywall-blur" aria-hidden="true">
+          <div class="card-title">Relatorio Plus — Analise de Concorrencia</div>
+          <div style="margin-bottom:14px;padding:14px;background:var(--bg);border-radius:10px">
+            <div style="height:14px;background:var(--slate3);border-radius:4px;margin-bottom:8px"></div>
+            <div style="height:20px;background:var(--slate3);border-radius:4px;margin-bottom:6px;width:80%"></div>
+            <div style="height:20px;background:var(--slate3);border-radius:4px;margin-bottom:6px;width:60%"></div>
+            <div style="height:20px;background:var(--slate3);border-radius:4px;width:75%"></div>
+          </div>
+          <div style="height:14px;background:var(--slate3);border-radius:4px;margin-bottom:6px"></div>
+          <div style="height:14px;background:var(--slate3);border-radius:4px;width:70%"></div>
+        </div>
+        <div class="paywall-overlay">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="margin-bottom:12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <div class="paywall-title">Recurso Exclusivo Plus</div>
+          <div class="paywall-sub">O Relatorio de Analise de Concorrencia e exclusivo para assinantes do Plano Plus. Acesse dados completos de comportamento de compra e posicionamento de mercado.</div>
+          <button class="paywall-btn" onclick="nav(document.querySelector('[data-section=plano]'),'plano')">Fazer Upgrade para Plus — R$ 599,90/mes</button>
+        </div>
+      </div>
+      `}
+    </div>
+  </div>`;
+}
+
+/* ═══ Produtos ═══ */
+function renderProdutos() {
+  return `
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="card-title" style="margin:0">Catalogo de Produtos</div>
+      <button class="btn-primary" style="width:auto;padding:10px 20px;margin:0;font-size:12px" onclick="showToast('Adicionar produto em breve')">+ Adicionar Produto</button>
+    </div>
+    <table class="product-table">
+      <thead><tr>
+        <th>EAN</th><th>Produto</th><th>Preco Atual</th><th>Posicionamento</th><th>Status</th><th>Em Oferta</th>
+      </tr></thead>
+      <tbody>
+        ${[
+          {ean:'7891025123417',name:'Leite Parmalat 1L',price:'R$ 5,49',pos:'#1 na regiao',active:true,oferta:true},
+          {ean:'7896006716015',name:'Arroz Tio Joao 5kg',price:'R$ 24,90',pos:'#2 na regiao',active:true,oferta:false},
+          {ean:'7896006716220',name:'Feijao Camil 1kg',price:'R$ 8,99',pos:'#3 na regiao',active:true,oferta:false},
+          {ean:'7891108116007',name:'Oleo Liza 900ml',price:'R$ 7,49',pos:'#1 na regiao',active:true,oferta:true},
+          {ean:'7894900011517',name:'Coca-Cola 2L',price:'R$ 9,99',pos:'#4 na regiao',active:false,oferta:false},
+          {ean:'7891000055120',name:'Acucar Uniao 1kg',price:'R$ 4,89',pos:'#2 na regiao',active:true,oferta:false},
+        ].map((p,i) => `
+        <tr>
+          <td style="font-family:monospace;font-size:11px;color:var(--slate)">${p.ean}</td>
+          <td style="font-weight:500;color:var(--navy)">${p.name}</td>
+          <td style="font-weight:700;color:var(--red)">${p.price}</td>
+          <td><span class="status-badge ${p.active?'active':'inactive'}">${p.pos}</span></td>
+          <td><span class="status-badge ${p.active?'active':'inactive'}">${p.active?'Ativo':'Inativo'}</span></td>
+          <td>
+            <button class="toggle-btn ${p.oferta?'on':'off'}" onclick="this.className='toggle-btn '+(this.className.includes('on')?'off':'on');showToast('Status de oferta atualizado')">
+              <div class="toggle-knob"></div>
+            </button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ═══ Alertas ═══ */
+function renderAlertas() {
+  return `
+  <div>
+    <div class="alert-item unread" onclick="showToast('Alerta de preco visualizado')">
+      <div class="alert-icon-wrap" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg></div>
+      <div class="alert-body">
+        <div class="alert-title">Preco Defasado — Leite Parmalat 1L</div>
+        <div class="alert-desc">3 usuarios reportaram preco diferente do cadastrado. Atualize para manter sua posicao no ranking.</div>
+      </div>
+      <div class="alert-time">2h</div>
+    </div>
+    <div class="alert-item unread" onclick="showToast('Alerta de ranking visualizado')">
+      <div class="alert-icon-wrap" style="background:#FFF7ED"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg></div>
+      <div class="alert-body">
+        <div class="alert-title">Queda no Ranking de Precos</div>
+        <div class="alert-desc">Sua posicao no arroz Tio Joao caiu de #1 para #3. Concorrente atualizou com preco R$ 0,40 menor.</div>
+      </div>
+      <div class="alert-time">5h</div>
+    </div>
+    <div class="alert-item unread" onclick="showToast('Alerta de denúncia visualizado')">
+      <div class="alert-icon-wrap" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div class="alert-body">
+        <div class="alert-title">Denuncia de Preco Incorreto</div>
+        <div class="alert-desc">1 usuario votou negativamente no preco do Feijao Camil 1kg. Verifique o valor cadastrado.</div>
+      </div>
+      <div class="alert-time">8h</div>
+    </div>
+    <div class="alert-item" onclick="showToast('Notificacao visualizada')">
+      <div class="alert-icon-wrap" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="alert-body">
+        <div class="alert-title">Novo Seguidor do Estabelecimento</div>
+        <div class="alert-desc">Seu estabelecimento ganhou 12 novos seguidores esta semana.</div>
+      </div>
+      <div class="alert-time">2d</div>
+    </div>
+    <div class="alert-item" onclick="showToast('Notificacao visualizada')">
+      <div class="alert-icon-wrap" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <div class="alert-body">
+        <div class="alert-title">NF-e Validada com Sucesso</div>
+        <div class="alert-desc">43 notas fiscais foram validadas e processadas este mes.</div>
+      </div>
+      <div class="alert-time">3d</div>
+    </div>
+  </div>`;
+}
+
+/* ═══ Plano ═══ */
+function renderPlano() {
+  const isPlus = currentPlan === 'plus';
+  return `
+  <div class="plan-grid">
+    <div class="plan-card ${!isPlus ? 'current' : ''}">
+      ${!isPlus ? '<div class="current-badge">Plano Atual</div>' : ''}
+      <div class="plan-name">Plano Normal</div>
+      <div class="plan-price">R$ 299<span>,90/mes</span></div>
+      <div class="plan-period">Cobranca mensal recorrente</div>
+      ${['Raio de busca padrao (5km)','Gestao de inventario basica','Relatorios semanais simplificados','1 campanha ativa por vez','Suporte padrao (ate 72h)'].map(f => `
+      <div class="plan-feature">
+        <div class="plan-feature-check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        ${f}
+      </div>`).join('')}
+      <button class="plan-btn ${!isPlus ? 'current-plan' : 'upgrade'}" ${!isPlus ? 'disabled' : ''} onclick="showToast('Migracao para Plano Normal — entre em contato com suporte')">
+        ${!isPlus ? 'Plano Contratado' : 'Fazer Downgrade'}
+      </button>
+    </div>
+
+    <div class="plan-card plus-card ${isPlus ? 'current' : ''}">
+      ${isPlus ? '<div class="current-badge">Plano Atual</div>' : ''}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div class="plan-name">Plano Plus</div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFD700" stroke="#FFD700" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <div class="plan-price">R$ 599<span style="color:var(--slate2)">,90/mes</span></div>
+      <div class="plan-period">Cobranca mensal recorrente</div>
+      ${['Raio de busca estendido (10km)','Destaque prioritario nos resultados','Relatorio Plus — Analise de concorrencia','Campanhas ilimitadas','Comportamento de compra regional','Suporte prioritario 24h'].map(f => `
+      <div class="plan-feature">
+        <div class="plan-feature-check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        ${f}
+      </div>`).join('')}
+      <button class="plan-btn ${isPlus ? 'current-plan' : 'get-plus'}" ${isPlus ? 'disabled' : ''} onclick="showCheckout()">
+        ${isPlus ? 'Plano Contratado' : 'Fazer Upgrade para Plus'}
+      </button>
+    </div>
+  </div>
+
+  <div class="card" style="background:var(--bg)">
+    <div style="font-size:12px;color:var(--slate)">
+      <strong style="color:var(--navy)">Informacoes de cobranca:</strong> O plano e renovado automaticamente no inicio de cada mes.
+      Para cancelamento ou alteracao de plano, entre em contato com <a href="mailto:parceiros@ecompara.com.br" style="color:var(--red)">parceiros@ecompara.com.br</a> com ate 5 dias de antecedencia.
+    </div>
+  </div>`;
+}
+
+/* ═══ Config ═══ */
+function renderConfig() {
+  const reg = session.registration || {};
+  const user = session.user || {};
+  return `
+  <div class="settings-section">
+    <div class="settings-title">Dados do Estabelecimento</div>
+    <div class="settings-row">
+      <div class="settings-field">
+        <label class="field-label">Razao Social</label>
+        <input class="field-input" value="${reg.razao_social || ''}" placeholder="Razao Social">
+      </div>
+      <div class="settings-field">
+        <label class="field-label">Nome Fantasia</label>
+        <input class="field-input" value="${reg.nome_fantasia || ''}" placeholder="Nome Fantasia">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-field">
+        <label class="field-label">CNPJ</label>
+        <input class="field-input" value="${reg.cnpj || ''}" placeholder="00.000.000/0001-00" readonly style="background:var(--bg)">
+      </div>
+      <div class="settings-field">
+        <label class="field-label">Telefone</label>
+        <input class="field-input" value="${reg.phone || ''}" placeholder="(61) 99999-9999">
+      </div>
+    </div>
+    <button class="btn-primary" style="width:auto;padding:10px 24px;font-size:13px;margin-top:4px" onclick="showToast('Dados atualizados com sucesso')">Salvar Alteracoes</button>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-title">Seguranca da Conta</div>
+    <div class="settings-row">
+      <div class="settings-field">
+        <label class="field-label">E-mail de Acesso</label>
+        <input class="field-input" value="${user.email || ''}" readonly style="background:var(--bg)">
+      </div>
+      <div class="settings-field">
+        <label class="field-label">Ultimo Acesso</label>
+        <input class="field-input" value="${user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('pt-BR') : 'Este acesso'}" readonly style="background:var(--bg)">
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="section-title" style="font-size:11px;margin-bottom:14px">Alterar Senha</div>
+    <div class="settings-row">
+      <div class="settings-field">
+        <label class="field-label">Senha Atual</label>
+        <input class="field-input" id="cfgOldPwd" type="password" placeholder="Senha atual">
+      </div>
+      <div class="settings-field">
+        <label class="field-label">Nova Senha</label>
+        <input class="field-input" id="cfgNewPwd" type="password" placeholder="Minimo 8 caracteres">
+      </div>
+    </div>
+    <button class="btn-primary" style="width:auto;padding:10px 24px;font-size:13px" onclick="doConfigChangePwd()">Atualizar Senha</button>
+  </div>`;
+}
+
+async function doConfigChangePwd() {
+  const old = document.getElementById('cfgOldPwd')?.value;
+  const nw = document.getElementById('cfgNewPwd')?.value;
+  if (!old || !nw) { showToast('Preencha a senha atual e a nova senha', true); return; }
+  if (nw.length < 8) { showToast('A nova senha deve ter pelo menos 8 caracteres', true); return; }
+  try {
+    const r = await fetch(`${API}/merchant/auth/change-password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ currentPassword: old, newPassword: nw })
+    });
+    const data = await r.json();
+    if (!r.ok) { showToast(data.error || 'Erro ao alterar senha', true); return; }
+    showToast('Senha alterada com sucesso');
+  } catch { showToast('Falha de conexao', true); }
+}
+
+/* ═══ Helpers ═══ */
+function showToast(msg, isErr = false) {
+  const existing = document.getElementById('toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.id = 'toast';
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;background:${isErr?'#B91C1C':'#0F172A'};color:#fff;padding:12px 20px;border-radius:10px;font-family:var(--font);font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .3s;max-width:320px`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+function showQRCode() {
+  showToast('QR Code da loja disponivel — funcionalidade em implementacao');
+}
+
+function showCheckout() {
+  showToast('Checkout de upgrade — redirecionando para opcoes de pagamento');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (!document.getElementById('loginCard').hidden) doLogin();
+    else if (!document.getElementById('forgotCard').hidden) doForgot();
+    else if (!document.getElementById('resetCard').hidden) doReset();
+  }
+});
+
+init();
+</script>
+</body>
+</html>

@@ -608,10 +608,24 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
                 <Feather name="zap" size={18} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" }}>Nova Campanha</Text>
+                <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" }}>Lancamento de Oferta</Text>
                 <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)" }}>Crie banners e ofertas patrocinadas</Text>
               </View>
               <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.7)" />
+            </Pressable>
+
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/merchant-portal" as any); }}
+              style={{ backgroundColor: isDark ? "#1E293B" : "#0F172A", borderRadius: 14, padding: 16, flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" }}>
+                <Feather name="monitor" size={18} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" }}>Acessar Painel Web</Text>
+                <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.65)" }}>Dashboard completo com relatorios e KPIs</Text>
+              </View>
+              <Feather name="external-link" size={16} color="rgba(255,255,255,0.6)" />
             </Pressable>
 
             <View style={{ flexDirection: "row", gap: 8 }}>
@@ -815,15 +829,27 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
               </View>
             </View>
           ) : (
-            <View style={[styles.plusLockedCard, { backgroundColor: C.surfaceElevated, borderColor: "#FFD70050" }]}>
-              <Ionicons name="star" size={24} color="#FFD700" />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.plusLockedTitle, { color: C.text }]}>Relatório Completo</Text>
-                <Text style={[styles.plusLockedSub, { color: C.textMuted }]}>Listas finalizadas e notas enviadas disponíveis no Plano Plus.</Text>
+            <View style={{ backgroundColor: C.surfaceElevated, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: "hidden" }}>
+              <View style={{ padding: 16, gap: 8, opacity: 0.35, pointerEvents: "none" }}>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <View style={{ flex: 1, height: 64, backgroundColor: C.backgroundTertiary, borderRadius: 10 }} />
+                  <View style={{ flex: 1, height: 64, backgroundColor: C.backgroundTertiary, borderRadius: 10 }} />
+                </View>
+                <View style={{ height: 40, backgroundColor: C.backgroundTertiary, borderRadius: 8 }} />
+                <View style={{ height: 32, backgroundColor: C.backgroundTertiary, borderRadius: 8, width: "70%" }} />
               </View>
-              <Pressable style={styles.plusUpgradeBtn} onPress={() => setSection("plan")}>
-                <Text style={styles.plusUpgradeTxt}>Ver planos</Text>
-              </Pressable>
+              <View style={{ position: "absolute", inset: 0 as any, alignItems: "center", justifyContent: "center", backgroundColor: isDark ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)", padding: 20, gap: 10 }}>
+                <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: "#CC000015", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="lock" size={20} color="#CC0000" />
+                </View>
+                <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: C.text, textAlign: "center" }}>Recurso Exclusivo Plus</Text>
+                <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", lineHeight: 18, maxWidth: 240 }}>
+                  O Relatorio Completo com analise de listas, NF-e e comportamento de compra esta disponivel apenas no Plano Plus.
+                </Text>
+                <Pressable onPress={() => setSection("plan")} style={{ backgroundColor: "#CC0000", borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 }}>
+                  <Text style={{ color: "#fff", fontFamily: "Inter_700Bold", fontSize: 13 }}>Fazer Upgrade — R$ 599,90/mes</Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </ScrollView>
@@ -987,7 +1013,7 @@ function PlanCard({ isDark, C, plan, current }: any) {
         </Text>
       </View>
       <Text style={[styles.planPrice, { color: isPlus ? "#fff" : C.text }]}>
-        {isPlus ? "R$ 89,90" : "R$ 49,90"}<Text style={[{ fontSize: 13 }, { color: isPlus ? "rgba(255,255,255,0.7)" : C.textMuted }]}>/mês</Text>
+        {isPlus ? "R$ 599,90" : "R$ 299,90"}<Text style={[{ fontSize: 13 }, { color: isPlus ? "rgba(255,255,255,0.7)" : C.textMuted }]}>/mês</Text>
       </Text>
       {[
         { text: `Visibilidade: ${isPlus ? "até 10km" : "até 5km"}`, highlight: isPlus },

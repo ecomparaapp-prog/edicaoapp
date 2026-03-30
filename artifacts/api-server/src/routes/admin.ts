@@ -4,8 +4,10 @@ import {
   searchZonesTable,
   partnershipRequestsTable,
   merchantRegistrationsTable,
+  merchantUsersTable,
 } from "@workspace/db/schema";
 import { eq, desc } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { syncZone, getCreditStatus } from "../services/placesSync";
 import {
   getAllConfigStatus,
@@ -15,7 +17,11 @@ import {
   CONFIG_GROUPS,
   type ConfigKey,
 } from "../services/configService";
-import { sendClaimInvitation } from "../services/emailService";
+import {
+  sendClaimInvitation,
+  sendMerchantWelcome,
+} from "../services/emailService";
+import { generateTempPassword } from "./merchant-auth";
 
 const adminRouter = Router();
 
@@ -278,14 +284,129 @@ adminRouter.post("/admin/merchant-registrations/:id/approve", async (req, res) =
   if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
 
   try {
+    const regs = await db
+      .select()
+      .from(merchantRegistrationsTable)
+      .where(eq(merchantRegistrationsTable.id, id))
+      .limit(1);
+
+    if (regs.length === 0) { res.status(404).json({ error: "Cadastro não encontrado." }); return; }
+    const reg = regs[0];
+
     await db
       .update(merchantRegistrationsTable)
       .set({ status: "approved", adminNote: req.body.note ?? null, updatedAt: new Date() })
       .where(eq(merchantRegistrationsTable.id, id));
-    res.json({ ok: true });
+
+    const email = reg.verificationContact;
+    if (!email) {
+      res.json({ ok: true, merchantUser: null, note: "Sem e-mail de contato para criar acesso." });
+      return;
+    }
+
+    // Verificar se já existe um usuário lojista para este cadastro
+    const existingUsers = await db
+      .select()
+      .from(merchantUsersTable)
+      .where(eq(merchantUsersTable.merchantRegistrationId, id))
+      .limit(1);
+
+    let merchantUser = existingUsers[0] ?? null;
+    let tempPassword: string | null = null;
+    let emailResult = { sent: false, previewUrl: undefined as string | undefined };
+
+    if (!merchantUser) {
+      tempPassword = generateTempPassword();
+      const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+      const [created] = await db
+        .insert(merchantUsersTable)
+        .values({
+          merchantRegistrationId: id,
+          email: email.toLowerCase().trim(),
+          passwordHash,
+          mustChangePassword: true,
+          plan: "normal",
+        })
+        .returning();
+
+      merchantUser = created;
+
+      const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/merchant-portal`;
+      emailResult = await sendMerchantWelcome({
+        to: email,
+        ownerName: reg.ownerName ?? "Lojista",
+        storeName: reg.nomeFantasia ?? reg.razaoSocial ?? "Estabelecimento",
+        tempPassword,
+        portalUrl: baseUrl,
+      });
+
+      console.log(`[Admin] MerchantUser criado para registration #${id}. E-mail: ${emailResult.sent ? "enviado" : "falhou"}`);
+    }
+
+    res.json({
+      ok: true,
+      merchantUserId: merchantUser?.id ?? null,
+      emailSent: emailResult.sent,
+      ...(emailResult.previewUrl ? { emailPreviewUrl: emailResult.previewUrl } : {}),
+    });
   } catch (err) {
     console.error("POST /admin/merchant-registrations/:id/approve error:", err);
     res.status(500).json({ error: "Erro ao aprovar cadastro." });
+  }
+});
+
+adminRouter.post("/admin/merchant-registrations/:id/reset-password", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido." }); return; }
+
+  try {
+    const users = await db
+      .select()
+      .from(merchantUsersTable)
+      .where(eq(merchantUsersTable.merchantRegistrationId, id))
+      .limit(1);
+
+    if (users.length === 0) {
+      res.status(404).json({ error: "Usuário lojista não encontrado para este cadastro." });
+      return;
+    }
+
+    const user = users[0];
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+    await db
+      .update(merchantUsersTable)
+      .set({ passwordHash, mustChangePassword: true, updatedAt: new Date() })
+      .where(eq(merchantUsersTable.id, user.id));
+
+    const regs = await db
+      .select()
+      .from(merchantRegistrationsTable)
+      .where(eq(merchantRegistrationsTable.id, id))
+      .limit(1);
+
+    const reg = regs[0];
+    const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/merchant-portal`;
+    const emailResult = await sendMerchantWelcome({
+      to: user.email,
+      ownerName: reg?.ownerName ?? "Lojista",
+      storeName: reg?.nomeFantasia ?? "Estabelecimento",
+      tempPassword,
+      portalUrl: baseUrl,
+    });
+
+    console.log(`[Admin] Senha resetada para MerchantUser #${user.id} (registration #${id}). E-mail: ${emailResult.sent ? "enviado" : "falhou"}`);
+
+    res.json({
+      ok: true,
+      emailSent: emailResult.sent,
+      ...(emailResult.previewUrl ? { emailPreviewUrl: emailResult.previewUrl } : {}),
+    });
+  } catch (err) {
+    console.error("POST /admin/merchant-registrations/:id/reset-password error:", err);
+    res.status(500).json({ error: "Erro ao resetar senha." });
   }
 });
 

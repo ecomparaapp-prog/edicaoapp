@@ -24,6 +24,7 @@ const allowlist = [
   "memorystore",
   "multer",
   "nanoid",
+  "bcryptjs",
   "nodemailer",
   "openai",
   "passport",
@@ -80,6 +81,7 @@ async function buildAll() {
 
   const staticFiles = [
     "admin.html",
+    "merchant-portal.html",
     "advertiser.html",
     "logo-dark.png",
     "logo-light.png",

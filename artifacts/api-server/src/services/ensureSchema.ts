@@ -437,6 +437,25 @@ export async function ensureSchema(): Promise<void> {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_advertisers_status ON advertisers (status, created_at DESC);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_advertisers_email ON advertisers (email);`);
 
+    // ── Merchant Users (Portal do Lojista — Credenciais de Acesso) ────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS merchant_users (
+        id SERIAL PRIMARY KEY,
+        merchant_registration_id INTEGER NOT NULL REFERENCES merchant_registrations(id),
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
+        plan TEXT NOT NULL DEFAULT 'normal',
+        reset_token TEXT,
+        reset_token_expires_at TIMESTAMPTZ,
+        last_login_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_merchant_users_email ON merchant_users (email);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_merchant_users_reg ON merchant_users (merchant_registration_id);`);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);
