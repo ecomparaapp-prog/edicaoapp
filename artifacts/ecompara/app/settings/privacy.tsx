@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -16,6 +17,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/colors";
+import { useApp } from "@/context/AppContext";
+import { deleteAccount, exportUserData } from "@/services/profileService";
 
 type PrivacyKey =
   | "shareShoppingData"
@@ -63,6 +66,7 @@ export default function PrivacySettingsScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const { user, setUser } = useApp();
 
   const topPad = isWeb ? 67 : insets.top;
 
@@ -74,9 +78,73 @@ export default function PrivacySettingsScreen() {
     analyticsCollection: true,
   });
 
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const toggle = (key: PrivacyKey) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleExport = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      "Exportar dados",
+      "Seus dados serão coletados e disponibilizados para download. Deseja continuar?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Exportar",
+          onPress: async () => {
+            if (!user?.id) {
+              Alert.alert("Erro", "Usuário não identificado.");
+              return;
+            }
+            setExporting(true);
+            const result = await exportUserData(user.id);
+            setExporting(false);
+            if (result.ok) {
+              Alert.alert(
+                "Dados exportados",
+                "Seus dados foram coletados com sucesso. Em um app em produção, eles seriam enviados por e-mail ou disponibilizados para download.",
+              );
+            } else {
+              Alert.alert("Erro", result.error);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDelete = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert(
+      "Excluir conta",
+      "Esta ação é irreversível. Todos os seus dados serão apagados permanentemente do nosso sistema.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            if (!user?.id) {
+              Alert.alert("Erro", "Usuário não identificado.");
+              return;
+            }
+            setDeleting(true);
+            const result = await deleteAccount(user.id);
+            setDeleting(false);
+            if (result.ok) {
+              await setUser(null);
+              router.replace("/");
+            } else {
+              Alert.alert("Erro", result.error);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -127,17 +195,14 @@ export default function PrivacySettingsScreen() {
         <View style={[styles.section, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
           <Text style={[styles.sectionTitle, { color: C.textSecondary }]}>DADOS DA CONTA</Text>
           <Pressable
-            style={styles.row}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              Alert.alert("Exportar dados", "Seus dados serão enviados para o e-mail cadastrado em até 48 horas.", [
-                { text: "Cancelar", style: "cancel" },
-                { text: "Solicitar", onPress: () => Alert.alert("Solicitação enviada!") },
-              ]);
-            }}
+            style={[styles.row, exporting && { opacity: 0.6 }]}
+            onPress={handleExport}
+            disabled={exporting || deleting}
           >
             <View style={[styles.iconWrap, { backgroundColor: C.backgroundTertiary }]}>
-              <Feather name="download" size={16} color={C.textSecondary} />
+              {exporting
+                ? <ActivityIndicator size="small" color={C.textSecondary} />
+                : <Feather name="download" size={16} color={C.textSecondary} />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowLabel, { color: C.text }]}>Exportar meus dados</Text>
@@ -147,21 +212,14 @@ export default function PrivacySettingsScreen() {
           </Pressable>
           <View style={[styles.divider, { backgroundColor: C.border }]} />
           <Pressable
-            style={styles.row}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              Alert.alert(
-                "Excluir conta",
-                "Esta ação é irreversível. Todos os seus dados serão apagados permanentemente.",
-                [
-                  { text: "Cancelar", style: "cancel" },
-                  { text: "Excluir", style: "destructive", onPress: () => Alert.alert("Solicitação registrada", "Sua conta será excluída em até 30 dias.") },
-                ]
-              );
-            }}
+            style={[styles.row, deleting && { opacity: 0.6 }]}
+            onPress={handleDelete}
+            disabled={exporting || deleting}
           >
             <View style={[styles.iconWrap, { backgroundColor: "#CC000018" }]}>
-              <Feather name="trash-2" size={16} color="#CC0000" />
+              {deleting
+                ? <ActivityIndicator size="small" color="#CC0000" />
+                : <Feather name="trash-2" size={16} color="#CC0000" />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowLabel, { color: "#CC0000" }]}>Excluir minha conta</Text>

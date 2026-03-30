@@ -73,3 +73,35 @@ export async function saveProfile(
     return { ok: false, error: "Sem conexão com o servidor." };
   }
 }
+
+export async function exportUserData(userId: string): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`${BASE}/profile/${userId}/export`, {
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      return { ok: false, error: (json as any).error ?? "Erro ao exportar dados." };
+    }
+    const data = await res.json();
+    return { ok: true, data };
+  } catch {
+    return { ok: false, error: "Sem conexão com o servidor." };
+  }
+}
+
+export async function deleteAccount(userId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`${BASE}/profile/${userId}`, {
+      method: "DELETE",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      return { ok: false, error: (json as any).error ?? "Erro ao excluir conta." };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Sem conexão com o servidor." };
+  }
+}

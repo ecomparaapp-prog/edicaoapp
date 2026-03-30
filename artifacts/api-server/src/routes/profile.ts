@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { userProfilesTable } from "@workspace/db/schema";
-import { eq, and, ne, sql } from "drizzle-orm";
+import { userProfilesTable, nfceRecordsTable, priceReportsTable } from "@workspace/db/schema";
+import { eq, and, ne } from "drizzle-orm";
 import { logPoints } from "../services/pointsLogger";
 
 const profileRouter = Router();
@@ -213,6 +213,98 @@ profileRouter.put("/profile/:userId", async (req, res) => {
   } catch (err) {
     console.error("PUT /profile error:", err);
     res.status(500).json({ error: "Erro ao salvar perfil." });
+  }
+});
+
+// GET /api/profile/:userId/export
+profileRouter.get("/profile/:userId/export", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const profileRows = await db
+      .select()
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.userId, userId))
+      .limit(1);
+
+    if (profileRows.length === 0) {
+      res.status(404).json({ error: "Perfil não encontrado." });
+      return;
+    }
+
+    const priceReports = await db
+      .select()
+      .from(priceReportsTable)
+      .where(eq(priceReportsTable.userId, userId));
+
+    const nfceRecords = await db
+      .select()
+      .from(nfceRecordsTable)
+      .where(eq(nfceRecordsTable.userId, userId));
+
+    const p = profileRows[0];
+    res.json({
+      exportedAt: new Date().toISOString(),
+      profile: {
+        userId: p.userId,
+        nickname: p.nickname,
+        fullName: p.fullName,
+        cpf: p.cpf,
+        phone: p.phone,
+        address: p.address,
+        pixKey: p.pixKey,
+        referralCode: p.referralCode,
+        referralCount: p.referralCount,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      },
+      priceReports: priceReports.map((r) => ({
+        id: r.id,
+        ean: r.ean,
+        productName: r.productName,
+        placeId: r.placeId,
+        price: r.price,
+        reportedAt: r.reportedAt,
+        isVerified: r.isVerified,
+        pointsAwarded: r.pointsAwarded,
+      })),
+      nfceRecords: nfceRecords.map((n) => ({
+        id: n.id,
+        storeName: n.storeName,
+        totalValue: n.totalValue,
+        itemCount: n.itemCount,
+        pointsAwarded: n.pointsAwarded,
+        processedAt: n.processedAt,
+      })),
+    });
+  } catch (err) {
+    console.error("GET /profile/export error:", err);
+    res.status(500).json({ error: "Erro ao exportar dados." });
+  }
+});
+
+// DELETE /api/profile/:userId
+profileRouter.delete("/profile/:userId", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const rows = await db
+      .select({ id: userProfilesTable.id })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.userId, userId))
+      .limit(1);
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: "Perfil não encontrado." });
+      return;
+    }
+
+    await db.delete(userProfilesTable).where(eq(userProfilesTable.userId, userId));
+    await db.delete(priceReportsTable).where(eq(priceReportsTable.userId, userId));
+    await db.delete(nfceRecordsTable).where(eq(nfceRecordsTable.userId, userId));
+
+    res.json({ success: true, message: "Conta excluída com sucesso." });
+  } catch (err) {
+    console.error("DELETE /profile error:", err);
+    res.status(500).json({ error: "Erro ao excluir conta." });
   }
 });
 
