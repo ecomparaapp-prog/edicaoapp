@@ -1,0 +1,63 @@
+Abaixo, preparei o Prompt Técnico de Fluxo e Simulação, que você pode usar para orientar o desenvolvimento ou validar a lógica do sistema com uma IA de programação.
+
+🚀 PROMPT DE TESTE E IMPLANTAÇÃO: FLUXO DO ANUNCIANTE (INDÚSTRIA)
+Objetivo: Validar tecnicamente a jornada completa de um anunciante B2B, desde o cadastro inicial até a métrica de desempenho de uma campanha ativa.
+
+1. MÓDULO DE CADASTRO E TRIAGEM (ONBOARDING)
+Ação: Simular o cadastro de uma marca (Ex: "Indústria de Biscoitos Mabel").
+
+Dados Requeridos: CNPJ, Nome do Responsável, E-mail Corporativo e Categoria de Produto.
+
+Lógica de Backend:
+
+O sistema deve criar o registro com status: PENDING_APPROVAL.
+
+O login deve permanecer bloqueado nesta fase.
+
+Disparar uma notificação (E-mail ou Push) para o Painel Admin: "Nova marca aguardando validação".
+
+2. MÓDULO DE APROVAÇÃO E ACESSO (ADMIN)
+Interface Admin: Criar o botão de "Aprovar Parceiro" no painel de controle.
+
+Gatilho de Liberação:
+
+Ao aprovar, o sistema deve mudar o status para status: ACTIVE.
+
+Gerar automaticamente um link de "Definição de Senha" enviado para o e-mail do anunciante.
+
+Atribuir a role ROLE_ADVERTISER, que dá acesso apenas ao Portal do Anunciante (sem acesso aos dados sensíveis de outros mercados).
+
+3. SIMULAÇÃO DE CAMPANHA (THE PILOT TEST)
+Configuração da Campanha:
+
+Produto (SKU): Biscoito Recheado Mabel (EAN específico).
+
+Objetivo: Aumentar o Share of Shelf digital em Brasília.
+
+Parâmetros de Exibição:
+
+Geofencing: Ativar para todos os usuários num raio de 10km de supermercados que possuam o produto em estoque/preço validado.
+
+Orçamento: Definir um teto de cliques (Ex: 1.000 cliques).
+
+Criativo: Banner 5x3 na Home e "Produto Patrocinado" na busca por "Biscoito".
+
+4. VALIDAÇÃO DE MÉTRICAS (DATA DASHBOARD)
+O sistema deve gerar um relatório de teste contendo:
+
+Impressões: Quantos usuários únicos viram o anúncio no DF.
+
+Cliques (CTR): Taxa de cliques sobre as visualizações.
+
+Custo por Clique (CPC): Valor descontado do saldo do anunciante a cada interação.
+
+Localização do Clique: Mapa de calor indicando quais Regiões Administrativas (RAs) de Brasília geraram mais interesse.
+
+🧪 Roteiro para Teste Prático (Simulação de Estresse)
+Para verificar se o sistema é resiliente, peça à IA para simular estes 3 erros comuns:
+
+Tentativa de Login Antecipado: O anunciante tenta logar antes da aprovação do admin. (O sistema deve retornar: "Cadastro em análise").
+
+Esgotamento de Verba: A campanha atinge 1.001 cliques. (O sistema deve ocultar o anúncio imediatamente para não gerar custo excedente).
+
+Conflito de Região: Um usuário de fora de Brasília busca o produto. (O anúncio da Mabel não deve aparecer, preservando o orçamento regionalizado).

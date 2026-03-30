@@ -228,6 +228,105 @@ export async function sendSupportEmail(opts: SendSupportEmailOptions): Promise<E
   }
 }
 
+// ── Aprovação de anunciante ────────────────────────────────────────────────────
+
+export interface SendAdvertiserApprovalOptions {
+  to: string;
+  contactName: string;
+  companyName: string;
+  tempPassword: string;
+  loginUrl?: string;
+}
+
+export async function sendAdvertiserApproval(opts: SendAdvertiserApprovalOptions): Promise<EmailSendResult> {
+  const { transport, isEthereal } = await createTransporter();
+  const { name: fromName, addr: fromAddr } = await getFromAddress();
+  const loginUrl = opts.loginUrl ?? "https://anunciantes.ecompara.com.br/login";
+
+  try {
+    const info = await transport.sendMail({
+      from: `"${fromName}" <${fromAddr}>`,
+      to: opts.to,
+      subject: `Bem-vindo ao eCompara Anunciantes — Seu acesso foi liberado!`,
+      text: [
+        `Olá, ${opts.contactName}!`,
+        ``,
+        `Sua conta de anunciante para a empresa "${opts.companyName}" foi APROVADA.`,
+        ``,
+        `Seus dados de acesso:`,
+        `  E-mail: ${opts.to}`,
+        `  Senha temporária: ${opts.tempPassword}`,
+        ``,
+        `Acesse o portal: ${loginUrl}`,
+        ``,
+        `Por segurança, altere sua senha após o primeiro acesso.`,
+        ``,
+        `Equipe eCompara`,
+      ].join("\n"),
+      html: `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr><td style="background:#CC0000;padding:24px 32px;">
+          <h1 style="margin:0;color:#fff;font-size:22px;letter-spacing:0.5px;">eCompara Anunciantes</h1>
+          <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Portal B2B de Marcas e Indústrias</p>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <p style="margin:0 0 8px;color:#009900;font-size:18px;font-weight:700;">✅ Cadastro Aprovado!</p>
+          <p style="margin:0 0 16px;color:#333;font-size:15px;line-height:1.6;">
+            Olá, <strong>${opts.contactName}</strong>! A conta de anunciante para
+            <strong>${opts.companyName}</strong> foi aprovada com sucesso.
+          </p>
+          <p style="margin:0 0 8px;color:#555;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Seus dados de acesso:</p>
+          <div style="background:#f9f9f9;border:1px solid #eee;border-radius:10px;padding:20px;margin:16px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="color:#888;font-size:13px;padding:6px 0;width:110px;">E-mail</td>
+                <td style="color:#333;font-size:14px;font-weight:600;padding:6px 0;">${opts.to}</td>
+              </tr>
+              <tr>
+                <td style="color:#888;font-size:13px;padding:6px 0;">Senha temporária</td>
+                <td style="color:#CC0000;font-size:18px;font-weight:700;letter-spacing:3px;padding:6px 0;">${opts.tempPassword}</td>
+              </tr>
+            </table>
+          </div>
+          <div style="text-align:center;margin:24px 0 8px;">
+            <a href="${loginUrl}" style="background:#CC0000;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;display:inline-block;">
+              Acessar o Portal do Anunciante
+            </a>
+          </div>
+          <p style="margin:16px 0 0;color:#999;font-size:12px;text-align:center;">Por segurança, altere sua senha após o primeiro acesso.</p>
+          <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+          <p style="margin:0;color:#999;font-size:12px;">Se você não solicitou este acesso, entre em contato com suporte@ecompara.com.br</p>
+        </td></tr>
+        <tr><td style="background:#f9f9f9;padding:16px 32px;border-top:1px solid #eee;">
+          <p style="margin:0;color:#aaa;font-size:11px;text-align:center;">© 2026 eCompara · Todos os direitos reservados</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+    });
+
+    const previewUrl = isEthereal ? (nodemailer.getTestMessageUrl(info) || undefined) : undefined;
+    if (previewUrl) {
+      console.log(`[Email] ✅ Aprovação de anunciante enviada (Ethereal) → ${previewUrl}`);
+    } else {
+      console.log(`[Email] ✅ Aprovação de anunciante enviada para ${opts.to} — messageId: ${info.messageId}`);
+    }
+
+    return { sent: true, previewUrl };
+  } catch (err) {
+    console.error("[Email] Falha ao enviar e-mail de aprovação de anunciante:", err);
+    return { sent: false };
+  }
+}
+
 // ── Convite de novo parceiro ───────────────────────────────────────────────────
 
 export interface SendClaimInvitationOptions {
