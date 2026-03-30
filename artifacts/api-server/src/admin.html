@@ -247,6 +247,10 @@
       <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
       Monitoramento de API
     </div>
+    <div class="nav-item" data-s="audit" onclick="go('audit',this)">
+      <span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+      Log de Auditoria
+    </div>
 
     <div class="sb-footer">
       <div class="logout-link" onclick="doLogout()">
@@ -399,17 +403,41 @@
       <!-- GESTÃO DE GAMIFICAÇÃO -->
       <div class="sec" id="sec-pts">
         <p class="pg-title">Gestão de Gamificação e Engajamento</p>
-        <p class="pg-sub">Configuração de créditos por ação do usuário e valores de premiação por posição no ranking semanal.</p>
+        <p class="pg-sub">Configuração de créditos por ação do usuário e valores de premiação. Alterações agendadas entram em vigor automaticamente na próxima sexta-feira às 00h UTC.</p>
         <div class="card">
-          <div class="ch"><span class="ch-title">Valores de Premiação por Posição</span><button class="btn b-gry bsm" onclick="loadTiers()">Atualizar</button></div>
+          <div class="ch"><span class="ch-title">Valores de Premiação por Posição no Ranking</span><button class="btn b-gry bsm" onclick="loadTiers()">Atualizar</button></div>
           <div class="cb"><div id="tiers-body"><span class="empty">Carregando configurações...</span></div><div class="msg" id="tier-msg"></div></div>
         </div>
         <div class="card">
-          <div class="ch"><span class="ch-title">Créditos por Ação do Usuário</span><button class="btn b-gry bsm" onclick="loadPts()">Atualizar</button></div>
-          <div class="cb">
-            <p style="font-size:12px;color:var(--muted);margin-bottom:16px;padding:10px 14px;background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:7px;">Alterações <strong>agendadas</strong> entram em vigor no próximo ciclo de sexta-feira às 00h UTC. Alterações imediatas são aplicadas instantaneamente.</p>
-            <div id="pts-body"><span class="empty">Carregando configurações...</span></div>
-            <div class="msg" id="pts-msg"></div>
+          <div class="ch">
+            <span class="ch-title">Créditos por Ação do Usuário</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="badge bb" style="font-size:10px;gap:5px;display:inline-flex;align-items:center">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Agendamentos aplicados todo ciclo de Sexta-feira 00h UTC
+              </span>
+              <button class="btn b-gry bsm" onclick="loadPts()">Atualizar</button>
+            </div>
+          </div>
+          <div class="cb" style="padding:0">
+            <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+              <div style="padding:12px 18px;border-right:1px solid var(--border);background:#F0FDF4">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:0.8px">Configuração Ativa</span>
+                </div>
+                <p style="font-size:11px;color:var(--muted);margin-top:3px">Valores em vigor agora na plataforma.</p>
+              </div>
+              <div style="padding:12px 18px;background:var(--warn-bg)">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span style="font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:0.8px">Configuração Agendada</span>
+                </div>
+                <p style="font-size:11px;color:var(--muted);margin-top:3px">Entrará em vigor na próxima Sexta-feira 00h UTC.</p>
+              </div>
+            </div>
+            <div id="pts-body" style="padding:0 18px 8px"><span class="empty" style="display:block;padding:20px 0">Carregando configurações...</span></div>
+            <div style="padding:0 18px"><div class="msg" id="pts-msg"></div></div>
           </div>
         </div>
       </div>
@@ -437,6 +465,30 @@
         </div>
       </div>
 
+      <!-- LOG DE AUDITORIA -->
+      <div class="sec" id="sec-audit">
+        <p class="pg-title">Log de Auditoria do Sistema</p>
+        <p class="pg-sub">Registro técnico de todas as ações administrativas: quem alterou, o quê e quando. Fonte de dados imutável para fins de governança e conformidade.</p>
+        <div class="card">
+          <div class="ch">
+            <span class="ch-title">Histórico de Ações Administrativas</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="audit-module" onchange="loadAudit()" style="width:auto;padding:5px 10px;font-size:12px">
+                <option value="">Todos os módulos</option>
+                <option value="Gestão de Gamificação">Gestão de Gamificação</option>
+                <option value="Credenciamento de Parceiros">Credenciamento de Parceiros</option>
+                <option value="Cadastros de Varejistas">Cadastros de Varejistas</option>
+              </select>
+              <button class="btn b-gry bsm" onclick="loadAudit()">Atualizar</button>
+            </div>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>Data / Hora</th><th>Módulo</th><th>Entidade</th><th>Operador</th><th>Detalhe da Operação</th></tr></thead>
+            <tbody id="audit-body"><tr><td colspan="5"><span class="empty">Carregando registros de auditoria...</span></td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -445,13 +497,13 @@
 <script>
   const BASE='/api', TK='ecompara_adm_tk';
   let token=sessionStorage.getItem(TK)||'';
-  const STIT={dash:['Painel de Controle','Monitoramento operacional do sistema'],pt:['Credenciamento de Parceiros','Solicitações de ingresso de varejistas e marcas na plataforma'],mr:['Cadastros de Varejistas','Registro e validação de estabelecimentos parceiros'],camp:['Ativos Publicitários','Gerenciamento de campanhas de Trade Marketing'],zones:['Zonas de Indexação','Configuração de áreas de sincronização via Google Places'],win:['Ranking e Distribuição de Prêmios','Gestão de pagamentos e auditoria de vencedores'],pts:['Gestão de Gamificação','Configuração de créditos por ação e valores de premiação'],cfg:['Configurações e Integrações','Chaves de API, SMTP e parâmetros operacionais'],credit:['Monitoramento de API','Consumo e limites de chamadas à API Google Places']};
+  const STIT={dash:['Painel de Controle','Monitoramento operacional do sistema'],pt:['Credenciamento de Parceiros','Solicitações de ingresso de varejistas e marcas na plataforma'],mr:['Cadastros de Varejistas','Registro e validação de estabelecimentos parceiros'],camp:['Ativos Publicitários','Gerenciamento de campanhas de Trade Marketing'],zones:['Zonas de Indexação','Configuração de áreas de sincronização via Google Places'],win:['Ranking e Distribuição de Prêmios','Gestão de pagamentos e auditoria de vencedores'],pts:['Gestão de Gamificação e Engajamento','Configuração de créditos por ação e valores de premiação'],cfg:['Configurações e Integrações','Chaves de API, SMTP e parâmetros operacionais'],credit:['Monitoramento de API','Consumo e limites de chamadas à API Google Places'],audit:['Log de Auditoria do Sistema','Registro técnico de todas as ações administrativas — governança e conformidade']};
   let _cur='dash';
   function ah(){return{'Content-Type':'application/json','Authorization':'Bearer '+token};}
   async function af(u,o={}){const r=await fetch(u,{...o,headers:{...ah(),...(o.headers||{})}});if(r.status===401){doLogout();throw new Error('Sessão expirada.');}return r;}
   function go(s,el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));if(el)el.classList.add('active');document.querySelectorAll('.sec').forEach(x=>x.classList.remove('active'));document.getElementById('sec-'+s).classList.add('active');_cur=s;const[t,sb]=STIT[s]||[s,''];document.getElementById('tb-title').textContent=t;document.getElementById('tb-sub').textContent=sb;load(s);}
   function refresh(){load(_cur);}
-  function load(s){switch(s){case 'dash':loadDash();break;case 'pt':loadPT();break;case 'mr':loadMR();break;case 'zones':loadZones();break;case 'win':loadWin();break;case 'pts':loadPts();loadTiers();break;case 'cfg':loadCfg();break;case 'credit':loadCredit();break;}}
+  function load(s){switch(s){case 'dash':loadDash();break;case 'pt':loadPT();break;case 'mr':loadMR();break;case 'zones':loadZones();break;case 'win':loadWin();break;case 'pts':loadPts();loadTiers();break;case 'cfg':loadCfg();break;case 'credit':loadCredit();break;case 'audit':loadAudit();break;}}
   function showApp(){document.getElementById('login-screen').style.display='none';document.getElementById('app-screen').style.display='block';loadDash();loadPT();}
   function showLogin(){document.getElementById('login-screen').style.display='flex';document.getElementById('app-screen').style.display='none';}
   async function doLogin(){const p=document.getElementById('li').value;const b=document.getElementById('lbtn'),e=document.getElementById('lerr');if(!p)return;b.disabled=true;b.textContent='Verificando credencial\u2026';e.style.display='none';try{const r=await fetch(BASE+'/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})});const d=await r.json();if(!r.ok)throw new Error(d.error);token=d.token;sessionStorage.setItem(TK,token);showApp();}catch(ex){e.style.display='block';}finally{b.disabled=false;b.textContent='Acessar o Painel';}}
@@ -502,7 +554,29 @@
   /* POINTS */
   const PI={store_indication:{l:'Indicação de Estabelecimento',d:'Créditos concedidos ao indicar um novo estabelecimento à plataforma.'},referral:{l:'Programa de Aquisição de Usuários',d:'Créditos concedidos ao convidar novos usuários para a plataforma.'},nfce_base:{l:'Leitura de NFC-e',d:'Créditos base por escanear uma nota fiscal eletrônica.'},price_ocr:{l:'Cadastro de Preço via OCR',d:'Créditos por registrar preço de produto via câmera.'},price_confirmation:{l:'Confirmação de Preço',d:'Créditos por validar um preço já cadastrado.'},price_partner:{l:'Preço em Estabelecimento Parceiro',d:'Créditos por reportar preço em loja credenciada.'}};
   let _pk=null,_pnow=false;
-  async function loadPts(){document.getElementById('pts-body').innerHTML='<span class="empty">Carregando\u2026</span>';try{const r=await af(BASE+'/admin/points-config');const d=await r.json();if(!r.ok)throw new Error(d.error);const pm={};for(const p of d.pending)pm[p.key]=p;document.getElementById('pts-body').innerHTML=d.current.map(c=>{const pe=pm[c.key];const i=PI[c.key]||{l:c.key,d:''};return'<div class="cfg-row"><div class="cfg-meta"><strong>'+i.l+'</strong><small>'+i.d+'</small></div><span class="cfg-val">'+Number(c.value).toLocaleString('pt-BR')+' pts</span>'+(pe?'<span class="badge by">Agendado: '+Number(pe.value).toLocaleString('pt-BR')+' pts</span><button class="btn b-gry bsm" onclick="cancelPP(\''+c.key+'\',this)">Cancelar</button>':'')+'<button class="btn b-gry bsm" onclick="openEP(\''+c.key+'\','+c.value+',false)">Agendar Alteração</button><button class="btn b-red bsm" onclick="openEP(\''+c.key+'\','+c.value+',true)">Aplicar Imediatamente</button></div>';}).join('')||'<span class="empty">Nenhuma configuração disponível.</span>';}catch(er){document.getElementById('pts-body').innerHTML='<span class="empty" style="color:var(--danger)">'+er.message+'</span>';}}
+  async function loadPts(){document.getElementById('pts-body').innerHTML='<span class="empty" style="display:block;padding:20px 0">Carregando\u2026</span>';try{const r=await af(BASE+'/admin/points-config');const d=await r.json();if(!r.ok)throw new Error(d.error);const pm={};for(const p of d.pending)pm[p.key]=p;const rows=d.current.map(c=>{const pe=pm[c.key];const i=PI[c.key]||{l:c.key,d:''};const hasPending=pe&&Number(pe.value)!==Number(c.value);return'<div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #F4F4F5;min-height:64px">'+
+  '<div style="padding:13px 18px;border-right:1px solid #F4F4F5;display:flex;align-items:center;justify-content:space-between;gap:12px">'+
+    '<div><strong style="font-size:13px;display:block">'+i.l+'</strong><small style="font-size:11px;color:var(--muted)">'+i.d+'</small></div>'+
+    '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
+      '<span style="font-size:20px;font-weight:800;letter-spacing:-0.5px;color:var(--success)">'+Number(c.value).toLocaleString('pt-BR')+'</span>'+
+      '<span style="font-size:10px;color:var(--muted);font-weight:600">pts</span>'+
+      '<button class="btn b-gry bsm" onclick="openEP(\''+c.key+'\','+c.value+',false)" title="Agendar para próxima sexta">Agendar</button>'+
+      '<button class="btn b-red bsm" onclick="openEP(\''+c.key+'\','+c.value+',true)" title="Aplicar agora">Imediato</button>'+
+    '</div>'+
+  '</div>'+
+  '<div style="padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:'+(hasPending?'var(--warn-bg)':'#FAFAFA')+'">'+
+    (hasPending?
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<div>'+
+          '<div style="font-size:20px;font-weight:800;letter-spacing:-0.5px;color:var(--warn)">'+Number(pe.value).toLocaleString('pt-BR')+'<span style="font-size:10px;color:var(--muted);font-weight:600;margin-left:4px">pts</span></div>'+
+          '<div style="font-size:10px;color:var(--warn);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Agendado — Próxima Sexta-feira</div>'+
+        '</div>'+
+        '<button class="btn b-gry bsm" onclick="cancelPP(\''+c.key+'\',this)" title="Cancelar agendamento">Cancelar</button>'+
+      '</div>'
+    :'<span style="font-size:12px;color:var(--light)">Nenhuma alteração agendada</span>')+
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="'+(hasPending?'var(--warn)':'var(--border)')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'+
+  '</div>'+
+'</div>';});document.getElementById('pts-body').innerHTML=rows.join('')||'<span class="empty" style="display:block;padding:20px 0">Nenhuma configuração disponível.</span>';}catch(er){document.getElementById('pts-body').innerHTML='<span class="empty" style="display:block;padding:20px 0;color:var(--danger)">'+er.message+'</span>';}}
   function openEP(k,v,now){_pk=k;_pnow=now;const i=PI[k]||{l:k};openModal((now?'Aplicar Imediatamente: ':'Agendar Alteração: ')+i.l,'<p style="font-size:13px;color:var(--muted);margin-bottom:12px">'+(now?'O novo valor entrará em vigor <strong>imediatamente</strong>.':'O novo valor entrará em vigor no próximo ciclo de sexta-feira às 00h UTC.')+'</p><div class="fgroup"><label>Novo valor em créditos</label><input type="number" id="pe-inp" min="0" step="1" value="'+v+'" style="margin-top:4px" /></div>','<button class="btn b-gry" onclick="closeModal()">Cancelar</button><button class="btn '+(now?'b-red':'b-grn')+'" id="pe-btn" onclick="savePts()">Confirmar Alterações</button>');setTimeout(()=>document.getElementById('pe-inp')?.focus(),50);}
   async function savePts(){const v=parseInt(document.getElementById('pe-inp')?.value||'',10);const b=document.getElementById('pe-btn');b.disabled=true;b.textContent='\u2026';try{const r=await af(BASE+'/admin/points-config',{method:'PUT',body:JSON.stringify({key:_pk,value:v,applyNow:_pnow})});const d=await r.json();if(!r.ok)throw new Error(d.error);closeModal();msg('pts-msg','Configuração de '+(PI[_pk]?.l||_pk)+' atualizada para '+v.toLocaleString('pt-BR')+' créditos.',true);loadPts();}catch(er){b.disabled=false;b.textContent='Confirmar Alterações';msg('pts-msg',er.message,false);}}
   async function cancelPP(k,btn){btn.disabled=true;try{const r=await af(BASE+'/admin/points-config/pending/'+k,{method:'DELETE'});const d=await r.json();if(!r.ok)throw new Error(d.error);loadPts();}catch(er){btn.disabled=false;alert(er.message);}}
@@ -514,6 +588,9 @@
   function openCM(k,l,d){_ck=k;openModal('Atualizar Configuração: '+l,'<p style="font-size:13px;color:var(--muted);margin-bottom:12px">'+d+'</p><div class="fgroup"><label>Novo valor</label><input type="text" id="cm-inp" autocomplete="off" spellcheck="false" placeholder="Valor da configuração\u2026" style="margin-top:4px" /></div>','<button class="btn b-gry" onclick="closeModal()">Cancelar</button><button class="btn b-red" id="cm-btn" onclick="saveCM()">Confirmar Alterações</button>');setTimeout(()=>document.getElementById('cm-inp')?.focus(),50);}
   async function saveCM(){const v=document.getElementById('cm-inp')?.value?.trim();if(!_ck||!v)return;const b=document.getElementById('cm-btn');b.disabled=true;b.textContent='\u2026';try{const r=await af(BASE+'/admin/config/'+_ck,{method:'PUT',body:JSON.stringify({value:v})});const d=await r.json();if(!r.ok)throw new Error(d.error);closeModal();msg('cfg-msg','Configuração atualizada com sucesso.',true);loadCfg();}catch(er){b.disabled=false;b.textContent='Confirmar Alterações';msg('cfg-msg',er.message,false);}}
   async function rvCfg(k,btn){if(!confirm('Remover do banco e reverter para variável de ambiente?'))return;btn.disabled=true;try{const r=await af(BASE+'/admin/config/'+k,{method:'DELETE'});const d=await r.json();if(!r.ok)throw new Error(d.error);msg('cfg-msg','Configuração revertida.',true);loadCfg();}catch(er){btn.disabled=false;msg('cfg-msg',er.message,false);}}
+
+  /* AUDIT LOG */
+  async function loadAudit(){const tb=document.getElementById('audit-body');tb.innerHTML='<tr><td colspan="5"><span class="empty">Carregando registros...</span></td></tr>';const mod=document.getElementById('audit-module')?.value||'';try{const r=await af(BASE+'/admin/audit-log?limit=100');const d=await r.json();if(!r.ok)throw new Error(d.error);let rows=d.entries||[];if(mod)rows=rows.filter(e=>e.module===mod);if(!rows.length){tb.innerHTML='<tr><td colspan="5"><span class="empty">Nenhum registro de auditoria encontrado.</span></td></tr>';return;}const MB={['Gestão de Gamificação']:'bb',['Credenciamento de Parceiros']:'bg',['Cadastros de Varejistas']:'by'};tb.innerHTML=rows.map(e=>{const bc=MB[e.module]||'bgr';return'<tr><td style="white-space:nowrap;font-size:11px;font-family:monospace">'+fmt(e.occurred_at)+'</td><td><span class="badge '+bc+'" style="font-size:10px">'+e.module+'</span></td><td style="font-size:12px;font-weight:500">'+e.entity+'</td><td style="font-size:12px;font-family:monospace;color:var(--muted)">'+e.actor+'</td><td style="font-size:12px;color:var(--muted);max-width:300px">'+e.detail+'</td></tr>';}).join('');}catch(er){tb.innerHTML='<tr><td colspan="5"><span class="empty">Erro ao carregar registros: '+er.message+'</span></td></tr>';}}
 
   /* CREDIT */
   async function loadCredit(){document.getElementById('credit-body').innerHTML='<span class="empty">Carregando\u2026</span>';try{const r=await af(BASE+'/admin/credit');const d=await r.json();const p=d.percentUsed||0;const col=p>=80?'var(--primary)':p>=50?'var(--warn)':'var(--success)';document.getElementById('credit-body').innerHTML='<div style="display:flex;flex-wrap:wrap;gap:32px;align-items:center;margin-bottom:20px"><div><div style="font-size:40px;font-weight:800;line-height:1;letter-spacing:-2px">'+(d.callsCount||0)+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px">Chamadas realizadas</div></div><div><div style="font-size:40px;font-weight:800;line-height:1;letter-spacing:-2px">'+(d.limit||200)+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px">Limite mensal</div></div><div style="flex:1;min-width:200px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Utilização do ciclo</span><span style="font-size:12px;font-weight:700;color:'+col+'">'+p+'%</span></div><div class="progress"><div class="pf" style="width:'+Math.min(p,100)+'%;background:'+col+'"></div></div></div><div><span class="badge '+(d.suspended?'br':'bg')+'">'+(d.suspended?'SUSPENSO':'Operacional')+'</span></div></div>';document.getElementById('throttle-alert').style.display=d.suspended?'block':'none';}catch(e){document.getElementById('credit-body').innerHTML='<span class="empty">Erro ao carregar dados de consumo.</span>';}}

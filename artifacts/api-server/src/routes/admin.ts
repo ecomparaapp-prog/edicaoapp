@@ -438,4 +438,68 @@ adminRouter.delete("/admin/points-config/pending/:key", async (req, res) => {
   }
 });
 
+// GET /admin/audit-log — technical audit trail of admin actions
+adminRouter.get("/admin/audit-log", async (req, res) => {
+  const limit = Math.min(parseInt(String(req.query.limit ?? "100")), 500);
+  const client = await pool.connect();
+  try {
+    const [pointsLog, partnershipsLog, merchantsLog] = await Promise.all([
+      client.query(
+        `SELECT
+           'Gestão de Gamificação' AS module,
+           'Alteração de Créditos: ' || action AS entity,
+           updated_by AS actor,
+           'De ' || old_points || ' → ' || new_points || ' créditos (' || action || ')' AS detail,
+           applied_at AS occurred_at
+         FROM points_config_log
+         ORDER BY applied_at DESC
+         LIMIT $1`,
+        [limit]
+      ),
+      client.query(
+        `SELECT
+           'Credenciamento de Parceiros' AS module,
+           'Parceria #' || id AS entity,
+           'admin' AS actor,
+           'Status: ' || status || COALESCE(' — ' || admin_note, '') AS detail,
+           updated_at AS occurred_at
+         FROM partnership_requests
+         WHERE status IN ('approved', 'rejected') AND updated_at IS NOT NULL
+         ORDER BY updated_at DESC
+         LIMIT $1`,
+        [limit]
+      ),
+      client.query(
+        `SELECT
+           'Cadastros de Varejistas' AS module,
+           'Cadastro #' || id AS entity,
+           'admin' AS actor,
+           'Status: ' || status || COALESCE(' — ' || admin_note, '') AS detail,
+           updated_at AS occurred_at
+         FROM merchant_registrations
+         WHERE status IN ('approved', 'rejected') AND updated_at IS NOT NULL
+         ORDER BY updated_at DESC
+         LIMIT $1`,
+        [limit]
+      ),
+    ]);
+
+    const allEntries = [
+      ...pointsLog.rows,
+      ...partnershipsLog.rows,
+      ...merchantsLog.rows,
+    ].sort(
+      (a, b) =>
+        new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
+    ).slice(0, limit);
+
+    res.json({ entries: allEntries, total: allEntries.length });
+  } catch (err) {
+    console.error("GET /admin/audit-log error:", err);
+    res.status(500).json({ error: "Erro ao carregar log de auditoria." });
+  } finally {
+    client.release();
+  }
+});
+
 export default adminRouter;
