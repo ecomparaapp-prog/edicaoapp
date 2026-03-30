@@ -1,0 +1,54 @@
+PROMPT DE IMPLEMENTAÇÃO: SISTEMA DE AUTENTICAÇÃO E GESTÃO DE ACESSOS
+Objetivo: Desenvolver o módulo de login e recuperação de credenciais para o Painel Lojista e Portal de Marcas, com integração direta ao fluxo de aprovação do Painel Administrativo.
+
+1. FLUXO DE PRIMEIRO ACESSO (ONBOARDING)
+Gatilho de Aprovação: No momento em que o Administrador alterar o status de um parceiro (Lojista ou Marca) para "Aprovado" no Painel Admin, o sistema deve:
+
+Gerar uma senha temporária segura e aleatória.
+
+Disparar um e-mail automático de boas-vindas utilizando o e-mail cadastrado.
+
+O e-mail deve conter as instruções de acesso, o link do portal correspondente e as credenciais temporárias.
+
+Segurança: Solicitar obrigatoriamente a troca de senha no primeiro login.
+
+2. INTERFACE DE LOGIN (UI/UX CORPORATIVA)
+Campos: E-mail e Senha.
+
+Design: Estética minimalista, fundo sólido ou com gradiente sutil, logo oficial do eCompara (sem fundo) centralizada.
+
+Linguagem: Uso de termos como "Acessar Plataforma", "Credenciais de Acesso" e "Autenticação Segura". Proibição total de emojis.
+
+Recuperação: Link discreto "Esqueci minha senha" abaixo do campo de entrada.
+
+3. RECUPERAÇÃO DE SENHA AUTOMATIZADA
+Fluxo:
+
+O usuário insere o e-mail cadastrado.
+
+O sistema valida se o e-mail existe na base ativa.
+
+Envia um token de redefinição com tempo de expiração (ex: 30 minutos).
+
+O link direciona o usuário para uma tela segura de criação de nova senha dentro da identidade visual coesa do projeto.
+
+4. GESTÃO MANUAL PELO ADMINISTRADOR (CONTROLE TOTAL)
+Painel Admin: Dentro do perfil de cada parceiro (Lojista ou Marca), deve existir uma seção de "Gestão de Acessos".
+
+Funcionalidade: O Administrador deve ter o poder de sobrescrever a senha de qualquer usuário manualmente.
+
+Registro: Toda alteração manual de senha deve ser registrada no Log de Auditoria do sistema, informando qual admin realizou a mudança e o timestamp.
+
+5. REQUISITOS TÉCNICOS E SEGURANÇA
+Criptografia: Armazenamento de senhas utilizando algoritmos de hash robustos (ex: BCrypt).
+
+Integração SMTP: Configuração de serviço de disparo de e-mails (SendGrid, Mailgun ou AWS SES) para garantir que as senhas e links de recuperação não caiam no SPAM.
+
+Sessão: Implementar expiração de sessão por inatividade para proteger os dados comerciais dos lojistas e marcas.
+
+🧪 CENÁRIOS DE TESTE PARA VALIDAÇÃO
+Teste de Aprovação: Aprove um novo Lojista no Admin e verifique se o e-mail com a senha gerada chega em menos de 2 minutos.
+
+Teste de Bloqueio: Tente logar com a senha antiga após o Administrador ter feito a alteração manual no painel. O sistema deve negar o acesso antigo e aceitar apenas o novo.
+
+Teste de Recuperação: Solicite "Esqueci minha senha" e valide se o link enviado expira após o tempo determinado, garantindo a segurança do portal.
