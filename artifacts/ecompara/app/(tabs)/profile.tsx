@@ -202,15 +202,6 @@ export default function ProfileScreen() {
             <Pressable style={[styles.iconBtnSm, { backgroundColor: C.backgroundSecondary }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}>
               <Feather name={isDark ? "sun" : "moon"} size={16} color={C.text} />
             </Pressable>
-            {isLoggedIn && (
-              <Pressable
-                style={[styles.switchModeBtn, { backgroundColor: merchantSession ? "#CC000015" : C.backgroundSecondary, borderColor: merchantSession ? "#CC000040" : C.border, borderWidth: 1 }]}
-                onPress={handleOpenMerchantArea}
-              >
-                <Feather name="store" size={14} color={merchantSession ? C.primary : C.textMuted} />
-                <Text style={[styles.switchModeTxt, { color: merchantSession ? C.primary : C.textMuted }]}>Área Supermercado</Text>
-              </Pressable>
-            )}
           </View>
         </View>
 

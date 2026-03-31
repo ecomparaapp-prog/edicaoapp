@@ -146,7 +146,7 @@ export default function LoginScreen() {
           <View style={[styles.dividerLine, { backgroundColor: C.border }]} />
         </View>
 
-        {/* Botão lojista — Google */}
+        {/* Botão Área Supermercado */}
         <Pressable
           style={[
             styles.retailerBtn,
@@ -156,23 +156,20 @@ export default function LoginScreen() {
               opacity: loading ? 0.6 : 1,
             },
           ]}
-          onPress={() => handleLogin("retailer")}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(auth)/merchant-login");
+          }}
           disabled={loading !== null}
         >
-          {loading === "retailer" ? (
-            <Text style={[styles.retailerBtnText, { color: "#8B0000" }]}>Entrando com Google...</Text>
-          ) : (
-            <>
-              <View style={[styles.retailerIconBg, { backgroundColor: "#8B000015" }]}>
-                <Feather name="store" size={18} color="#8B0000" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.retailerBtnText, { color: "#8B0000" }]}>Lojista · Entrar com Google</Text>
-                <Text style={[styles.retailerBtnSub, { color: C.textMuted }]}>Área exclusiva para supermercados parceiros</Text>
-              </View>
-              <Feather name="chevron-right" size={16} color="#8B0000" />
-            </>
-          )}
+          <View style={[styles.retailerIconBg, { backgroundColor: "#8B000015" }]}>
+            <Feather name="store" size={18} color="#8B0000" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.retailerBtnText, { color: "#8B0000" }]}>Área Supermercado</Text>
+            <Text style={[styles.retailerBtnSub, { color: C.textMuted }]}>Área exclusiva para supermercados parceiros</Text>
+          </View>
+          <Feather name="chevron-right" size={16} color="#8B0000" />
         </Pressable>
 
         <Text style={[styles.terms, { color: C.textMuted }]}>
