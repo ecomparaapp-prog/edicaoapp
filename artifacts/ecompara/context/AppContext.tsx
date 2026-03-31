@@ -318,6 +318,7 @@ type AppContextType = {
   activeTab: "customer" | "retailer";
   setActiveTab: (tab: "customer" | "retailer") => void;
   merchantSession: MerchantSession | null;
+  merchantSessionLoaded: boolean;
   merchantLogin: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   merchantLogout: () => void;
 };
@@ -335,6 +336,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
   const [activeTab, setActiveTab] = useState<"customer" | "retailer">("customer");
   const [merchantSession, setMerchantSession] = useState<MerchantSession | null>(null);
+  const [merchantSessionLoaded, setMerchantSessionLoaded] = useState(false);
   const [cosmosCache, setCosmosCache] = useState<Record<string, Product>>({});
   const [stores, setStores] = useState<Store[]>(MOCK_STORES);
   const [storesLoading, setStoresLoading] = useState(false);
@@ -415,13 +417,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else {
         await AsyncStorage.removeItem("@ecompara_merchant_token");
       }
-    } catch {}
+    } catch {
+    } finally {
+      setMerchantSessionLoaded(true);
+    }
   };
 
   const merchantLogin = async (email: string, password: string): Promise<{ ok: boolean; error?: string }> => {
     const result = await apiMerchantLogin(email, password);
     if (result.ok && result.session) {
       setMerchantSession(result.session);
+      setMerchantSessionLoaded(true);
       await AsyncStorage.setItem("@ecompara_merchant_token", result.session.token);
       const merchantId = result.session.merchantUser?.id;
       if (merchantId) {
@@ -809,6 +815,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         activeTab,
         setActiveTab,
         merchantSession,
+        merchantSessionLoaded,
         merchantLogin,
         merchantLogout,
       }}
