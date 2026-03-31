@@ -20,6 +20,7 @@ import {
   apiMerchantMe,
   type MerchantSession,
 } from "@/services/merchantAuthService";
+import { realtimeService } from "@/services/realtimeService";
 
 export type { MerchantSession };
 
@@ -407,6 +408,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const session = await apiMerchantMe(token);
       if (session) {
         setMerchantSession(session);
+        const merchantId = session.merchantUser?.id;
+        if (merchantId) {
+          realtimeService.connect(merchantId, token);
+        }
       } else {
         await AsyncStorage.removeItem("@ecompara_merchant_token");
       }
@@ -418,12 +423,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (result.ok && result.session) {
       setMerchantSession(result.session);
       await AsyncStorage.setItem("@ecompara_merchant_token", result.session.token);
+      const merchantId = result.session.merchantUser?.id;
+      if (merchantId) {
+        realtimeService.connect(merchantId, result.session.token);
+      }
       return { ok: true };
     }
     return { ok: false, error: result.error };
   };
 
   const merchantLogout = async () => {
+    realtimeService.disconnect();
     setMerchantSession(null);
     setActiveTab("customer");
     await AsyncStorage.removeItem("@ecompara_merchant_token");
@@ -455,6 +465,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setRetailerStore(null);
     }
   }, [merchantSession, user]);
+
+  // WebSocket: sincroniza plano e invalida sessao em tempo real
+  useEffect(() => {
+    if (!merchantSession) return;
+    const offPlan = realtimeService.on("plan:changed", (evt) => {
+      const newPlan = evt.payload.plan as "normal" | "plus" | undefined;
+      if (newPlan) {
+        setRetailerStore((prev) => prev ? { ...prev, plan: newPlan } : prev);
+        setMerchantSession((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            registration: { ...prev.registration, plan: newPlan },
+          };
+        });
+      }
+    });
+    const offSession = realtimeService.on("session:invalidated", () => {
+      realtimeService.disconnect();
+      setMerchantSession(null);
+      setActiveTab("customer");
+      AsyncStorage.removeItem("@ecompara_merchant_token");
+    });
+    return () => { offPlan(); offSession(); };
+  }, [merchantSession?.token]);
 
   const loadUser = async () => {
     try {

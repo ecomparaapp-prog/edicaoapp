@@ -13,6 +13,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 import type { MerchantSession } from "@/services/merchantAuthService";
+import { realtimeService } from "@/services/realtimeService";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -644,6 +645,14 @@ export default function RetailerBI({ C, isDark, merchantSession, bottomPad, onUp
 
   useEffect(() => {
     fetchBI();
+  }, [fetchBI]);
+
+  // Atualiza BI automaticamente quando o Portal emite bi:refresh via WebSocket
+  useEffect(() => {
+    const off = realtimeService.on("bi:refresh", () => {
+      fetchBI();
+    });
+    return off;
   }, [fetchBI]);
 
   const isPlus = data?.plan === "plus";

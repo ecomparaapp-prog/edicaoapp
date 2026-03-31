@@ -6,6 +6,7 @@
 <title>Portal do Lojista — eCompara</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -211,6 +212,27 @@
 
   svg{display:block}
   [hidden]{display:none!important}
+
+  /* ── Realtime Indicator ── */
+  .rt-dot{width:8px;height:8px;border-radius:50%;background:var(--slate3);flex-shrink:0;transition:.3s}
+  .rt-dot.connected{background:var(--green)}
+  .rt-indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--slate2);padding:6px 0}
+
+  /* ── CSV Import ── */
+  .csv-drop-zone{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.2s;background:var(--bg)}
+  .csv-drop-zone:hover,.csv-drop-zone.drag-over{border-color:var(--red);background:#FEF2F2}
+  .csv-progress-wrap{background:var(--bg);border-radius:8px;height:6px;overflow:hidden;margin:10px 0}
+  .csv-progress-bar{height:100%;background:var(--red);border-radius:8px;transition:width .3s;width:0%}
+  .csv-status{font-size:12px;color:var(--text2);margin-top:6px}
+
+  /* ── BI Loading ── */
+  .bi-skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:6px;height:28px}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* ── Live Badge ── */
+  .live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);background:#F0FDF4;border:1px solid #BBF7D0;padding:3px 8px;border-radius:20px}
+  .live-pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-green 1.5s ease-in-out infinite}
+  @keyframes pulse-green{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 </style>
 </head>
 <body>
@@ -340,6 +362,10 @@
         <div class="topbar-breadcrumb" id="topbarBreadcrumb">Visao Geral de Indicadores</div>
       </div>
       <div class="topbar-right">
+        <div class="rt-indicator">
+          <div class="rt-dot" id="rtDot"></div>
+          <span id="rtLabel">Conectando...</span>
+        </div>
         <span class="plan-badge" id="topbarPlanBadge">Normal</span>
         <div class="notif-btn" onclick="nav(document.querySelector('[data-section=alertas]'),'alertas')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -382,6 +408,9 @@ const API = BASE.endsWith('/api') ? BASE : BASE + '/api';
 
 let session = { token: null, user: null, registration: null };
 let currentPlan = 'normal';
+let wsSocket = null;
+let biCache = null;
+let biPeriod = 'week';
 
 /* ═══ Router ═══ */
 async function init() {
@@ -525,8 +554,10 @@ async function doChangePassword() {
 }
 
 function doLogout() {
+  if (wsSocket) { wsSocket.disconnect(); wsSocket = null; }
   sessionStorage.removeItem('merchantToken');
   session = { token: null, user: null, registration: null };
+  biCache = null;
   showLogin();
 }
 
@@ -553,7 +584,95 @@ function startApp() {
     document.getElementById('changePwdModal').className = 'modal-overlay show';
   }
 
+  connectWebSocket();
   renderSection('dashboard');
+}
+
+/* ═══ WebSocket ═══ */
+function connectWebSocket() {
+  if (wsSocket) { wsSocket.disconnect(); wsSocket = null; }
+  if (!window.io) return;
+
+  wsSocket = window.io({ auth: { merchantId: session.user?.id }, transports: ['websocket', 'polling'] });
+
+  wsSocket.on('connect', () => {
+    wsSocket.emit('join:merchant', session.user?.id);
+    setRtStatus(true);
+  });
+
+  wsSocket.on('disconnect', () => setRtStatus(false));
+  wsSocket.on('connect_error', () => setRtStatus(false));
+
+  wsSocket.on('event', (evt) => {
+    switch (evt.type) {
+      case 'bi:refresh':
+        biCache = null;
+        if (currentSection === 'dashboard') renderSection('dashboard');
+        break;
+      case 'price:updated':
+        showToast(`Preco atualizado: ${evt.payload.ean} — R$ ${Number(evt.payload.newPrice).toFixed(2).replace('.',',')}`);
+        biCache = null;
+        if (currentSection === 'dashboard') renderSection('dashboard');
+        break;
+      case 'csv:import:started':
+        updateCSVProgress(0, evt.payload.total, 'Iniciando importacao...');
+        break;
+      case 'csv:import:progress':
+        updateCSVProgress(evt.payload.processed, evt.payload.total, `Processando... ${evt.payload.processed}/${evt.payload.total}`);
+        break;
+      case 'csv:import:complete':
+        updateCSVProgress(evt.payload.total, evt.payload.total, evt.payload.message || 'Importacao concluida!', 'success');
+        showToast(evt.payload.message || 'CSV importado com sucesso');
+        biCache = null;
+        break;
+      case 'csv:import:error':
+        updateCSVProgress(0, 1, evt.payload.message || 'Erro na importacao', 'error');
+        showToast(evt.payload.message || 'Erro ao importar CSV', true);
+        break;
+      case 'plan:changed':
+        currentPlan = evt.payload.plan;
+        applyPlanUI(currentPlan);
+        showToast(currentPlan === 'plus' ? 'Plano Plus ativado em todas as plataformas' : 'Plano atualizado');
+        biCache = null;
+        if (currentSection === 'dashboard' || currentSection === 'plano') renderSection(currentSection);
+        break;
+      case 'session:invalidated':
+        showToast('Sua senha foi alterada. Faca login novamente.', true);
+        setTimeout(doLogout, 2000);
+        break;
+    }
+  });
+}
+
+function setRtStatus(connected) {
+  const dot = document.getElementById('rtDot');
+  const label = document.getElementById('rtLabel');
+  if (!dot || !label) return;
+  if (connected) {
+    dot.className = 'rt-dot connected';
+    label.textContent = 'Tempo real';
+  } else {
+    dot.className = 'rt-dot';
+    label.textContent = 'Reconectando...';
+  }
+}
+
+function applyPlanUI(plan) {
+  document.getElementById('sidebarPlan').textContent = plan === 'plus' ? 'Plano Plus' : 'Plano Normal';
+  document.getElementById('topbarPlanBadge').textContent = plan === 'plus' ? 'Plus' : 'Normal';
+  document.getElementById('topbarPlanBadge').className = `plan-badge ${plan}`;
+}
+
+function updateCSVProgress(processed, total, msg, state) {
+  const bar = document.getElementById('csvProgressBar');
+  const status = document.getElementById('csvStatus');
+  if (!bar || !status) return;
+  const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+  bar.style.width = pct + '%';
+  if (state === 'success') bar.style.background = 'var(--green)';
+  else if (state === 'error') bar.style.background = 'var(--red)';
+  else bar.style.background = 'var(--red)';
+  status.textContent = msg;
 }
 
 const NAV_META = {
@@ -573,110 +692,291 @@ function nav(el, section) {
   renderSection(section);
 }
 
-function renderSection(section) {
+async function renderSection(section) {
   const el = document.getElementById('contentArea');
   switch(section) {
-    case 'dashboard': el.innerHTML = renderDashboard(); break;
-    case 'produtos':  el.innerHTML = renderProdutos(); break;
+    case 'dashboard':
+      el.innerHTML = renderDashboardSkeleton();
+      const biData = await loadBI(biPeriod);
+      el.innerHTML = renderDashboard(biData);
+      break;
+    case 'produtos':  el.innerHTML = renderProdutos(); setupCSVDrop(); break;
     case 'alertas':   el.innerHTML = renderAlertas(); break;
     case 'plano':     el.innerHTML = renderPlano(); break;
     case 'config':    el.innerHTML = renderConfig(); break;
   }
 }
 
+/* ═══ BI Data Loading ═══ */
+async function loadBI(period) {
+  if (biCache && biCache.period === period) return biCache.data;
+  try {
+    const r = await fetch(`${API}/merchant/bi/dashboard?period=${period}`, {
+      headers: { Authorization: `Bearer ${session.token}` }
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    biCache = { period, data };
+    return data;
+  } catch { return null; }
+}
+
+function renderDashboardSkeleton() {
+  return `<div style="padding:8px 0">
+    <div class="kpi-grid">${[1,2,3,4].map(() => `<div class="kpi-card"><div class="bi-skeleton" style="width:60%;margin-bottom:10px"></div><div class="bi-skeleton" style="width:40%;height:36px;margin-bottom:8px"></div><div class="bi-skeleton" style="width:80%;height:14px"></div></div>`).join('')}</div>
+    <div class="card"><div class="bi-skeleton" style="margin-bottom:12px"></div>${[1,2,3,4,5].map(()=>`<div class="bi-skeleton" style="margin-bottom:8px"></div>`).join('')}</div>
+  </div>`;
+}
+
+function fmt(n, decimals = 0) {
+  if (n == null) return '—';
+  return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function delta(current, prev, unit = '') {
+  if (prev == null || prev === 0) return '<span class="kpi-delta neutral">Sem historico</span>';
+  const pct = ((current - prev) / prev) * 100;
+  const sign = pct >= 0 ? '+' : '';
+  const cls = pct >= 0 ? 'up' : 'down';
+  const arrow = pct >= 0
+    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>'
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
+  return `<span class="kpi-delta ${cls}">${arrow} ${sign}${pct.toFixed(1)}% vs periodo anterior${unit}</span>`;
+}
+
 /* ═══ Dashboard ═══ */
-function renderDashboard() {
+function renderDashboard(bi) {
   const isPlus = currentPlan === 'plus';
+  const d = bi || {};
+  const conv = d.conversions || {};
+  const flow = d.flow || {};
+  const loyalty = d.loyalty || {};
+
+  const periodLabels = { day: 'Hoje', week: 'Esta semana', month: 'Este mes', year: 'Este ano' };
+
+  const heatmapDays = d.heatmapDays || ['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
+  const heatmap = d.heatmap || [];
+  const heatmapMax = d.heatmapMax || 1;
+
+  const totalVisits = flow.totalVisits || 0;
+  const conversionRate = conv.conversionRate || 0;
+  const purchaseConf = flow.purchaseConfirmations || 0;
+  const totalConv = conv.total || 0;
+
   return `
-  <!-- Acoes Rapidas -->
-  <div style="margin-bottom:20px">
-    <div class="section-header"><div><div class="section-title">Acoes Rapidas</div><div class="section-sub">Operacoes de alta prioridade</div></div></div>
-    <div class="action-grid">
-      <div class="action-btn" onclick="showToast('Atualizacao de preco iniciada')">
-        <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div>
-        <div>
-          <div class="action-btn-label">Atualizar Preco</div>
-          <div class="action-btn-sub">Registrar preco hoje</div>
-        </div>
-      </div>
-      <div class="action-btn" onclick="showToast('Oferta relampago criada com sucesso')">
-        <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-        <div>
-          <div class="action-btn-label">Oferta Relampago</div>
-          <div class="action-btn-sub">Lancamento imediato</div>
-        </div>
-      </div>
-      <div class="action-btn" onclick="showQRCode()">
-        <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-3v2h3"/><path d="M21 21h-3v-2h3"/><path d="M14 21v-2h2"/><path d="M14 16v2h2"/></svg></div>
-        <div>
-          <div class="action-btn-label">QR Code da Loja</div>
-          <div class="action-btn-sub">Exibir codigo</div>
-        </div>
-      </div>
+  <!-- Cabecalho com seletor de periodo e indicador live -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <div class="section-title">Dashboard — Supermercado</div>
+      <div class="section-sub">Dados sincronizados em tempo real com o app eCompara</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="live-badge"><div class="live-pulse"></div> Ao vivo</div>
+      <select style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font);font-size:12px;color:var(--navy);background:var(--white);cursor:pointer" onchange="biPeriod=this.value;biCache=null;renderSection('dashboard')">
+        <option value="day" ${biPeriod==='day'?'selected':''}>Hoje</option>
+        <option value="week" ${biPeriod==='week'?'selected':''}>Esta semana</option>
+        <option value="month" ${biPeriod==='month'?'selected':''}>Este mes</option>
+        <option value="year" ${biPeriod==='year'?'selected':''}>Este ano</option>
+      </select>
     </div>
   </div>
 
-  <!-- KPIs -->
+  <!-- Acoes Rapidas -->
+  <div class="action-grid" style="margin-bottom:20px">
+    <div class="action-btn" onclick="nav(document.querySelector('[data-section=produtos]'),'produtos')">
+      <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div><div class="action-btn-label">Importar CSV</div><div class="action-btn-sub">Upload em lote de precos</div></div>
+    </div>
+    <div class="action-btn" onclick="showToast('Oferta Relampago criada com sucesso')">
+      <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+      <div><div class="action-btn-label">Oferta Relampago</div><div class="action-btn-sub">Lancamento imediato</div></div>
+    </div>
+    <div class="action-btn" onclick="showQRCode()">
+      <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-3v2h3"/><path d="M21 21h-3v-2h3"/><path d="M14 21v-2h2"/><path d="M14 16v2h2"/></svg></div>
+      <div><div class="action-btn-label">QR Code da Loja</div><div class="action-btn-sub">Exibir codigo</div></div>
+    </div>
+  </div>
+
+  <!-- KPIs — Metricas de Exposicao -->
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate);margin-bottom:10px">Metricas de Exposicao — ${periodLabels[biPeriod]||''}</div>
   <div class="kpi-grid">
-    <div class="kpi-card" onclick="showToast('Visualizacoes: usuarios unicos que visualizaram sua loja')">
+    <div class="kpi-card">
       <div class="kpi-icon" style="background:#EFF6FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
-      <div class="kpi-label">Visualizacoes</div>
-      <div class="kpi-value">48.500</div>
-      <div class="kpi-delta up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> +12% vs semana anterior</div>
+      <div class="kpi-label">Visitas ao Supermercado</div>
+      <div class="kpi-value">${fmt(totalVisits)}</div>
+      ${delta(totalVisits, flow.prevTotalVisits)}
     </div>
-    <div class="kpi-card" onclick="showToast('Cliques: usuarios que interagiram com produtos ou promocoes')">
+    <div class="kpi-card">
       <div class="kpi-icon" style="background:#F5F3FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9C27B0" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
-      <div class="kpi-label">Cliques</div>
-      <div class="kpi-value">3.200</div>
-      <div class="kpi-delta up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> +8% este mes</div>
+      <div class="kpi-label">Conversao por Banner</div>
+      <div class="kpi-value">${fmt(conv.fromBanners)}</div>
+      ${delta(conversionRate, conv.prevConversionRate)}
     </div>
-    <div class="kpi-card" onclick="showToast('Seguidores: usuarios que seguem sua loja para receber atualizacoes')">
-      <div class="kpi-icon" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-      <div class="kpi-label">Seguidores</div>
-      <div class="kpi-value">1.240</div>
-      <div class="kpi-delta up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> +3% este mes</div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div class="kpi-label">Confirmacoes de Compra</div>
+      <div class="kpi-value">${fmt(purchaseConf)}</div>
+      ${delta(purchaseConf, flow.prevPurchaseConfirmations)}
     </div>
     <div class="kpi-card" onclick="nav(document.querySelector('[data-section=alertas]'),'alertas')">
-      <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-      <div class="kpi-label">Alertas Ativos</div>
-      <div class="kpi-value">3</div>
-      <div class="kpi-delta down"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg> 2 criticos, 1 informativo</div>
+      <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M12 22v-2"/><path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg></div>
+      <div class="kpi-label">Tempo Medio na Loja</div>
+      <div class="kpi-value">${flow.avgTimeInStore || '—'} <span style="font-size:14px;font-weight:400;color:var(--slate)">min</span></div>
+      <span class="kpi-delta neutral">Pico: ${flow.peakDay || '—'} as ${flow.peakHour || '—'}h</span>
     </div>
   </div>
 
+  ${isPlus && loyalty.avgTicket ? `
+  <!-- KPIs Plus — Metricas de Publico -->
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate);margin-bottom:10px;margin-top:4px">Metricas de Publico — Plano Plus</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#FFF7ED"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="kpi-label">Ticket Medio</div>
+      <div class="kpi-value">R$ ${fmt(loyalty.avgTicket)}</div>
+      ${delta(loyalty.avgTicket, loyalty.prevAvgTicket)}
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+      <div class="kpi-label">Frequencia de Compra</div>
+      <div class="kpi-value">${fmt(loyalty.purchaseFrequency,1)}x</div>
+      <span class="kpi-delta neutral">por semana por cliente</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#EFF6FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="kpi-label">NPS do Supermercado</div>
+      <div class="kpi-value">${fmt(loyalty.npsScore)}</div>
+      <span class="kpi-delta neutral">${loyalty.npsResponses || 0} respostas</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg></div>
+      <div class="kpi-label">Churn Rate</div>
+      <div class="kpi-value">${fmt(loyalty.churnRate,1)}%</div>
+      ${delta(loyalty.prevChurnRate, loyalty.churnRate)}
+    </div>
+  </div>
+  ` : ''}
+
   <div class="grid-3-1">
-    <!-- Campanha Ativa -->
+    <!-- Metricas de Conversao -->
     <div class="card">
       <div class="card-title">
-        <span>Campanha Ativa — Alcance & Cliques</span>
+        <span>Metricas de Conversao & Tomada de Decisao</span>
         <span style="font-size:11px;color:var(--slate);font-weight:400;text-transform:none">${isPlus ? 'Raio 10km' : 'Raio 5km'}</span>
       </div>
       <div class="chart-bar-group">
-        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">SEG</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:72%;background:var(--red)"></div></div><div class="chart-val">1.240</div></div>
-        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">TER</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:58%;background:var(--red)"></div></div><div class="chart-val">998</div></div>
-        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">QUA</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:85%;background:var(--red)"></div></div><div class="chart-val">1.463</div></div>
-        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">QUI</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:91%;background:var(--red)"></div></div><div class="chart-val">1.566</div></div>
-        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">SEX</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:100%;background:var(--red)"></div></div><div class="chart-val">1.720</div></div>
-        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">SAB</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:65%;background:var(--slate3)"></div></div><div class="chart-val">1.118</div></div>
-        <div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">DOM</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:43%;background:var(--slate3)"></div></div><div class="chart-val">740</div></div>
+        ${[
+          { label: 'Via Banner', val: conv.fromBanners || 0, color: 'var(--red)' },
+          { label: 'Melhor Compra', val: conv.fromBestDeal || 0, color: 'var(--navy)' },
+          { label: 'Proximidade', val: conv.fromProximity || 0, color: 'var(--green)' },
+        ].map(r => {
+          const max = Math.max(conv.fromBanners||0, conv.fromBestDeal||0, conv.fromProximity||0, 1);
+          const pct = Math.round((r.val/max)*100);
+          return `<div class="chart-row"><div class="chart-label" style="color:var(--slate2);font-size:11px">${r.label}</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:${pct}%;background:${r.color}"></div></div><div class="chart-val">${fmt(r.val)}</div></div>`;
+        }).join('')}
       </div>
       <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:20px">
-        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Total Visualizacoes</div><div style="font-size:18px;font-weight:700;color:var(--navy)">48.500</div></div>
-        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Total Cliques</div><div style="font-size:18px;font-weight:700;color:var(--red)">3.200</div></div>
-        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CTR</div><div style="font-size:18px;font-weight:700;color:var(--green)">6,6%</div></div>
+        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Total Conversoes</div><div style="font-size:18px;font-weight:700;color:var(--navy)">${fmt(totalConv)}</div></div>
+        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Taxa de Conversao</div><div style="font-size:18px;font-weight:700;color:var(--red)">${fmt(conversionRate,1)}%</div></div>
       </div>
     </div>
 
-    <!-- Atividade Recente -->
+    <!-- NPS Breakdown (Plus) ou Atividade Recente (Normal) -->
     <div class="card">
+      ${isPlus && loyalty.npsBreakdown ? `
+      <div class="card-title">NPS Detalhado</div>
+      ${(loyalty.npsBreakdown||[]).map(item => {
+        const pct = item.score;
+        const color = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
+        return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text2)">${item.label}</span><span style="font-weight:700;color:${color}">${item.score}</span></div><div class="csv-progress-wrap" style="margin:0"><div class="csv-progress-bar" style="width:${pct}%;background:${color}"></div></div></div>`;
+      }).join('')}
+      ` : `
       <div class="card-title">Atividade Recente</div>
-      <div class="activity-item"><div class="activity-dot" style="background:#2196F3"></div><div class="activity-text"><strong>48 novos usuarios</strong> viram sua loja</div><div class="activity-time">Hoje</div></div>
-      <div class="activity-item"><div class="activity-dot" style="background:#9C27B0"></div><div class="activity-text"><strong>12 cliques</strong> no banner de promocao</div><div class="activity-time">Hoje</div></div>
-      <div class="activity-item"><div class="activity-dot" style="background:#FFC107"></div><div class="activity-text"><strong>Avaliacao nova:</strong> ★★★★★</div><div class="activity-time">Ontem</div></div>
-      <div class="activity-item"><div class="activity-dot" style="background:#4CAF50"></div><div class="activity-text"><strong>3 novos seguidores</strong> na sua loja</div><div class="activity-time">Ontem</div></div>
-      <div class="activity-item"><div class="activity-dot" style="background:#FF5722"></div><div class="activity-text"><strong>2 precos</strong> marcados como desatualizados</div><div class="activity-time">Ontem</div></div>
+      <div class="activity-item"><div class="activity-dot" style="background:#2196F3"></div><div class="activity-text"><strong>${fmt(Math.round((flow.totalVisits||0)*0.12))} novos usuarios</strong> viram sua loja</div><div class="activity-time">Hoje</div></div>
+      <div class="activity-item"><div class="activity-dot" style="background:#9C27B0"></div><div class="activity-text"><strong>${fmt(conv.fromBanners||0)} cliques</strong> no banner</div><div class="activity-time">Hoje</div></div>
+      <div class="activity-item"><div class="activity-dot" style="background:#4CAF50"></div><div class="activity-text"><strong>${fmt(purchaseConf)} compras</strong> confirmadas</div><div class="activity-time">${periodLabels[biPeriod]||''}</div></div>
+      <div class="activity-item"><div class="activity-dot" style="background:#FF5722"></div><div class="activity-text">Pico de fluxo: <strong>${flow.peakDay||'—'} as ${flow.peakHour||'—'}h</strong></div><div class="activity-time">Padrao</div></div>
+      `}
     </div>
   </div>
+
+  <!-- Indice de Competitividade + Share de Ofertas (Plus) -->
+  ${isPlus && d.competition ? `
+  <div class="grid-2" style="margin-bottom:24px">
+    <div class="card">
+      <div class="card-title">Indice de Competitividade (IP) — Tomada de Decisao</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+        <div style="text-align:center">
+          <div style="font-size:40px;font-weight:700;color:${d.competition.ip<=1?'var(--green)':'var(--red)'}">${fmt(d.competition.ip,2)}</div>
+          <div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px">IP Geral</div>
+          <div style="font-size:11px;color:${d.competition.ip<=1?'var(--green)':'var(--red)'};margin-top:4px">${d.competition.ip<=0.95?'Competitivo':d.competition.ip<=1.05?'Alinhado ao mercado':'Acima do mercado'}</div>
+        </div>
+        <div style="flex:1">
+          ${(d.competition.categories||[]).map(c => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:12px;color:var(--text2)">${c.name}</span>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span style="font-size:12px;font-weight:700;color:${c.ip<=1?'var(--green)':'var(--red)'}">${fmt(c.ip,2)}</span>
+              <span style="font-size:11px;color:${c.diff<0?'var(--green)':'var(--red)'}">${c.diff>0?'+':''}${fmt(c.diff,1)}%</span>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Elasticidade de Preco & Share de Ofertas</div>
+      <div style="margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:8px;display:flex;justify-content:space-between">
+        <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px">Share de Ofertas</div><div style="font-size:24px;font-weight:700;color:var(--navy)">${d.elasticity?.shareOfPromo||0}%</div></div>
+        <div style="text-align:right">${delta(d.elasticity?.shareOfPromo, d.elasticity?.prevShareOfPromo)}</div>
+      </div>
+      ${(d.elasticity?.products||[]).map(p => `
+      <div style="padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+          <span style="font-size:12px;font-weight:500;color:var(--navy)">${p.name}</span>
+          <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${p.sensitivity==='Alta'?'#FEF2F2':'#FFF7ED'};color:${p.sensitivity==='Alta'?'var(--red)':'var(--amber)'}">${p.sensitivity}</span>
+        </div>
+        <div style="font-size:11px;color:var(--slate)">Elasticidade: <strong>${p.elasticity}</strong> | Impacto na receita: <strong>+${p.revenueImpact}%</strong></div>
+      </div>`).join('')}
+    </div>
+  </div>
+  ` : ''}
+
+  <!-- Curva ABC (Plus) ou paywall -->
+  ${isPlus && d.abcCurve ? `
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-title">
+      <span>Curva ABC — Giro de Estoque</span>
+      <div class="live-badge"><div class="live-pulse"></div> Atualizado em tempo real</div>
+    </div>
+    ${d.abcInsight ? `<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#1E40AF;line-height:1.5"><strong>Insight:</strong> ${d.abcInsight}</div>` : ''}
+    <table class="product-table">
+      <thead><tr><th>Produto</th><th>EAN</th><th>Faturamento</th><th>% do Total</th><th>% Acum.</th><th>Categoria</th></tr></thead>
+      <tbody>
+        ${(d.abcCurve||[]).map(p => `<tr>
+          <td style="font-weight:500;color:var(--navy)">${p.name}</td>
+          <td style="font-family:monospace;font-size:11px;color:var(--slate)">${p.ean}</td>
+          <td style="font-weight:700;color:var(--red)">R$ ${fmt(p.revenue)}</td>
+          <td style="color:var(--text2)">${fmt(p.pct,1)}%</td>
+          <td style="color:var(--text2)">${fmt(p.cumulativePct,1)}%</td>
+          <td><span style="padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${p.category==='A'?'#DCFCE7':p.category==='B'?'#FEF9C3':'#F1F5F9'};color:${p.category==='A'?'#166534':p.category==='B'?'#854D0E':'var(--slate)'}">${p.category}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  ` : !isPlus ? `
+  <div class="paywall-wrap" style="margin-bottom:24px">
+    <div class="card paywall-blur" aria-hidden="true">
+      <div class="card-title">Curva ABC — Giro de Estoque + Elasticidade de Preco</div>
+      <div style="height:120px;background:var(--bg);border-radius:8px"></div>
+    </div>
+    <div class="paywall-overlay">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="margin-bottom:12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div class="paywall-title">Recurso Exclusivo Plus</div>
+      <div class="paywall-sub">Curva ABC, Elasticidade de Preco e Indice de Competitividade sao exclusivos do Plano Plus. Tome decisoes baseadas em dados reais.</div>
+      <button class="paywall-btn" onclick="nav(document.querySelector('[data-section=plano]'),'plano')">Fazer Upgrade para Plus — R$ 599,90/mes</button>
+    </div>
+  </div>
+  ` : ''}
 
   <!-- Top Produtos + Relatorio Plus -->
   <div class="grid-2">
@@ -750,12 +1050,87 @@ function renderDashboard() {
   </div>`;
 }
 
+/* ═══ CSV Import ═══ */
+function setupCSVDrop() {
+  const zone = document.getElementById('csvDropZone');
+  const input = document.getElementById('csvFileInput');
+  if (!zone || !input) return;
+
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadCSV(file);
+  });
+  input.addEventListener('change', () => { if (input.files[0]) uploadCSV(input.files[0]); });
+}
+
+async function uploadCSV(file) {
+  const progressWrap = document.getElementById('csvProgressWrap');
+  const statusEl = document.getElementById('csvStatus');
+  const barEl = document.getElementById('csvProgressBar');
+  if (progressWrap) progressWrap.hidden = false;
+  if (statusEl) statusEl.textContent = 'Enviando arquivo...';
+  if (barEl) { barEl.style.width = '5%'; barEl.style.background = 'var(--red)'; }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const r = await fetch(`${API}/merchant/bi/import-csv`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.token}` },
+      body: formData,
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      if (statusEl) statusEl.textContent = data.error || 'Erro ao importar.';
+      if (barEl) barEl.style.background = 'var(--red)';
+      showToast(data.error || 'Erro ao importar CSV', true);
+    } else {
+      if (statusEl) statusEl.textContent = `Processando ${data.total} linhas...`;
+      if (barEl) { barEl.style.width = '10%'; }
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = 'Falha de conexao.';
+    showToast('Falha de conexao ao importar', true);
+  }
+}
+
 /* ═══ Produtos ═══ */
 function renderProdutos() {
   return `
+  <!-- CSV Import Section -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">
+      <span>Importacao em Lote — CSV de Precos</span>
+      <div class="live-badge"><div class="live-pulse"></div> Progresso em tempo real</div>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+      Faca upload de um arquivo CSV com colunas: <strong>ean</strong>, <strong>preco</strong> e opcionalmente <strong>place_id</strong>.
+      O progresso aparecera aqui e no App simultaneamente.
+    </div>
+    <div id="csvDropZone" class="csv-drop-zone">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--slate)" stroke-width="2" style="margin:0 auto 10px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px">Arraste o arquivo CSV aqui ou clique para selecionar</div>
+      <div style="font-size:11px;color:var(--slate)">Formato: ean,preco,place_id — maximo 5MB</div>
+      <input type="file" id="csvFileInput" accept=".csv,text/csv" hidden>
+    </div>
+    <div id="csvProgressWrap" hidden style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:11px;font-weight:600;color:var(--navy)">Progresso da Importacao</span>
+        <span style="font-size:11px;color:var(--slate)" id="csvStatus">Aguardando...</span>
+      </div>
+      <div class="csv-progress-wrap"><div class="csv-progress-bar" id="csvProgressBar"></div></div>
+    </div>
+  </div>
+
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div class="card-title" style="margin:0">Catalogo de Produtos</div>
+      <div class="card-title" style="margin:0">Catalogo de Produtos do Supermercado</div>
       <button class="btn-primary" style="width:auto;padding:10px 20px;margin:0;font-size:12px" onclick="showToast('Adicionar produto em breve')">+ Adicionar Produto</button>
     </div>
     <table class="product-table">
@@ -952,7 +1327,11 @@ async function doConfigChangePwd() {
     });
     const data = await r.json();
     if (!r.ok) { showToast(data.error || 'Erro ao alterar senha', true); return; }
-    showToast('Senha alterada com sucesso');
+    showToast('Senha alterada. Sessoes em outros dispositivos serao encerradas.');
+    // Invalida sessoes no App e outros clientes via WebSocket
+    fetch(`${API}/merchant/session/invalidate`, {
+      method: 'POST', headers: { Authorization: `Bearer ${session.token}` }
+    }).catch(() => {});
   } catch { showToast('Falha de conexao', true); }
 }
 
@@ -972,8 +1351,24 @@ function showQRCode() {
   showToast('QR Code da loja disponivel — funcionalidade em implementacao');
 }
 
-function showCheckout() {
-  showToast('Checkout de upgrade — redirecionando para opcoes de pagamento');
+async function showCheckout() {
+  const targetPlan = currentPlan === 'plus' ? 'normal' : 'plus';
+  const label = targetPlan === 'plus' ? 'Plano Plus — R$ 599,90/mes' : 'Plano Normal — R$ 299,90/mes';
+  if (!confirm(`Confirmar upgrade para ${label}?`)) return;
+
+  try {
+    const r = await fetch(`${API}/merchant/plan/upgrade`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ plan: targetPlan }),
+    });
+    const data = await r.json();
+    if (!r.ok) { showToast(data.error || 'Erro ao atualizar plano', true); return; }
+    currentPlan = data.plan;
+    applyPlanUI(data.plan);
+    showToast(data.message || 'Plano atualizado com sucesso');
+    renderSection('plano');
+  } catch { showToast('Falha de conexao ao atualizar plano', true); }
 }
 
 // Keyboard shortcuts

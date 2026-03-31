@@ -14,6 +14,7 @@ import prizesRouter from "./prizes";
 import advertisersRouter from "./advertisers";
 import merchantAuthRouter from "./merchant-auth";
 import biRouter from "./bi";
+import merchantOperationsRouter from "./merchant-operations";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(prizesRouter);
 router.use(advertisersRouter);
 router.use(merchantAuthRouter);
 router.use(biRouter);
+router.use(merchantOperationsRouter);
 
 export default router;

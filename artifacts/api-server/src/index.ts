@@ -1,4 +1,6 @@
+import { createServer } from "http";
 import app from "./app";
+import { initWebSocket } from "./websocket";
 import { ensureSchema } from "./services/ensureSchema";
 import { seedTestUsers } from "./services/seedTestUsers";
 import { seedFakeStores } from "./services/seedFakeStores";
@@ -23,7 +25,11 @@ async function start() {
   await seedTestUsers();
   await seedFakeStores();
   startWeeklyResetCron();
-  app.listen(port, () => {
+
+  const httpServer = createServer(app);
+  initWebSocket(httpServer);
+
+  httpServer.listen(port, () => {
     console.log(`Server listening on port ${port}`);
   });
 }

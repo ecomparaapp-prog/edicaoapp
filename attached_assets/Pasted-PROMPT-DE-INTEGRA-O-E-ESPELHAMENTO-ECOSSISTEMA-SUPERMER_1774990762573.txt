@@ -1,0 +1,41 @@
+PROMPT DE INTEGRAÇÃO E ESPELHAMENTO: ECOSSISTEMA "SUPERMERCADO" (WEB & APP)
+Objetivo: Configurar a integração absoluta e o espelhamento de dados entre o Portal Supermercado (Web) e a Área Supermercado (App). Ambos devem compartilhar o mesmo estado, banco de dados e lógica de Business Intelligence (BI).
+
+1. ARQUITETURA DE DADOS UNIFICADA
+API Centralizada: Configure o sistema para que tanto o App quanto o Portal Web consumam a mesma RESTful API. Nenhuma lógica de cálculo de BI deve ser feita no front-end; todos os cálculos (IP, Curva ABC, Elasticidade) devem ser processados no servidor (Back-end) para garantir que os resultados sejam idênticos em qualquer tela.
+
+Sincronização em Tempo Real: Implementar WebSockets (ou mecanismos de revalidação imediata como SWR ou React Query) para que, se um preço for alterado ou um CSV for importado via Web, a Área Supermercado no App reflita a mudança instantaneamente sem necessidade de refresh manual.
+
+2. ESPELHAMENTO DE BUSINESS INTELLIGENCE (BI)
+Garanta que as seguintes métricas capturadas pelo comportamento do usuário no App sejam exibidas de forma idêntica no Portal Web:
+
+Métricas de Exposição: Conversão por banner, indicações de melhor compra e tempo em loja.
+
+Métricas de Público (Plus): Ticket médio, frequência de compra, NPS detalhado e fluxo de clientes por hora.
+
+Tomada de Decisão: Índice de Competitividade (IP), Elasticidade de Preço e Share de Ofertas.
+
+Giro de Estoque: Curva ABC atualizada dinamicamente com base nas notas fiscais (NFC-e) validadas.
+
+3. FLUXO DE OPERAÇÕES CRUZADAS
+Importação de Dados: Ao realizar o upload de um CSV de preços no Portal Web, o status de processamento deve ser visível na Área Supermercado do App.
+
+Gestão de Planos: O status da assinatura (Normal R$ 299,90 ou Plus R$ 599,90) deve ser verificado globalmente. Se o upgrade for realizado em uma plataforma, os recursos (como o Relatório Plus e o bônus de R$ 100 em campanha) devem ser liberados na outra imediatamente.
+
+Autenticação: Utilize JWT (JSON Web Tokens) persistentes. Se o lojista alterar a senha via "Esqueci minha senha" no portal, a sessão no app deve ser atualizada ou solicitada novamente com a nova credencial.
+
+4. UI/UX E PADRONIZAÇÃO
+Nomenclatura: Substituir globalmente "mercado" por "Supermercado".
+
+Estética: Manter a identidade visual corporativa, minimalista e sem o uso de emojis.
+
+Layout do App: Manter a estrutura corrigida (Formulário no topo e Mapa na parte inferior) para garantir a usabilidade durante o cadastro de geolocalização.
+
+🧪 TESTE DE VALIDAÇÃO TÉCNICA
+Após a implementação, a IA deve validar os seguintes cenários:
+
+Cenário A: Alterar o preço de um produto via App e verificar se o gráfico de "Elasticidade de Preço" no Portal Web foi atualizado no mesmo instante.
+
+Cenário B: Finalizar uma pesquisa de NPS no App e confirmar se a nota e o feedback (atendimento, limpeza, etc.) aparecem no dashboard analítico da Web.
+
+Cenário C: Iniciar uma campanha com o bônus de R$ 100 (Plano Plus) via Web e verificar se o status da campanha está visível na Área Supermercado do App.
