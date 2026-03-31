@@ -442,7 +442,7 @@ export default function MerchantRegisterScreen() {
         <Pressable style={[styles.backBtn, { backgroundColor: C.backgroundSecondary }]} onPress={goBack} hitSlop={8}>
           <Feather name="arrow-left" size={20} color={C.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: C.text }]}>Cadastro de Lojista</Text>
+        <Text style={[styles.headerTitle, { color: C.text }]}>Cadastro de Supermercado</Text>
         <View style={{ width: 36 }} />
       </View>
 

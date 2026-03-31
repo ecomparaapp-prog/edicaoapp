@@ -55,7 +55,7 @@ export default function RetailerScannerScreen() {
         <Feather name="lock" size={48} color={C.textMuted} />
         <Text style={{ color: C.text, fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 16 }}>Acesso Restrito</Text>
         <Text style={{ color: C.textMuted, fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 8, textAlign: "center", paddingHorizontal: 32 }}>
-          Esta área é exclusiva para lojistas cadastrados.
+          Esta área é exclusiva para supermercados cadastrados.
         </Text>
         <Pressable onPress={() => router.back()} style={{ marginTop: 24, backgroundColor: C.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}>
           <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold" }}>Voltar</Text>

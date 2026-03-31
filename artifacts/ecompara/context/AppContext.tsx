@@ -15,6 +15,13 @@ import {
 } from "@/services/storesService";
 import { submitPrice } from "@/services/priceService";
 import { fetchPointsHistory, fetchPointsTotal } from "@/services/pointsService";
+import {
+  apiMerchantLogin,
+  apiMerchantMe,
+  type MerchantSession,
+} from "@/services/merchantAuthService";
+
+export type { MerchantSession };
 
 export type UserRole = "customer" | "retailer" | null;
 
@@ -309,6 +316,9 @@ type AppContextType = {
   userRadius: number;
   activeTab: "customer" | "retailer";
   setActiveTab: (tab: "customer" | "retailer") => void;
+  merchantSession: MerchantSession | null;
+  merchantLogin: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  merchantLogout: () => void;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -323,6 +333,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
   const [activeTab, setActiveTab] = useState<"customer" | "retailer">("customer");
+  const [merchantSession, setMerchantSession] = useState<MerchantSession | null>(null);
   const [cosmosCache, setCosmosCache] = useState<Record<string, Product>>({});
   const [stores, setStores] = useState<Store[]>(MOCK_STORES);
   const [storesLoading, setStoresLoading] = useState(false);
@@ -361,6 +372,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadUser();
     loadShoppingList();
+    loadMerchantSession();
   }, []);
 
   // Load real points history from API whenever user changes
@@ -388,15 +400,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // Security gate: retailerStore is ONLY populated for users with role === "retailer".
-  // Any other role (customer, null) always gets null — no leakage of merchant data.
+  const loadMerchantSession = async () => {
+    try {
+      const token = await AsyncStorage.getItem("@ecompara_merchant_token");
+      if (!token) return;
+      const session = await apiMerchantMe(token);
+      if (session) {
+        setMerchantSession(session);
+      } else {
+        await AsyncStorage.removeItem("@ecompara_merchant_token");
+      }
+    } catch {}
+  };
+
+  const merchantLogin = async (email: string, password: string): Promise<{ ok: boolean; error?: string }> => {
+    const result = await apiMerchantLogin(email, password);
+    if (result.ok && result.session) {
+      setMerchantSession(result.session);
+      await AsyncStorage.setItem("@ecompara_merchant_token", result.session.token);
+      return { ok: true };
+    }
+    return { ok: false, error: result.error };
+  };
+
+  const merchantLogout = async () => {
+    setMerchantSession(null);
+    setActiveTab("customer");
+    await AsyncStorage.removeItem("@ecompara_merchant_token");
+  };
+
   useEffect(() => {
-    if (user?.role === "retailer") {
+    if (merchantSession) {
+      const reg = merchantSession.registration;
+      setRetailerStore({
+        id: reg.id?.toString() || "1",
+        name: reg.storeName || "Minha Loja",
+        address: reg.address || "",
+        plan: (reg.plan as "normal" | "plus") || "normal",
+        subscribers: 1240,
+        campaignBudget: 500,
+        totalViews: 48500,
+        totalClicks: 3200,
+        products: [
+          { ean: "7891000053508", name: "Leite Parmalat 1L", price: 5.49, updatedAt: "2025-03-13" },
+          { ean: "7891910000197", name: "Arroz Tio João 5kg", price: 24.90, updatedAt: "2025-03-13" },
+          { ean: "7894900700015", name: "Coca-Cola 2L", price: 9.99, updatedAt: "2025-03-12" },
+          { ean: "7896045104482", name: "Feijão Camil 1kg", price: 8.99, updatedAt: "2025-03-11" },
+          { ean: "7891000310755", name: "Açúcar União 1kg", price: 4.89, updatedAt: "2025-03-10" },
+        ],
+      });
+    } else if (user?.role === "retailer") {
       setRetailerStore(MOCK_RETAILER_STORE);
     } else {
       setRetailerStore(null);
     }
-  }, [user]);
+  }, [merchantSession, user]);
 
   const loadUser = async () => {
     try {
@@ -700,6 +758,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         userRadius: 5,
         activeTab,
         setActiveTab,
+        merchantSession,
+        merchantLogin,
+        merchantLogout,
       }}
     >
       {children}

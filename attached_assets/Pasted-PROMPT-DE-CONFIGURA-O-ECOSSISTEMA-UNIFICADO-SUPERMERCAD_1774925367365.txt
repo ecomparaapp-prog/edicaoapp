@@ -1,0 +1,43 @@
+PROMPT DE CONFIGURAÇÃO: ECOSSISTEMA UNIFICADO "SUPERMERCADO" (APP & WEB)
+Contexto: Estou desenvolvendo o ecossistema B2B do app eCompara. Preciso que você configure a integração absoluta entre a interface móvel e a interface web para os lojistas.
+
+1. REPADRONIZAÇÃO DE NOMENCLATURA (RENAMING)
+Web/Dashboard: Renomear de "Painel Lojista" para Portal Supermercado.
+
+App/Mobile: Renomear de "Área Lojista" para Área Supermercado.
+
+Identidade: Ambos devem utilizar o logotipo oficial (sem fundo) e manter a linguagem corporativa e profissional (sem emojis).
+
+2. ARQUITETURA DE BACKEND (SINGLE SOURCE OF TRUTH)
+Para garantir o espelhamento obrigatório, configure o sistema seguindo estas diretrizes:
+
+Banco de Dados Unificado: Ambos os portais devem consumir a mesma API e o mesmo banco de dados. Nenhuma informação deve ser duplicada ou armazenada localmente de forma isolada.
+
+Autenticação Centralizada: O login (E-mail e Senha gerada pelo Admin) deve validar o usuário contra a mesma tabela de credenciais. Se o usuário alterar a senha no Portal Web, o acesso no App deve ser atualizado instantaneamente.
+
+Token de Sessão (JWT): Implementar autenticação via Token para permitir que o lojista transite entre o celular e o computador sem conflitos de sessão.
+
+3. SINCRONIZAÇÃO DE FUNCIONALIDADES (MIRRORING)
+Implementar os seguintes módulos de forma que a mudança em um reflita obrigatoriamente no outro:
+
+Gestão de Preços (Importação CSV/Manual): Se um arquivo CSV for importado via Portal Supermercado (Web), o progresso da importação e a lista de preços atualizada devem estar disponíveis para conferência imediata na Área Supermercado (App).
+
+Fluxo de Aprovação: Qualquer pendência de preço ou alerta de divergência reportado por usuários deve aparecer como "Notificação de Pendência" em ambas as plataformas simultaneamente.
+
+Planos e Assinaturas: O status do plano (Normal R$ 299,90 ou Plus R$ 599,90) e o raio de atuação (5km ou 10km) devem ser globais. Se o upgrade for feito via Web, as funções do App (como o Relatório Plus) devem ser desbloqueadas no mesmo segundo.
+
+4. REQUISITOS DE UI/UX (COESÃO)
+Estado do Sistema: Use bibliotecas de gerenciamento de estado (como Redux, Context API ou similar) para garantir que, se um preço for alterado no App, a tela do Dashboard Web seja atualizada via WebSockets ou Revalidation imediata.
+
+Ações Rápidas: Manter a mesma hierarquia de "Ações Rápidas", "Campanha Ativa" e "Relatórios" em ambas as interfaces, adaptando apenas o layout para o tamanho da tela.
+
+🧪 TESTE DE INTEGRIDADE (O QUE A IA DEVE VALIDAR)
+Solicite que a IA realize o seguinte teste após a configuração:
+
+Ação: Realizar o upload de um CSV com 10 produtos no Portal Supermercado.
+
+Verificação: Abrir a Área Supermercado no App e validar se os 10 produtos constam na lista de "Produtos Recentes" com os valores corretos.
+
+Ação: Alterar o preço de 1 item via App.
+
+Verificação: Atualizar a página Web e confirmar que o preço foi alterado automaticamente no banco de dados central.

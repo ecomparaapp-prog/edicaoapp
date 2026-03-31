@@ -52,11 +52,16 @@ export default function ProfileScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user, setUser, isLoggedIn, activeTab, setActiveTab, retailerStore, updateRetailerProduct, finalizedLists, processedNFCe } = useApp();
+  const { user, setUser, isLoggedIn, activeTab, setActiveTab, retailerStore, updateRetailerProduct, finalizedLists, processedNFCe, merchantSession, merchantLogin, merchantLogout } = useApp();
   const { toggleTheme } = useTheme();
 
   const [editingEan, setEditingEan] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
+  const [showMerchantLogin, setShowMerchantLogin] = useState(false);
+  const [mlEmail, setMlEmail] = useState("");
+  const [mlPassword, setMlPassword] = useState("");
+  const [mlError, setMlError] = useState("");
+  const [mlLoading, setMlLoading] = useState(false);
   const [referralData, setReferralData] = useState<{
     referralCode: string | null;
     referralCount: number;
@@ -143,18 +148,48 @@ export default function ProfileScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  if (activeTab === "retailer" && isLoggedIn && user?.role === "retailer") {
+  const handleOpenMerchantArea = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (merchantSession) {
+      setActiveTab("retailer");
+    } else {
+      setMlEmail("");
+      setMlPassword("");
+      setMlError("");
+      setShowMerchantLogin(true);
+    }
+  };
+
+  const handleMerchantLogin = async () => {
+    if (!mlEmail.trim() || !mlPassword) { setMlError("Preencha e-mail e senha."); return; }
+    setMlLoading(true);
+    setMlError("");
+    const result = await merchantLogin(mlEmail.trim(), mlPassword);
+    setMlLoading(false);
+    if (result.ok) {
+      setShowMerchantLogin(false);
+      setActiveTab("retailer");
+    } else {
+      setMlError(result.error || "Credenciais inválidas.");
+    }
+  };
+
+  if (activeTab === "retailer" && merchantSession !== null) {
     return (
-      <RetailerPanel
-        topPad={topPad} bottomPad={bottomPad} isDark={isDark} C={C}
-        onSwitchToCustomer={() => setActiveTab("customer")}
-        retailerStore={retailerStore}
-        editingEan={editingEan} setEditingEan={setEditingEan}
-        editPrice={editPrice} setEditPrice={setEditPrice}
-        handleSavePrice={handleSavePrice}
-        finalizedLists={finalizedLists}
-        processedNFCe={processedNFCe}
-      />
+      <>
+        <RetailerPanel
+          topPad={topPad} bottomPad={bottomPad} isDark={isDark} C={C}
+          onSwitchToCustomer={() => setActiveTab("customer")}
+          onMerchantLogout={() => merchantLogout()}
+          retailerStore={retailerStore}
+          merchantSession={merchantSession}
+          editingEan={editingEan} setEditingEan={setEditingEan}
+          editPrice={editPrice} setEditPrice={setEditPrice}
+          handleSavePrice={handleSavePrice}
+          finalizedLists={finalizedLists}
+          processedNFCe={processedNFCe}
+        />
+      </>
     );
   }
 
@@ -167,10 +202,13 @@ export default function ProfileScreen() {
             <Pressable style={[styles.iconBtnSm, { backgroundColor: C.backgroundSecondary }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}>
               <Feather name={isDark ? "sun" : "moon"} size={16} color={C.text} />
             </Pressable>
-            {isLoggedIn && user?.role === "retailer" && (
-              <Pressable style={[styles.switchModeBtn, { backgroundColor: "#CC000015", borderColor: "#CC000040", borderWidth: 1 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab("retailer"); }}>
-                <Feather name="store" size={14} color={C.primary} />
-                <Text style={[styles.switchModeTxt, { color: C.primary }]}>Área Lojista</Text>
+            {isLoggedIn && (
+              <Pressable
+                style={[styles.switchModeBtn, { backgroundColor: merchantSession ? "#CC000015" : C.backgroundSecondary, borderColor: merchantSession ? "#CC000040" : C.border, borderWidth: 1 }]}
+                onPress={handleOpenMerchantArea}
+              >
+                <Feather name="store" size={14} color={merchantSession ? C.primary : C.textMuted} />
+                <Text style={[styles.switchModeTxt, { color: merchantSession ? C.primary : C.textMuted }]}>Área Supermercado</Text>
               </Pressable>
             )}
           </View>
@@ -349,6 +387,67 @@ export default function ProfileScreen() {
           </>
         ) : null}
       </ScrollView>
+
+      {/* Modal de Login — Área Supermercado */}
+      <Modal transparent animationType="fade" visible={showMerchantLogin} onRequestClose={() => setShowMerchantLogin(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: isDark ? "#1E293B" : "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 28, paddingBottom: 40 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20, gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#CC000015", alignItems: "center", justifyContent: "center" }}>
+                <Feather name="store" size={18} color="#CC0000" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: isDark ? "#fff" : "#0F172A" }}>Área Supermercado</Text>
+                <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: isDark ? "#94A3B8" : "#64748B", marginTop: 2 }}>Entre com as credenciais do Portal Supermercado</Text>
+              </View>
+              <Pressable onPress={() => setShowMerchantLogin(false)} style={{ padding: 4 }}>
+                <Feather name="x" size={20} color={isDark ? "#94A3B8" : "#64748B"} />
+              </Pressable>
+            </View>
+
+            {!!mlError && (
+              <View style={{ backgroundColor: "#FEF2F2", borderRadius: 8, padding: 10, marginBottom: 14, flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <Feather name="alert-circle" size={14} color="#CC0000" />
+                <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: "#CC0000", flex: 1 }}>{mlError}</Text>
+              </View>
+            )}
+
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: isDark ? "#94A3B8" : "#64748B", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>E-mail</Text>
+              <TextInput
+                style={{ backgroundColor: isDark ? "#0F172A" : "#F1F5F9", borderRadius: 10, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: isDark ? "#fff" : "#0F172A", borderWidth: 1, borderColor: isDark ? "#334155" : "#E2E8F0" }}
+                placeholder="seu@email.com"
+                placeholderTextColor={isDark ? "#475569" : "#94A3B8"}
+                value={mlEmail}
+                onChangeText={setMlEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: isDark ? "#94A3B8" : "#64748B", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>Senha</Text>
+              <TextInput
+                style={{ backgroundColor: isDark ? "#0F172A" : "#F1F5F9", borderRadius: 10, padding: 14, fontSize: 14, fontFamily: "Inter_400Regular", color: isDark ? "#fff" : "#0F172A", borderWidth: 1, borderColor: isDark ? "#334155" : "#E2E8F0" }}
+                placeholder="Senha do portal"
+                placeholderTextColor={isDark ? "#475569" : "#94A3B8"}
+                value={mlPassword}
+                onChangeText={setMlPassword}
+                secureTextEntry
+              />
+            </View>
+
+            <TouchableOpacity
+              style={{ backgroundColor: "#CC0000", borderRadius: 12, paddingVertical: 16, alignItems: "center", opacity: mlLoading ? 0.7 : 1 }}
+              onPress={handleMerchantLogin}
+              disabled={mlLoading}
+            >
+              <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" }}>{mlLoading ? "Verificando..." : "Entrar na Área Supermercado"}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -416,7 +515,7 @@ function WeeklyChart({ C }: { C: any }) {
   );
 }
 
-function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retailerStore, editingEan, setEditingEan, editPrice, setEditPrice, handleSavePrice, finalizedLists, processedNFCe }: any) {
+function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMerchantLogout, retailerStore, merchantSession, editingEan, setEditingEan, editPrice, setEditPrice, handleSavePrice, finalizedLists, processedNFCe }: any) {
   const [section, setSection] = useState<"dashboard" | "alertas" | "products" | "plan">("dashboard");
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [campaignName, setCampaignName] = useState("");
@@ -466,7 +565,7 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
             <Feather name="store" size={14} color="rgba(255,255,255,0.75)" />
-            <Text style={styles.retailerHeaderLabel}>Área Lojista</Text>
+            <Text style={styles.retailerHeaderLabel}>Área Supermercado</Text>
           </View>
           <Text style={styles.retailerStoreName} numberOfLines={1}>{retailerStore?.name || "Minha Loja"}</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
@@ -480,10 +579,22 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
             <Text style={styles.activeLabel}>Loja ativa</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.switchClientBtn} onPress={onSwitchToCustomer}>
-          <Feather name="user" size={13} color="rgba(255,255,255,0.85)" />
-          <Text style={styles.switchClientText}>Cliente</Text>
-        </TouchableOpacity>
+        <View style={{ alignItems: "flex-end", gap: 6 }}>
+          <TouchableOpacity style={styles.switchClientBtn} onPress={onSwitchToCustomer}>
+            <Feather name="user" size={13} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.switchClientText}>Cliente</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.12)" }}
+            onPress={() => Alert.alert("Sair da Área Supermercado", "Deseja encerrar a sessão do supermercado?", [
+              { text: "Cancelar", style: "cancel" },
+              { text: "Sair", style: "destructive", onPress: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); onMerchantLogout(); } },
+            ])}
+          >
+            <Feather name="log-out" size={11} color="rgba(255,255,255,0.7)" />
+            <Text style={{ fontSize: 10, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.7)" }}>Sair</Text>
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       {/* Section Tabs */}

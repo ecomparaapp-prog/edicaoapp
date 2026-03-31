@@ -74,6 +74,10 @@ app.get("/api/logo-dark.png", (_req, res) => {
   res.sendFile(path.join(__dirname, "logo-dark.png"));
 });
 
+app.get("/api/logo-white.png", (_req, res) => {
+  res.sendFile(path.join(__dirname, "logo-white.png"));
+});
+
 app.post("/api/admin/login", (req: Request, res: Response) => {
   const { password } = req.body as { password?: string };
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
