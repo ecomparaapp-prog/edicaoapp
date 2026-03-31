@@ -193,9 +193,9 @@ export default function ShoppingListScreen() {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") return;
         await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        // Use the pre-computed distance from the stores list to find nearest within 500m
+        // Use the pre-computed distance from the stores list to find nearest within 25m (0.025km)
         const nearby = stores.reduce<Store | null>((best, s) => {
-          if (s.distance <= 0.5) return !best || s.distance < best.distance ? s : best;
+          if (s.distance <= 0.025) return !best || s.distance < best.distance ? s : best;
           return best;
         }, null);
         if (nearby) {
@@ -318,26 +318,6 @@ export default function ShoppingListScreen() {
             </View>
           </View>
         </LinearGradient>
-      )}
-
-      {/* Nudge — após 5 min de compras */}
-      {shopStatus === "shopping" && showNudge && (
-        <Pressable
-          style={styles.nudgeBanner}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowNudge(false); router.push("/nfce-scanner"); }}
-        >
-          <View style={styles.nudgeIcon}>
-            <MaterialCommunityIcons name="receipt" size={18} color="#E65100" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.nudgeTitle}>Finalizar a lista e enviar cupom fiscal</Text>
-            <Text style={styles.nudgeSub}>para receber seus pontos</Text>
-          </View>
-          <Feather name="arrow-right" size={16} color="#E65100" />
-          <Pressable onPress={(e) => { e.stopPropagation?.(); setShowNudge(false); }} hitSlop={8} style={{ padding: 4 }}>
-            <Feather name="x" size={14} color="#E65100" />
-          </Pressable>
-        </Pressable>
       )}
 
       {/* Search / Add input */}
@@ -468,22 +448,39 @@ export default function ShoppingListScreen() {
         )}
       </ScrollView>
 
-      {/* Floating FINALIZAR button when shopping */}
+      {/* Barra de finalização — inclui nudge de cupom após 5 min */}
       {shopStatus === "shopping" && (
-        <View style={[styles.finalizeBar, { paddingBottom: insets.bottom + 8 }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.finalizeHint}>Tempo mínimo para +200 pts: 5 min</Text>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${Math.min(100, (elapsedSeconds / 300) * 100)}%` }]} />
+        <View style={[styles.finalizeBar, { paddingBottom: insets.bottom + 8, flexDirection: "column", gap: 0 }]}>
+          {/* Nudge integrado — aparece após 5 min */}
+          {showNudge && (
+            <Pressable
+              style={styles.nudgeInBar}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowNudge(false); router.push("/nfce-scanner"); }}
+            >
+              <MaterialCommunityIcons name="receipt" size={15} color="#E65100" />
+              <Text style={styles.nudgeInBarText}>Enviar cupom fiscal para receber seus pontos</Text>
+              <Feather name="arrow-right" size={13} color="#E65100" />
+              <Pressable onPress={(e) => { e.stopPropagation?.(); setShowNudge(false); }} hitSlop={10} style={{ padding: 2 }}>
+                <Feather name="x" size={13} color="#E65100" />
+              </Pressable>
+            </Pressable>
+          )}
+          {/* Linha de progresso + botão */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingTop: showNudge ? 10 : 0 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.finalizeHint}>Tempo mínimo para +200 pts: 5 min</Text>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${Math.min(100, (elapsedSeconds / 300) * 100)}%` }]} />
+              </View>
             </View>
+            <Pressable
+              style={[styles.finalizeBtn, { opacity: elapsedSeconds < 10 ? 0.6 : 1 }]}
+              onPress={handleFinalize}
+            >
+              <Feather name="check-circle" size={18} color="#fff" />
+              <Text style={styles.finalizeBtnTxt}>Finalizar</Text>
+            </Pressable>
           </View>
-          <Pressable
-            style={[styles.finalizeBtn, { opacity: elapsedSeconds < 10 ? 0.6 : 1 }]}
-            onPress={handleFinalize}
-          >
-            <Feather name="check-circle" size={18} color="#fff" />
-            <Text style={styles.finalizeBtnTxt}>Finalizar</Text>
-          </Pressable>
         </View>
       )}
 
@@ -978,29 +975,23 @@ const styles = StyleSheet.create({
   qtyNum: { width: 28, textAlign: "center", fontSize: 13, fontFamily: "Inter_700Bold" },
   qtyInput: { width: 32, textAlign: "center", fontSize: 13, fontFamily: "Inter_700Bold", padding: 0 },
   removeBtn: { padding: 4 },
-  nudgeBanner: {
+  nudgeInBar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: "#FFF3E0",
-    borderWidth: 1,
-    borderColor: "#E6510030",
-  },
-  nudgeIcon: {
-    width: 36,
-    height: 36,
+    gap: 8,
+    backgroundColor: "#2A1A00",
     borderRadius: 10,
-    backgroundColor: "#E6510015",
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#E6510040",
   },
-  nudgeTitle: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#E65100" },
-  nudgeSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#BF360C", marginTop: 1 },
+  nudgeInBarText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "#E65100",
+  },
   /* shopping */
   shoppingBanner: { marginHorizontal: 16, marginBottom: 10, borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center" },
   activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#fff", opacity: 0.9 },
@@ -1016,7 +1007,7 @@ const styles = StyleSheet.create({
   startBtnBadgeTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
   startHint: { textAlign: "center", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 7 },
   /* finalize bar */
-  finalizeBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#1A1A1A", flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 14, gap: 14 },
+  finalizeBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#1A1A1A", paddingHorizontal: 16, paddingTop: 12, gap: 0 },
   finalizeHint: { color: "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "Inter_400Regular", marginBottom: 5 },
   progressTrack: { height: 4, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 2, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: "#CC0000", borderRadius: 2 },
