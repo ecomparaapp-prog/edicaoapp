@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
@@ -163,7 +163,7 @@ export default function LoginScreen() {
           disabled={loading !== null}
         >
           <View style={[styles.retailerIconBg, { backgroundColor: "#8B000015" }]}>
-            <Feather name="store" size={18} color="#8B0000" />
+            <MaterialCommunityIcons name="store-outline" size={20} color="#8B0000" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.retailerBtnText, { color: "#8B0000" }]}>Área Supermercado</Text>

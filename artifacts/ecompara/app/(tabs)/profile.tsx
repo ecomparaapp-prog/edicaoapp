@@ -271,7 +271,7 @@ export default function ProfileScreen() {
             disabled={loginLoading}
           >
             <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#8B000015" }}>
-              <Feather name="store" size={18} color="#8B0000" />
+              <MaterialCommunityIcons name="store-outline" size={20} color="#8B0000" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: "#8B0000" }}>Área Supermercado</Text>
@@ -691,10 +691,6 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
           </View>
         </View>
         <View style={{ alignItems: "flex-end", gap: 6 }}>
-          <TouchableOpacity style={styles.switchClientBtn} onPress={onSwitchToCustomer}>
-            <Feather name="user" size={13} color="rgba(255,255,255,0.85)" />
-            <Text style={styles.switchClientText}>Cliente</Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.12)" }}
             onPress={() => Alert.alert("Sair da Área Supermercado", "Deseja encerrar a sessão do supermercado?", [
