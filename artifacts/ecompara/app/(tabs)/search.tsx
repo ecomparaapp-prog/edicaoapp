@@ -54,7 +54,7 @@ function IndicateStoreBanner({ isDark, C }: { isDark: boolean; C: typeof Colors.
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.indicateTitle, { color: isDark ? "#A5D6A7" : "#1B5E20" }]}>
-            Não encontrou seu mercado?
+            Não encontrou seu supermercado?
           </Text>
           <Text style={[styles.indicateSub, { color: isDark ? "#81C784" : "#388E3C" }]}>
             Ganhe <Text style={{ fontFamily: "Inter_700Bold" }}>1.000 pontos</Text> indicando ele agora!
@@ -184,7 +184,7 @@ export default function SearchScreen() {
             )}
           </View>
           <Text style={[styles.storeCount, { color: C.textMuted }]}>
-            {item.prices.length} mercado{item.prices.length !== 1 ? "s" : ""}
+            {item.prices.length} supermercado{item.prices.length !== 1 ? "s" : ""}
           </Text>
         </View>
         {inList ? (
@@ -284,7 +284,7 @@ export default function SearchScreen() {
 
   const sections = [
     ...(hasStores ? [{
-      title: "Mercados",
+      title: "Supermercados",
       data: storeResults,
       renderItem: renderStore,
       keyExtractor: (item: Store) => item.id,
@@ -307,7 +307,7 @@ export default function SearchScreen() {
           <Feather name="search" size={18} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text }]}
-            placeholder="Produto, EAN ou nome do mercado..."
+            placeholder="Produto, EAN ou nome do supermercado..."
             placeholderTextColor={C.textMuted}
             value={query}
             onChangeText={handleSearch}
@@ -333,7 +333,7 @@ export default function SearchScreen() {
         <View style={[styles.favTip, { backgroundColor: isDark ? "#1A1A2E" : "#EEF2FF", borderColor: isDark ? "#3730A3" : "#C7D2FE" }]}>
           <Ionicons name="heart" size={12} color="#6366F1" />
           <Text style={[styles.favTipText, { color: isDark ? "#A5B4FC" : "#4338CA" }]}>
-            Mercados favoritos aparecem na busca de qualquer distância.{" "}
+            Supermercados favoritos aparecem na busca de qualquer distância.{" "}
             <Text style={{ fontFamily: "Inter_700Bold" }}>Favorite para não perder promoções!</Text>
           </Text>
         </View>
@@ -386,14 +386,14 @@ export default function SearchScreen() {
         /* Estado vazio — sem query */
         <View style={styles.emptyHint}>
           <MaterialCommunityIcons name="magnify" size={52} color={C.textMuted} style={{ opacity: 0.5 }} />
-          <Text style={[styles.emptyHintTitle, { color: C.text }]}>Busque produtos ou mercados</Text>
+          <Text style={[styles.emptyHintTitle, { color: C.text }]}>Busque produtos ou supermercados</Text>
           <Text style={[styles.emptyHintSub, { color: C.textMuted }]}>
-            Digite o nome do produto, EAN ou o nome de um mercado próximo.
+            Digite o nome do produto, EAN ou o nome de um supermercado próximo.
           </Text>
           <View style={[styles.favTipLarge, { backgroundColor: isDark ? "#1A1A2E" : "#EEF2FF", borderColor: isDark ? "#3730A3" : "#C7D2FE" }]}>
             <Ionicons name="heart" size={14} color="#6366F1" />
             <Text style={[styles.favTipLargeText, { color: isDark ? "#A5B4FC" : "#4338CA" }]}>
-              <Text style={{ fontFamily: "Inter_700Bold" }}>Dica:</Text> Mercados favoritos aparecem na busca independente da distância. Favorite seus mercados preferidos para acessar ofertas a qualquer hora!
+              <Text style={{ fontFamily: "Inter_700Bold" }}>Dica:</Text> Supermercados favoritos aparecem na busca independente da distância. Favorite seus supermercados preferidos para acessar ofertas a qualquer hora!
             </Text>
           </View>
         </View>

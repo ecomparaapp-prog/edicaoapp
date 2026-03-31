@@ -254,7 +254,7 @@ function PitchScreen({ onStart, onBack, insets, isDark, C }: any) {
             Leve seus produtos ao topo das buscas de milhares de consumidores em Brasília e no Brasil.
           </Text>
           <View style={styles.pitchStatsRow}>
-            {[["50k+", "Usuários ativos"], ["200+", "Mercados mapeados"], ["98%", "Alcance no DF"]].map(([num, label]) => (
+            {[["50k+", "Usuários ativos"], ["200+", "Supermercados mapeados"], ["98%", "Alcance no DF"]].map(([num, label]) => (
               <View key={num} style={styles.pitchStat}>
                 <Text style={styles.pitchStatNum}>{num}</Text>
                 <Text style={styles.pitchStatLabel}>{label}</Text>

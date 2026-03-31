@@ -178,7 +178,7 @@ export default function HomeScreen() {
         >
           <Feather name="search" size={18} color={C.textMuted} />
           <Text style={[styles.searchPlaceholder, { color: C.textMuted }]}>
-            Buscar produtos, mercados...
+            Buscar produtos, supermercados...
           </Text>
           <Pressable
             style={[styles.barcodeBtn, { backgroundColor: C.primary }]}

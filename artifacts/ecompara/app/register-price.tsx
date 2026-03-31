@@ -55,7 +55,7 @@ export default function RegisterPriceScreen() {
   const preselectedStore: NearbyStore | null = params.preselectedPlaceId
     ? {
         googlePlaceId: params.preselectedPlaceId,
-        name: params.preselectedPlaceName ?? "Mercado",
+        name: params.preselectedPlaceName ?? "Supermercado",
         address: null,
         lat: 0,
         lng: 0,
@@ -199,7 +199,7 @@ export default function RegisterPriceScreen() {
       const { stores: nearby, success } = await fetchNearbyStores(lat, lng, 5);
 
       if (!success || !nearby.length) {
-        setStoreError("Nenhum mercado encontrado nas proximidades. Tente ampliar a busca.");
+        setStoreError("Nenhum supermercado encontrado nas proximidades. Tente ampliar a busca.");
       } else {
         setStores(nearby);
       }
@@ -279,7 +279,7 @@ export default function RegisterPriceScreen() {
           <Feather name={step === "result" ? "x" : "arrow-left"} size={20} color={C.text} />
         </Pressable>
         <View style={s.headerCenter}>
-          <Text style={[s.headerTitle, { color: C.text }]}>Cadastrar no Mercado</Text>
+          <Text style={[s.headerTitle, { color: C.text }]}>Cadastrar no Supermercado</Text>
           {step !== "result" && (
             <Text style={[s.headerSub, { color: C.textMuted }]}>
               Passo {getStepIndex() + 1} de 4
@@ -432,7 +432,7 @@ export default function RegisterPriceScreen() {
           <View style={[s.priceSection, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
             <View style={s.priceLabelRow}>
               <MaterialCommunityIcons name="tag-outline" size={18} color={C.primary} />
-              <Text style={[s.priceSectionLabel, { color: C.text }]}>Qual o preço neste mercado?</Text>
+              <Text style={[s.priceSectionLabel, { color: C.text }]}>Qual o preço neste supermercado?</Text>
             </View>
 
             <View style={[s.priceInputRow, { borderColor: priceError ? C.error : C.border }]}>
@@ -475,16 +475,16 @@ export default function RegisterPriceScreen() {
       {step === "store" && (
         <View style={{ flex: 1 }}>
           <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 8 }}>
-            <Text style={[s.stepTitle2, { color: C.text }]}>Selecione o mercado</Text>
+            <Text style={[s.stepTitle2, { color: C.text }]}>Selecione o supermercado</Text>
             <Text style={[s.stepDesc, { color: C.textMuted }]}>
-              Escolha o mercado onde você encontrou esse produto.
+              Escolha o supermercado onde você encontrou esse produto.
             </Text>
           </View>
 
           {locationLoading ? (
             <View style={s.centerContent}>
               <ActivityIndicator size="large" color={C.primary} />
-              <Text style={[s.loadingText, { color: C.textMuted }]}>Localizando mercados próximos...</Text>
+              <Text style={[s.loadingText, { color: C.textMuted }]}>Localizando supermercados próximos...</Text>
             </View>
           ) : storeError ? (
             <View style={s.centerContent}>
@@ -506,7 +506,7 @@ export default function RegisterPriceScreen() {
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <View style={s.centerContent}>
-                  <Text style={[s.emptyText, { color: C.textMuted }]}>Nenhum mercado encontrado.</Text>
+                  <Text style={[s.emptyText, { color: C.textMuted }]}>Nenhum supermercado encontrado.</Text>
                 </View>
               }
               renderItem={({ item }) => (
@@ -578,7 +578,7 @@ export default function RegisterPriceScreen() {
             <View style={[s.divider, { backgroundColor: C.border }]} />
             <SummaryRow icon="tag" label="Preço" value={`R$ ${parseFloat(priceText.replace(",", ".")).toFixed(2).replace(".", ",")}`} C={C} highlight />
             <View style={[s.divider, { backgroundColor: C.border }]} />
-            <SummaryRow icon="store" label="Mercado" value={selectedStore.name} C={C} />
+            <SummaryRow icon="store" label="Supermercado" value={selectedStore.name} C={C} />
             <View style={[s.divider, { backgroundColor: C.border }]} />
             <SummaryRow icon="map-pin" label="Distância" value={`${selectedStore.distanceKm} km`} C={C} />
           </View>
@@ -598,7 +598,7 @@ export default function RegisterPriceScreen() {
                 color={selectedStore.is_partner ? "#1565C0" : "#827717"}
               />
               <Text style={[s.infoCardTitle, { color: selectedStore.is_partner ? "#1565C0" : "#827717" }]}>
-                {selectedStore.is_partner ? "Mercado Parceiro" : "Mercado sem Parceria"}
+                {selectedStore.is_partner ? "Supermercado Parceiro" : "Supermercado sem Parceria"}
               </Text>
             </View>
             <Text style={[s.infoCardText, { color: C.textSecondary }]}>
@@ -731,7 +731,7 @@ export default function RegisterPriceScreen() {
               <View style={{ gap: 8, marginTop: 8 }}>
                 <ResultDetailRow label="Produto" value={product?.description ?? ean} C={C} />
                 <ResultDetailRow label="Preço" value={`R$ ${parseFloat(priceText.replace(",", ".")).toFixed(2).replace(".", ",")}`} C={C} />
-                <ResultDetailRow label="Mercado" value={selectedStore.name} C={C} />
+                <ResultDetailRow label="Supermercado" value={selectedStore.name} C={C} />
                 <ResultDetailRow label="Tipo" value={selectedStore.is_partner ? "Parceiro" : "Sem parceria"} C={C} />
                 {result.hasFreshPrice && result.latestPrice ? (
                   <ResultDetailRow

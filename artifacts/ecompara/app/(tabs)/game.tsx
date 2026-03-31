@@ -33,13 +33,13 @@ const REDEEM_OPTIONS = [
 const POINTS_TABLE = [
   { action: "Indicar Amigo (Referral)", base: "2.000 pts", bonus: "Máx. 5 indicações recompensadas · CPF único verificado", trigger: "Amigo completa cadastro com CPF válido" },
   { action: "Indicar Supermercado", base: "1.000 pts", bonus: "Pontos revertidos se denúncias de fraude (≥3)", trigger: "Mercado ainda não mapeado confirmado" },
-  { action: "Registrar Novo Produto (OCR/manual)", base: "30 pts", bonus: "Produto ainda não cadastrado naquele mercado", trigger: "Preço novo em mercado shadow" },
+  { action: "Registrar Novo Produto (OCR/manual)", base: "30 pts", bonus: "Produto ainda não cadastrado naquele supermercado", trigger: "Preço novo em supermercado shadow" },
   { action: "Confirmar Preço Existente", base: "15 pts", bonus: "Recompensa reduzida — dado já estava no cache", trigger: "Confirmar preço recente (≤5 dias)" },
-  { action: "Envio Preço (mercado parceiro)", base: "10 pts", bonus: "30 pts se auto-validado por 3 usuários em 24 h", trigger: "Registro em mercado parceiro verificado" },
+  { action: "Envio Preço (supermercado parceiro)", base: "10 pts", bonus: "30 pts se auto-validado por 3 usuários em 24 h", trigger: "Registro em supermercado parceiro verificado" },
   { action: "Cadastrar Nota Fiscal (NFC-e)", base: "150 pts", bonus: "2× XP se >10 itens · 1,2× XP no fim de semana", trigger: "Chave de acesso processada com sucesso (sem duplicatas)" },
-  { action: "Finalizar Lista no Local", base: "200 pts", bonus: "+100 pts em mercado parceiro", trigger: "Check-out via GPS/Geofencing" },
+  { action: "Finalizar Lista no Local", base: "200 pts", bonus: "+100 pts em supermercado parceiro", trigger: "Check-out via GPS/Geofencing" },
   { action: "Finalizar Cadastro do Perfil", base: "250 pts", bonus: 'Concedido uma única vez · Requer nome, CPF, telefone, endereço e chave PIX', trigger: "Perfil 100% preenchido" },
-  { action: "Favoritar Mercado", base: "20 pts", bonus: "Receba notificações exclusivas da loja", trigger: "Bookmark de estabelecimento" },
+  { action: "Favoritar Supermercado", base: "20 pts", bonus: "Receba notificações exclusivas da loja", trigger: "Bookmark de estabelecimento" },
   { action: "Combo Diário (Streak)", base: "+50 pts", bonus: "Aumenta progressivamente (7 dias = 500 pts)", trigger: "Login e 1 ação diária" },
 ];
 
@@ -509,7 +509,7 @@ export default function GameScreen() {
           <View style={[styles.antifraudBox, { backgroundColor: isDark ? "#0A0A0A" : "#F5F5F5", borderColor: C.border }]}>
             <Text style={[styles.antifraudTitle, { color: C.text }]}>Regras Anti-Fraude</Text>
             {[
-              "GPS obrigatório: ações de OCR e Check só valem se você estiver a ≤200m do mercado",
+              "GPS obrigatório: ações de OCR e Check só valem se você estiver a ≤200m do supermercado",
               "Máximo de 15 envios de cupom por dia",
               "Máximo de 3 confirmações de preço por hora",
               "Fim de semana: Cupons NFC-e valem 1.2x XP",

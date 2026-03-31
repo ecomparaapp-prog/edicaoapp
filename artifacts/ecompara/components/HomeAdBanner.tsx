@@ -373,7 +373,7 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
                   </Text>
                 </View>
                 <Text style={[styles.sheetSectionLabel, { color: isDark ? "#AAA" : "#777", marginTop: 12 }]}>
-                  Mercado mais próximo com este produto:
+                  Supermercado mais próximo com este produto:
                 </Text>
                 <Pressable
                   style={[styles.storeRow, { borderBottomColor: isDark ? "#2A2A2A" : "#F0F0F0" }]}
@@ -397,7 +397,7 @@ export default function HomeAdBanner({ isDark, activeBanner, setActiveBanner }: 
               <View style={[styles.rupturaBox, { backgroundColor: isDark ? "#2A1A1A" : "#FFF3F3" }]}>
                 <Ionicons name="warning-outline" size={18} color="#CC0000" />
                 <Text style={[styles.rupturaText, { color: isDark ? "#FF8888" : "#CC0000" }]}>
-                  Nenhum mercado com este produto encontrado na sua região. Seja o primeiro a cadastrar!
+                  Nenhum supermercado com este produto encontrado na sua região. Seja o primeiro a cadastrar!
                 </Text>
               </View>
             )}

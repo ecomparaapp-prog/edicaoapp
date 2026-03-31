@@ -234,7 +234,7 @@ export default function ProductDetailScreen() {
         {/* Price List */}
         <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
           <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: C.text }]}>Preços por mercado</Text>
+            <Text style={[styles.sectionTitle, { color: C.text }]}>Preços por supermercado</Text>
             {loadingPrices && <ActivityIndicator size="small" color={C.primary} />}
             {livePrice.length > 0 && (
               <Text style={[styles.liveTag, { color: C.primary, borderColor: C.primary + "40", backgroundColor: C.primary + "12" }]}>
@@ -347,7 +347,7 @@ export default function ProductDetailScreen() {
               >
                 <Feather name="shopping-bag" size={14} color={selectedStore ? C.primary : C.textMuted} />
                 <Text style={[styles.storePickerText, { color: selectedStore ? C.text : C.textMuted }]} numberOfLines={1}>
-                  {selectedStore ? selectedStore.name : "Selecionar mercado..."}
+                  {selectedStore ? selectedStore.name : "Selecionar supermercado..."}
                 </Text>
                 <Feather name="chevron-down" size={14} color={C.textMuted} />
               </Pressable>
@@ -396,14 +396,14 @@ export default function ProductDetailScreen() {
       <Modal visible={showStorePicker} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalContainer, { backgroundColor: C.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
-            <Text style={[styles.modalTitle, { color: C.text }]}>Selecionar mercado</Text>
+            <Text style={[styles.modalTitle, { color: C.text }]}>Selecionar supermercado</Text>
             <Pressable onPress={() => setShowStorePicker(false)}>
               <Feather name="x" size={22} color={C.text} />
             </Pressable>
           </View>
           {stores.length === 0 ? (
             <View style={styles.centered}>
-              <Text style={[styles.emptyText, { color: C.textMuted }]}>Nenhum mercado próximo encontrado.</Text>
+              <Text style={[styles.emptyText, { color: C.textMuted }]}>Nenhum supermercado próximo encontrado.</Text>
             </View>
           ) : (
             <FlatList

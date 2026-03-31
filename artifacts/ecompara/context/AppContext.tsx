@@ -208,7 +208,7 @@ const MOCK_POINTS_HISTORY: PointsHistoryEntry[] = [
   { id: "h3", action: "Confirmar Preço", points: 15, date: "Hoje, 13:08", icon: "check-circle" },
   { id: "h4", action: "Combo Diário (Streak)", points: 50, date: "Hoje, 08:00", icon: "zap" },
   { id: "h5", action: "Cadastrar Produto (Individual)", points: 50, date: "Ontem, 17:45", icon: "package" },
-  { id: "h6", action: "Favoritar Mercado", points: 20, date: "Ontem, 16:20", icon: "heart" },
+  { id: "h6", action: "Favoritar Supermercado", points: 20, date: "Ontem, 16:20", icon: "heart" },
   { id: "h7", action: "Finalizar Lista no Local", points: 300, date: "Ontem, 12:05", icon: "map-pin", multiplier: "+100 pts (parceiro)" },
   { id: "h8", action: "Cadastrar Cupom (NFC-e)", points: 150, date: "Ontem, 10:30", icon: "file-text" },
   { id: "h9", action: "Confirmar Preço", points: 10, date: "Seg, 19:22", icon: "check-circle" },
@@ -216,7 +216,7 @@ const MOCK_POINTS_HISTORY: PointsHistoryEntry[] = [
 ];
 
 const MOCK_DAILY_MISSIONS: DailyMission[] = [
-  { id: "m1", label: "Favoritar 1 mercado hoje", points: 20, completed: true, icon: "heart" },
+  { id: "m1", label: "Favoritar 1 supermercado hoje", points: 20, completed: true, icon: "heart" },
   { id: "m2", label: "Confirmar 3 preços", points: 30, completed: false, icon: "check-circle" },
   { id: "m3", label: "Cadastrar 1 cupom NFC-e", points: 150, completed: false, icon: "file-text" },
   { id: "m4", label: "Buscar 1 produto", points: 10, completed: true, icon: "search" },

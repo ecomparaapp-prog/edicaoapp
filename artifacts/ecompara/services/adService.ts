@@ -80,7 +80,7 @@ const STORE_ADS: StoreAd[] = [
   {
     id: "ad-ultrabox",
     type: "store",
-    slotLabel: "Mercado Verificado Próximo",
+    slotLabel: "Supermercado Verificado Próximo",
     storeId: "3",
     storeName: "Ultrabox",
     bairro: "Santa Maria · DF",

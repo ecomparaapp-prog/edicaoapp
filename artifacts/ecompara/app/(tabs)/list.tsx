@@ -405,7 +405,7 @@ export default function ShoppingListScreen() {
                   </View>
                 </View>
                 <Text style={[styles.startCardSub, { color: C.textMuted }]}>
-                  O timer inicia automaticamente ao detectar sua presença em um mercado
+                  O timer inicia automaticamente ao detectar sua presença em um supermercado
                 </Text>
               </View>
             </View>
@@ -417,7 +417,7 @@ export default function ShoppingListScreen() {
           <View style={{ marginTop: 20, paddingHorizontal: 16 }}>
             <View style={styles.stratHeader}>
               <MaterialCommunityIcons name="trophy-outline" size={16} color={strategies.bestCoverageStore.isComplete ? "#2E7D32" : "#E65100"} />
-              <Text style={[styles.stratTitle, { color: C.text }]}>Melhor mercado para sua lista</Text>
+              <Text style={[styles.stratTitle, { color: C.text }]}>Melhor supermercado para sua lista</Text>
             </View>
             <BestStoreCard store={strategies.bestCoverageStore} C={C} isDark={isDark}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.bestCoverageStore!.storeId}`); }} />
@@ -443,13 +443,13 @@ export default function ShoppingListScreen() {
               <Text style={[styles.stratTitle, { color: C.text }]}>Outras opções de compra</Text>
             </View>
             {strategies.cheapestStore && (
-              <StrategyCard icon="tag" label="Mais barato em um mercado" storeNames={strategies.cheapestStore.storeName} total={strategies.cheapestStore.total} badge={strategies.bestCoverageStore && strategies.cheapestStore.coverage < strategies.bestCoverageStore.totalItems ? `${strategies.cheapestStore.coverage} de ${strategies.bestCoverageStore.totalItems} itens` : undefined} distance={`${strategies.cheapestStore.distance}km`} accentColor={C.primary} C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.cheapestStore!.storeId}`); }} />
+              <StrategyCard icon="tag" label="Mais barato em um supermercado" storeNames={strategies.cheapestStore.storeName} total={strategies.cheapestStore.total} badge={strategies.bestCoverageStore && strategies.cheapestStore.coverage < strategies.bestCoverageStore.totalItems ? `${strategies.cheapestStore.coverage} de ${strategies.bestCoverageStore.totalItems} itens` : undefined} distance={`${strategies.cheapestStore.distance}km`} accentColor={C.primary} C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.cheapestStore!.storeId}`); }} />
             )}
             {strategies.cheapestMix.total > 0 && (
-              <StrategyCard icon="layers" label="Mais barato item a item" storeNames={strategies.cheapestMix.stores.join(", ")} total={strategies.cheapestMix.total} badge="Múltiplos mercados" accentColor="#1B5E20" C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/(tabs)/search"); }} />
+              <StrategyCard icon="layers" label="Mais barato item a item" storeNames={strategies.cheapestMix.stores.join(", ")} total={strategies.cheapestMix.total} badge="Múltiplos supermercados" accentColor="#1B5E20" C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/(tabs)/search"); }} />
             )}
             {strategies.nearestStore && (
-              <StrategyCard icon="navigation" label="Mercado mais próximo" storeNames={strategies.nearestStore.storeName} total={strategies.nearestStore.total} distance={`${strategies.nearestStore.distance}km`} badge={strategies.bestCoverageStore && strategies.nearestStore.coverage < strategies.bestCoverageStore.totalItems ? `${strategies.nearestStore.coverage} de ${strategies.bestCoverageStore.totalItems} itens` : undefined} accentColor="#0D47A1" C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.nearestStore!.storeId}`); }} />
+              <StrategyCard icon="navigation" label="Supermercado mais próximo" storeNames={strategies.nearestStore.storeName} total={strategies.nearestStore.total} distance={`${strategies.nearestStore.distance}km`} badge={strategies.bestCoverageStore && strategies.nearestStore.coverage < strategies.bestCoverageStore.totalItems ? `${strategies.nearestStore.coverage} de ${strategies.bestCoverageStore.totalItems} itens` : undefined} accentColor="#0D47A1" C={C} isDark={isDark} onSearch={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push(`/store/${strategies.nearestStore!.storeId}`); }} />
             )}
           </View>
         )}
@@ -497,7 +497,7 @@ export default function ShoppingListScreen() {
         <View style={[styles.sheet, { backgroundColor: C.backgroundSecondary, paddingBottom: insets.bottom + 16 }]}>
           <View style={styles.sheetHandle} />
           <Text style={[styles.sheetTitle, { color: C.text }]}>Onde você está?</Text>
-          <Text style={[styles.sheetSub, { color: C.textMuted }]}>Selecione o mercado para validar sua presença</Text>
+          <Text style={[styles.sheetSub, { color: C.textMuted }]}>Selecione o supermercado para validar sua presença</Text>
           <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
             {stores.map((store) => (
               <Pressable
@@ -597,7 +597,7 @@ export default function ShoppingListScreen() {
             <View style={[styles.resultIcon, { backgroundColor: "#CC000015" }]}>
               <MaterialCommunityIcons name="map-marker-radius" size={32} color="#CC0000" />
             </View>
-            <Text style={[styles.resultTitle, { color: C.text }]}>Você está em um mercado!</Text>
+            <Text style={[styles.resultTitle, { color: C.text }]}>Você está em um supermercado!</Text>
             <Text style={[styles.resultSub, { color: C.textMuted }]}>
               Detectamos que você está próximo de{"\n"}
               <Text style={{ fontFamily: "Inter_700Bold", color: C.text }}>{nearbyStore?.name}</Text>
@@ -608,7 +608,7 @@ export default function ShoppingListScreen() {
                 style={[styles.resultBtn, { backgroundColor: C.backgroundTertiary, flex: 1 }]}
                 onPress={() => { setShowNearbyConfirm(false); setShowStoreSheet(true); }}
               >
-                <Text style={[styles.resultBtnTxt, { color: C.text }]}>Outro mercado</Text>
+                <Text style={[styles.resultBtnTxt, { color: C.text }]}>Outro supermercado</Text>
               </Pressable>
               <Pressable
                 style={[styles.resultBtn, { backgroundColor: "#CC0000", flex: 1 }]}
@@ -639,7 +639,7 @@ export default function ShoppingListScreen() {
                   <Feather name="clock" size={32} color="#0D47A1" />
                 </View>
                 <Text style={[styles.resultTitle, { color: C.text }]}>Compras concluídas!</Text>
-                <Text style={[styles.resultSub, { color: C.textMuted }]}>Fique ao menos 5 minutos no mercado para ganhar a pontuação completa (+200 pts).</Text>
+                <Text style={[styles.resultSub, { color: C.textMuted }]}>Fique ao menos 5 minutos no supermercado para ganhar a pontuação completa (+200 pts).</Text>
               </>
             ) : (
               <>

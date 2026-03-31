@@ -78,7 +78,7 @@ export default function IndicateStoreScreen() {
     return (
       <AuthGate
         title="Login necessário"
-        description="Faça login para indicar um mercado e ganhar 1.000 pontos."
+        description="Faça login para indicar um supermercado e ganhar 1.000 pontos."
         icon="map-marker-plus-outline"
       />
     );
@@ -124,11 +124,11 @@ export default function IndicateStoreScreen() {
 
   async function handleSubmit() {
     if (!storeName.trim()) {
-      Alert.alert("Nome obrigatório", "Por favor, informe o nome do mercado.");
+      Alert.alert("Nome obrigatório", "Por favor, informe o nome do supermercado.");
       return;
     }
     if (!markerCoords) {
-      Alert.alert("Localização obrigatória", "Role até o mapa e toque para marcar onde fica o mercado.");
+      Alert.alert("Localização obrigatória", "Role até o mapa e toque para marcar onde fica o supermercado.");
       return;
     }
 
@@ -147,7 +147,7 @@ export default function IndicateStoreScreen() {
       if (!result.ok) {
         const isAlreadyIndicated = result.error?.includes("anteriormente");
         Alert.alert(
-          isAlreadyIndicated ? "Mercado já indicado" : "Erro",
+          isAlreadyIndicated ? "Supermercado já indicado" : "Erro",
           result.error ?? "Não foi possível registrar a indicação.",
         );
         return;
@@ -170,7 +170,7 @@ export default function IndicateStoreScreen() {
           <Feather name="x" size={22} color={C.text} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: C.text }]}>Indicar Mercado</Text>
+          <Text style={[styles.headerTitle, { color: C.text }]}>Indicar Supermercado</Text>
           <Text style={[styles.headerSub, { color: C.textMuted }]}>Ganhe {INDICATION_POINTS.toLocaleString()} pontos!</Text>
         </View>
         <View style={[styles.pointsBadge, { backgroundColor: "#FFF3E0" }]}>
@@ -192,13 +192,13 @@ export default function IndicateStoreScreen() {
           <View style={[styles.rewardBanner, { backgroundColor: isDark ? "#1B2A1B" : "#E8F5E9", borderColor: isDark ? "#2E7D32" : "#A5D6A7" }]}>
             <MaterialCommunityIcons name="map-marker-plus" size={20} color="#2E7D32" />
             <Text style={[styles.rewardText, { color: isDark ? "#A5D6A7" : "#1B5E20" }]}>
-              Mapeie um mercado novo e ajude sua comunidade! O mercado ficará disponível para todos em até 10km.
+              Mapeie um supermercado novo e ajude sua comunidade! O supermercado ficará disponível para todos em até 10km.
             </Text>
           </View>
 
           {/* ─── FORMULÁRIO (topo) ─── */}
           <View style={styles.section}>
-            <Text style={[styles.label, { color: C.textSecondary }]}>Nome do Mercado *</Text>
+            <Text style={[styles.label, { color: C.textSecondary }]}>Nome do Supermercado *</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.backgroundSecondary, color: C.text, borderColor: C.border }]}
               placeholder="Ex: Mercadinho do Zé, Empório São João..."
@@ -235,7 +235,7 @@ export default function IndicateStoreScreen() {
           <View style={styles.section}>
             <Text style={[styles.label, { color: C.textSecondary }]}>Localização no Mapa *</Text>
             <Text style={[styles.mapInstruction, { color: C.textMuted }]}>
-              Toque no mapa para marcar o local exato do mercado
+              Toque no mapa para marcar o local exato do supermercado
             </Text>
 
             {/* Wrapper com altura fixa — o mapa não captura o scroll da página */}
@@ -261,7 +261,7 @@ export default function IndicateStoreScreen() {
                     {markerCoords && (
                       <Marker
                         coordinate={{ latitude: markerCoords.lat, longitude: markerCoords.lng }}
-                        title={storeName || "Mercado indicado"}
+                        title={storeName || "Supermercado indicado"}
                         pinColor="#2E7D32"
                       />
                     )}
@@ -269,7 +269,7 @@ export default function IndicateStoreScreen() {
                   <View style={[styles.mapHintBox, { backgroundColor: C.background + "EE" }]}>
                     <Feather name="map-pin" size={13} color={markerCoords ? "#2E7D32" : C.primary} />
                     <Text style={[styles.mapHint, { color: markerCoords ? "#2E7D32" : C.textSecondary }]}>
-                      {markerCoords ? "Marcador posicionado — ajuste se necessário" : "Toque no mapa para marcar o mercado"}
+                      {markerCoords ? "Marcador posicionado — ajuste se necessário" : "Toque no mapa para marcar o supermercado"}
                     </Text>
                   </View>
                 </>
@@ -301,7 +301,7 @@ export default function IndicateStoreScreen() {
             ) : (
               <>
                 <MaterialCommunityIcons name="map-marker-check" size={20} color="#fff" />
-                <Text style={styles.submitText}>Indicar Mercado e Ganhar {INDICATION_POINTS.toLocaleString()} Pontos</Text>
+                <Text style={styles.submitText}>Indicar Supermercado e Ganhar {INDICATION_POINTS.toLocaleString()} Pontos</Text>
               </>
             )}
           </Pressable>
@@ -310,9 +310,9 @@ export default function IndicateStoreScreen() {
           <View style={[styles.rulesBox, { backgroundColor: C.backgroundSecondary, borderColor: C.border }]}>
             <Text style={[styles.rulesTitle, { color: C.textSecondary }]}>Regras da indicação</Text>
             <Text style={[styles.rulesText, { color: C.textMuted }]}>
-              • O mercado estará disponível imediatamente para todos em até 10km.{"\n"}
-              • Se 3 usuários denunciarem o mercado como inexistente, os pontos serão revertidos.{"\n"}
-              • Indicações de locais que não são mercados serão removidas.
+              • O supermercado estará disponível imediatamente para todos em até 10km.{"\n"}
+              • Se 3 usuários denunciarem o supermercado como inexistente, os pontos serão revertidos.{"\n"}
+              • Indicações de locais que não são supermercados serão removidas.
             </Text>
           </View>
         </ScrollView>
@@ -324,7 +324,7 @@ export default function IndicateStoreScreen() {
           <Animated.View style={[styles.successCard, { transform: [{ scale: successScale }] }]}>
             <MaterialCommunityIcons name="map-marker-check" size={64} color="#2E7D32" />
             <Text style={styles.successTitle}>Parabéns, Explorador!</Text>
-            <Text style={styles.successSub}>Você mapeou um novo mercado para a comunidade.</Text>
+            <Text style={styles.successSub}>Você mapeou um novo supermercado para a comunidade.</Text>
             <Animated.View style={[styles.pointsPill, { opacity: pointsOpacity, transform: [{ translateY: pointsTranslate }] }]}>
               <MaterialCommunityIcons name="star-circle" size={22} color="#E65100" />
               <Text style={styles.pointsPillText}>+{INDICATION_POINTS.toLocaleString()} Pontos Recebidos!</Text>

@@ -1,0 +1,51 @@
+PROMPT DE PADRONIZAÇÃO NOMINAL E AJUSTE DE LAYOUT (REFATORAÇÃO GLOBAL)
+Objetivo: Substituir sistematicamente o termo "mercado" por "Supermercado" em todas as interfaces visíveis do projeto e ajustar o CSS para comportar a nova volumetria de texto.
+
+1. SUBSTITUIÇÃO SEMÂNTICA (TEXT REPLACEMENT)
+Escopo: Varra todos os arquivos de tradução, componentes de UI, templates HTML/React/Vue, notificações push e templates de e-mail.
+
+Regra de Case: * "Mercado" → "Supermercado"
+
+"mercado" → "supermercado"
+
+"MERCADO" → "SUPERMERCADO"
+
+Exceções: Não altere nomes de variáveis de backend, endpoints de API ou nomes de tabelas no banco de dados para evitar quebras de lógica. Foque apenas em Display Strings (texto visível ao usuário).
+
+2. AJUSTE DE UI E RESPONSIVIDADE (CSS FIX)
+Devido ao aumento do número de caracteres, aplique as seguintes correções de layout:
+
+Cards e Banners: Certifique-se de que os títulos dos cards utilizem flex-wrap: wrap ou diminuam levemente o font-size se o texto exceder o limite horizontal.
+
+Botões: Ajuste o min-width ou use width: fit-content em botões que contenham a palavra, garantindo que o texto não transborde (overflow).
+
+Truncamento Inteligente: Em locais com espaço crítico (ex: nomes de mercados na lista de busca), utilize text-overflow: ellipsis; white-space: nowrap; overflow: hidden; apenas se a quebra de linha prejudicar a leitura.
+
+Navegação (Sidebar/Tabbar): Verifique se o item "Área Supermercado" ou "Portal Supermercado" não está quebrando a largura do menu lateral ou da barra inferior.
+
+3. REVISÃO DE COESÃO (BRANDING)
+Linguagem: Mantenha o tom de voz corporativo e profissional.
+
+Zero Emojis: Reconfirme que nenhuma substituição introduziu emojis ou caracteres informais.
+
+Identidade: O logotipo (sem fundo) deve continuar como o elemento visual central, agora acompanhado exclusivamente pela terminologia "Supermercado".
+
+4. ÁREAS ESPECÍFICAS PARA AUDITORIA
+Peça para a IA verificar e corrigir especificamente:
+
+Header do App: "Supermercados Próximos".
+
+Dashboard Lojista: "Configurações do Supermercado".
+
+Ranking Semanal: "O melhor Supermercado da semana".
+
+Portal de Marcas: "Presença em Supermercados parceiros".
+
+🧪 TESTE DE INTEGRIDADE (O QUE A IA DEVE VALIDAR)
+Solicite que o Replit simule a visualização em um iPhone SE (tela pequena) e em um Monitor Ultrawide para garantir que:
+
+O título "Supermercado" não está sobrepondo ícones de busca.
+
+Os cards de preço na gôndola mantêm o alinhamento vertical mesmo com o nome mais longo.
+
+O fluxo de cadastro (agora com o mapa invertido) exibe corretamente "Localização do Supermercado" no topo da seção geográfica.
