@@ -474,8 +474,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUserState(newUser);
     if (newUser) {
       await AsyncStorage.setItem("@ecompara_user", JSON.stringify(newUser));
+      // Segurança: ao logar como cliente, encerra qualquer sessão de comerciante ativa
+      if (merchantSession) {
+        setMerchantSession(null);
+        setActiveTab("customer");
+        await AsyncStorage.removeItem("@ecompara_merchant_token");
+      }
     } else {
       await AsyncStorage.removeItem("@ecompara_user");
+      // Encerra sessão de comerciante junto com o logout do cliente
+      setMerchantSession(null);
+      setActiveTab("customer");
+      await AsyncStorage.removeItem("@ecompara_merchant_token");
     }
   };
 

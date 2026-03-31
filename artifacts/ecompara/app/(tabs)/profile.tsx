@@ -102,11 +102,6 @@ export default function ProfileScreen() {
     if (isLoggedIn) loadReferralData();
   }, [isLoggedIn, loadReferralData]);
 
-  useEffect(() => {
-    if (!isLoggedIn && !merchantSession) {
-      router.push("/(auth)/login");
-    }
-  }, [isLoggedIn, merchantSession]);
 
   const handleShareReferral = async () => {
     const link = referralData?.referralLink ?? `https://ecompara.com.br/invite/${referralData?.referralCode ?? ""}`;
@@ -135,7 +130,15 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert("Sair", "Deseja sair da sua conta?", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Sair", style: "destructive", onPress: () => { setUser(null); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } },
+      {
+        text: "Sair",
+        style: "destructive",
+        onPress: () => {
+          setUser(null);
+          merchantLogout();
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        },
+      },
     ]);
   };
 
@@ -173,6 +176,46 @@ export default function ProfileScreen() {
       setMlError(result.error || "Credenciais inválidas.");
     }
   };
+
+  // Tela de visitante: sem login de cliente nem sessão de comerciante
+  if (!isLoggedIn && !merchantSession) {
+    return (
+      <View style={[styles.container, { backgroundColor: C.background }]}>
+        <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: C.background }]}>
+          <Text style={[styles.title, { color: C.text }]}>Perfil</Text>
+          <Pressable
+            style={[styles.iconBtnSm, { backgroundColor: C.backgroundSecondary }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}
+          >
+            <Feather name={isDark ? "sun" : "moon"} size={16} color={C.text} />
+          </Pressable>
+        </View>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.backgroundSecondary, alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+            <Feather name="user" size={34} color={C.textMuted} />
+          </View>
+          <Text style={{ fontSize: 20, fontFamily: "Inter_700Bold", color: C.text, textAlign: "center", marginBottom: 8 }}>
+            Entre na sua conta
+          </Text>
+          <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", lineHeight: 21, marginBottom: 28 }}>
+            Acompanhe seus pontos, histórico de preços e configurações personalizadas.
+          </Text>
+          <Pressable
+            style={{ backgroundColor: C.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, width: "100%", alignItems: "center", marginBottom: 12 }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(auth)/login"); }}
+          >
+            <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" }}>Entrar / Criar conta</Text>
+          </Pressable>
+          <Pressable
+            style={{ borderWidth: 1.5, borderColor: C.border, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32, width: "100%", alignItems: "center" }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(auth)/merchant-login"); }}
+          >
+            <Text style={{ color: C.text, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Área Supermercado</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   if (activeTab === "retailer" && merchantSession !== null) {
     return (
