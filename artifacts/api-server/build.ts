@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 const allowlist = [
   "@google/generative-ai",
   "axios",
+  "bcryptjs",
   "connect-pg-simple",
   "cors",
   "date-fns",
@@ -83,8 +84,10 @@ async function buildAll() {
     "admin.html",
     "merchant-portal.html",
     "advertiser.html",
+    "portal-supermercado.html",
     "logo-dark.png",
     "logo-light.png",
+    "logo-white.png",
   ];
   for (const file of staticFiles) {
     await copyFile(
