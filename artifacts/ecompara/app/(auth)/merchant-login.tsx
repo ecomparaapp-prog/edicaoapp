@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
@@ -83,7 +83,7 @@ export default function MerchantLoginScreen() {
         {/* Icon + título */}
         <View style={styles.heroArea}>
           <View style={[styles.heroIconWrap, { backgroundColor: "#CC000012", borderColor: "#CC000030", borderWidth: 1 }]}>
-            <Feather name="store" size={32} color="#CC0000" />
+            <MaterialCommunityIcons name="store-outline" size={36} color="#CC0000" />
           </View>
           <Text style={[styles.heroTitle, { color: C.text }]}>Área Supermercado</Text>
           <Text style={[styles.heroSub, { color: C.textMuted }]}>
@@ -175,7 +175,7 @@ export default function MerchantLoginScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Feather name="store" size={13} color="#8B0000" />
+              <MaterialCommunityIcons name="store-outline" size={14} color="#8B0000" />
               <Text style={[styles.devBtnText, { color: "#8B0000" }]}>Login de Teste Supermercado</Text>
             </TouchableOpacity>
           </View>

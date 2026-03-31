@@ -103,10 +103,10 @@ export default function ProfileScreen() {
   }, [isLoggedIn, loadReferralData]);
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn && !merchantSession) {
       router.push("/(auth)/login");
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, merchantSession]);
 
   const handleShareReferral = async () => {
     const link = referralData?.referralLink ?? `https://ecompara.com.br/invite/${referralData?.referralCode ?? ""}`;

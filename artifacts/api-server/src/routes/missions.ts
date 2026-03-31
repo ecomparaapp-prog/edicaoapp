@@ -56,9 +56,9 @@ missionsRouter.get("/prices/missions", async (req, res) => {
     // Find stores within radius that have stale or disputed prices
     const rows = await db.execute(sql`
       WITH latest_per_ean AS (
-        SELECT DISTINCT ON (place_id, ean)
+        SELECT DISTINCT ON (place_id, product_ean)
           id,
-          ean,
+          product_ean,
           place_id,
           price::float AS price,
           reported_at,
@@ -66,7 +66,7 @@ missionsRouter.get("/prices/missions", async (req, res) => {
           upvotes,
           downvotes
         FROM price_reports
-        ORDER BY place_id, ean, reported_at DESC
+        ORDER BY place_id, product_ean, reported_at DESC
       ),
       needy AS (
         SELECT
@@ -141,9 +141,9 @@ missionsRouter.get("/prices/missions/:placeId/queue", async (req, res) => {
 
   try {
     const rows = await db.execute(sql`
-      SELECT DISTINCT ON (pr.ean)
+      SELECT DISTINCT ON (pr.product_ean)
         pr.id AS report_id,
-        pr.ean,
+        pr.product_ean AS ean,
         pr.price::float AS price,
         pr.reported_at,
         pr.is_verified,
@@ -158,13 +158,13 @@ missionsRouter.get("/prices/missions/:placeId/queue", async (req, res) => {
           ELSE 'ok'
         END AS reason
       FROM price_reports pr
-      LEFT JOIN ean_cache ec ON ec.ean = pr.ean
+      LEFT JOIN ean_cache ec ON ec.ean = pr.product_ean
       WHERE pr.place_id = ${placeId}
         AND (
           pr.reported_at < NOW() - INTERVAL '24 hours'
           OR (pr.downvotes > pr.upvotes AND pr.is_verified = false)
         )
-      ORDER BY pr.ean, pr.reported_at DESC
+      ORDER BY pr.product_ean, pr.reported_at DESC
     `);
 
     type QueueRow = {
