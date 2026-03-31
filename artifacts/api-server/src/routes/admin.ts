@@ -172,7 +172,7 @@ adminRouter.post("/admin/partnerships/:id/approve", async (req, res) => {
       return;
     }
 
-    // Criar cadastro de comerciante pré-preenchido com status pending_completion
+    // Criar cadastro de comerciante já aprovado
     const [registration] = await db
       .insert(merchantRegistrationsTable)
       .values({
@@ -181,7 +181,8 @@ adminRouter.post("/admin/partnerships/:id/approve", async (req, res) => {
         ownerName: claim.requesterName,
         verificationMethod: "email",
         verificationContact: claim.requesterEmail,
-        status: "pending_completion",
+        status: "approved",
+        adminNote: note ?? null,
       })
       .returning();
 
@@ -196,12 +197,25 @@ adminRouter.post("/admin/partnerships/:id/approve", async (req, res) => {
       })
       .where(eq(partnershipRequestsTable.id, id));
 
-    // Enviar e-mail de convite ao proprietário
-    const emailResult = await sendClaimInvitation({
+    // Criar usuário lojista com senha temporária
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+    await db.insert(merchantUsersTable).values({
+      merchantRegistrationId: registration.id,
+      email: claim.requesterEmail.toLowerCase().trim(),
+      passwordHash,
+      mustChangePassword: true,
+      plan: "normal",
+    });
+
+    // Enviar e-mail de boas-vindas com credenciais de acesso
+    const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/merchant-portal`;
+    const emailResult = await sendMerchantWelcome({
       to: claim.requesterEmail,
       ownerName: claim.requesterName,
       storeName: claim.placeName,
-      registrationId: registration.id,
+      tempPassword,
+      portalUrl: baseUrl,
     });
 
     console.log(`[Admin] Claim #${id} aprovado → registration #${registration.id} criado. E-mail: ${emailResult.sent ? "enviado" : "falhou"}`);

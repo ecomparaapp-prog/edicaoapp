@@ -366,47 +366,108 @@ export async function sendMerchantWelcome(opts: SendMerchantWelcomeOptions): Pro
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
     <tr><td align="center">
-      <table width="100%" style="max-width:540px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-        <tr><td style="background:#0F172A;padding:28px 36px;">
-          <h1 style="margin:0;color:#fff;font-size:20px;letter-spacing:0.5px;font-family:Arial,sans-serif;">eCompara</h1>
-          <p style="margin:6px 0 0;color:#94A3B8;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Portal do Lojista</p>
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+
+        <!-- HEADER / LOGO -->
+        <tr><td style="background:#0F172A;padding:32px 40px 28px;">
+          <table cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding-right:14px;vertical-align:middle;">
+                <!-- Ícone "e" estilizado como logomarca -->
+                <div style="width:48px;height:48px;background:#CC0000;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;">
+                  <span style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;line-height:1;padding:0 0 2px 2px;">e</span>
+                </div>
+              </td>
+              <td style="vertical-align:middle;">
+                <div style="color:#FFFFFF;font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1;font-family:Arial,sans-serif;">
+                  e<span style="color:#CC0000;">Compara</span>
+                </div>
+                <div style="color:#64748B;font-size:10px;text-transform:uppercase;letter-spacing:2px;margin-top:5px;font-family:Arial,sans-serif;">
+                  Portal do Lojista
+                </div>
+              </td>
+            </tr>
+          </table>
         </td></tr>
-        <tr><td style="padding:36px;">
-          <p style="margin:0 0 6px;color:#64748B;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;">Credenciais de Acesso</p>
-          <h2 style="margin:0 0 20px;color:#0F172A;font-size:22px;">Acesso ao Painel Liberado</h2>
-          <p style="margin:0 0 20px;color:#475569;font-size:14px;line-height:1.7;">
-            Prezado(a) <strong>${opts.ownerName}</strong>, o cadastro de
-            <strong>${opts.storeName}</strong> foi aprovado. Utilize as credenciais abaixo para acessar sua plataforma de gestao.
+
+        <!-- BADGE STATUS -->
+        <tr><td style="background:#CC0000;padding:10px 40px;">
+          <p style="margin:0;color:#fff;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;font-family:Arial,sans-serif;">
+            Acesso Liberado — Cadastro Aprovado
           </p>
-          <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:24px;margin:0 0 24px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="color:#64748B;font-size:12px;text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;width:130px;">E-mail</td>
-                <td style="color:#0F172A;font-size:14px;font-weight:600;padding:8px 0 4px;">${opts.to}</td>
-              </tr>
-              <tr>
-                <td style="color:#64748B;font-size:12px;text-transform:uppercase;letter-spacing:1px;padding:4px 0 8px;">Senha Temporaria</td>
-                <td style="color:#CC0000;font-size:20px;font-weight:700;letter-spacing:3px;padding:4px 0 8px;">${opts.tempPassword}</td>
-              </tr>
-            </table>
-          </div>
-          <div style="text-align:center;margin:28px 0 8px;">
-            <a href="${portalUrl}" style="background:#CC0000;color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:14px;font-weight:700;display:inline-block;letter-spacing:0.5px;">
+        </td></tr>
+
+        <!-- BODY -->
+        <tr><td style="padding:36px 40px;">
+          <p style="margin:0 0 8px;color:#64748B;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;font-family:Arial,sans-serif;">
+            Credenciais de Acesso ao Painel
+          </p>
+          <h2 style="margin:0 0 20px;color:#0F172A;font-size:22px;font-weight:800;letter-spacing:-0.3px;line-height:1.3;font-family:Arial,sans-serif;">
+            Bem-vindo(a), ${opts.ownerName}
+          </h2>
+          <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.8;font-family:Arial,sans-serif;">
+            O cadastro de <strong style="color:#0F172A;">${opts.storeName}</strong> foi validado e seu acesso ao
+            Portal Lojista eCompara foi liberado. Utilize as credenciais abaixo para entrar na plataforma.
+          </p>
+
+          <!-- CREDENCIAIS -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;margin-bottom:28px;">
+            <tr>
+              <td style="padding:20px 24px 12px;">
+                <p style="margin:0 0 4px;color:#94A3B8;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;font-family:Arial,sans-serif;">E-mail de Acesso</p>
+                <p style="margin:0;color:#0F172A;font-size:15px;font-weight:600;font-family:Arial,sans-serif;">${opts.to}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 24px;"><div style="height:1px;background:#E2E8F0;"></div></td>
+            </tr>
+            <tr>
+              <td style="padding:12px 24px 20px;">
+                <p style="margin:0 0 4px;color:#94A3B8;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;font-family:Arial,sans-serif;">Senha Temporaria de Acesso</p>
+                <p style="margin:0;color:#CC0000;font-size:26px;font-weight:800;letter-spacing:6px;font-family:'Courier New',monospace;">${opts.tempPassword}</p>
+              </td>
+            </tr>
+          </table>
+
+          <!-- AVISO -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;margin-bottom:28px;">
+            <tr>
+              <td style="padding:14px 18px;">
+                <p style="margin:0;color:#92400E;font-size:13px;line-height:1.6;font-family:Arial,sans-serif;">
+                  <strong>Importante:</strong> Por seguranca, voce sera solicitado a criar uma nova senha no primeiro acesso. A senha temporaria expira apos o primeiro uso.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA BUTTON -->
+          <div style="text-align:center;margin:0 0 8px;">
+            <a href="${portalUrl}" style="background:#CC0000;color:#ffffff;text-decoration:none;padding:15px 40px;border-radius:9px;font-size:14px;font-weight:700;display:inline-block;letter-spacing:0.5px;font-family:Arial,sans-serif;">
               Acessar Plataforma
             </a>
           </div>
-          <p style="margin:20px 0 0;color:#94A3B8;font-size:12px;text-align:center;">
-            Voce sera solicitado a redefinir sua senha no primeiro acesso.
+          <p style="margin:14px 0 0;color:#94A3B8;font-size:12px;text-align:center;font-family:Arial,sans-serif;">
+            Ou acesse: <a href="${portalUrl}" style="color:#CC0000;text-decoration:none;">${portalUrl}</a>
           </p>
-          <hr style="border:none;border-top:1px solid #E2E8F0;margin:28px 0;">
-          <p style="margin:0;color:#94A3B8;font-size:11px;">Duvidas? Entre em contato: suporte@ecompara.com.br</p>
+
+          <div style="height:1px;background:#E2E8F0;margin:28px 0;"></div>
+          <p style="margin:0;color:#94A3B8;font-size:11px;line-height:1.7;font-family:Arial,sans-serif;">
+            Duvidas ou problemas de acesso? Fale conosco em
+            <a href="mailto:parceiros@ecompara.com.br" style="color:#CC0000;text-decoration:none;">parceiros@ecompara.com.br</a>
+          </p>
         </td></tr>
-        <tr><td style="background:#F8FAFC;padding:16px 36px;border-top:1px solid #E2E8F0;">
-          <p style="margin:0;color:#94A3B8;font-size:11px;text-align:center;">© 2026 eCompara · Todos os direitos reservados</p>
+
+        <!-- FOOTER -->
+        <tr><td style="background:#F8FAFC;padding:18px 40px;border-top:1px solid #E2E8F0;">
+          <p style="margin:0;color:#94A3B8;font-size:11px;text-align:center;font-family:Arial,sans-serif;">
+            © 2026 eCompara · Todos os direitos reservados<br>
+            <span style="font-size:10px;">Se voce nao solicitou este acesso, ignore este e-mail.</span>
+          </p>
         </td></tr>
+
       </table>
     </td></tr>
   </table>
