@@ -288,7 +288,7 @@ export default function ProfileScreen() {
     );
   }
 
-  if (activeTab === "retailer" && merchantSession !== null) {
+  if (merchantSession !== null) {
     return (
       <>
         <RetailerPanel
