@@ -47,9 +47,12 @@ export default function RetailerScannerScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { getProductByEAN, updateRetailerProduct, lookupEAN, addManualProduct, user, isLoggedIn } = useApp();
+  const { getProductByEAN, updateRetailerProduct, lookupEAN, addManualProduct, user, isLoggedIn, merchantSession } = useApp();
 
-  if (!isLoggedIn || user?.role !== "retailer") {
+  const isMerchant = merchantSession !== null;
+  const isRetailerUser = isLoggedIn && user?.role === "retailer";
+
+  if (!isMerchant && !isRetailerUser) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: isDark ? Colors.dark.background : Colors.light.background }}>
         <Feather name="lock" size={48} color={C.textMuted} />

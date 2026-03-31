@@ -123,6 +123,89 @@ router.post("/merchant/bi/import-csv", upload.single("file"), async (req: any, r
   }
 });
 
+// ── POST /api/merchant/prices/bulk ───────────────────────────────────────────
+// Aceita array JSON de { ean, price, placeId? } — usado pelo app mobile
+router.post("/merchant/prices/bulk", async (req: any, res) => {
+  const merchantUserId: number = req.merchantUserId;
+  const items = req.body as { ean: string; price: number; placeId?: string }[];
+
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: "Envie um array de { ean, price }." });
+    return;
+  }
+
+  const [merchantUser] = await db
+    .select({ merchantRegistrationId: merchantUsersTable.merchantRegistrationId })
+    .from(merchantUsersTable)
+    .where(eq(merchantUsersTable.id, merchantUserId));
+
+  const reg = merchantUser?.merchantRegistrationId
+    ? await db.select({ placeId: merchantRegistrationsTable.placeId })
+        .from(merchantRegistrationsTable)
+        .where(eq(merchantRegistrationsTable.id, merchantUser.merchantRegistrationId))
+        .then((r) => r[0])
+    : null;
+
+  let processed = 0;
+  let errors = 0;
+
+  for (const item of items) {
+    try {
+      const { ean, price } = item;
+      if (!ean || isNaN(price) || price <= 0) { errors++; continue; }
+      const placeId = item.placeId || reg?.placeId || `merchant_${merchantUserId}`;
+      await db.execute(sql`
+        INSERT INTO price_reports (ean, place_id, price, reported_by, source, is_verified, created_at, updated_at)
+        VALUES (${ean}, ${placeId}, ${price}, ${"bulk_" + merchantUserId}, 'partner', true, NOW(), NOW())
+        ON CONFLICT (ean, place_id) DO UPDATE
+          SET price = EXCLUDED.price, updated_at = NOW(), is_verified = true
+      `);
+      processed++;
+    } catch { errors++; }
+  }
+
+  res.json({ ok: true, processed, errors, total: items.length });
+});
+
+// ── POST /api/merchant/prices/single ─────────────────────────────────────────
+// Atualiza o preço de um único produto pelo EAN
+router.post("/merchant/prices/single", async (req: any, res) => {
+  const merchantUserId: number = req.merchantUserId;
+  const { ean, price } = req.body as { ean?: string; price?: number };
+
+  if (!ean || !price || isNaN(price) || price <= 0) {
+    res.status(400).json({ error: "Informe ean e price válidos." });
+    return;
+  }
+
+  const [merchantUser] = await db
+    .select({ merchantRegistrationId: merchantUsersTable.merchantRegistrationId })
+    .from(merchantUsersTable)
+    .where(eq(merchantUsersTable.id, merchantUserId));
+
+  const reg = merchantUser?.merchantRegistrationId
+    ? await db.select({ placeId: merchantRegistrationsTable.placeId })
+        .from(merchantRegistrationsTable)
+        .where(eq(merchantRegistrationsTable.id, merchantUser.merchantRegistrationId))
+        .then((r) => r[0])
+    : null;
+
+  const placeId = reg?.placeId || `merchant_${merchantUserId}`;
+
+  try {
+    await db.execute(sql`
+      INSERT INTO price_reports (ean, place_id, price, reported_by, source, is_verified, created_at, updated_at)
+      VALUES (${ean}, ${placeId}, ${price}, ${"app_" + merchantUserId}, 'partner', true, NOW(), NOW())
+      ON CONFLICT (ean, place_id) DO UPDATE
+        SET price = EXCLUDED.price, updated_at = NOW(), is_verified = true
+    `);
+    res.json({ ok: true, ean, price, placeId });
+  } catch (err) {
+    console.error("Single price update error:", err);
+    res.status(500).json({ error: "Erro ao salvar preço." });
+  }
+});
+
 // ── POST /api/merchant/plan/upgrade ──────────────────────────────────────────
 router.post("/merchant/plan/upgrade", async (req: any, res) => {
   const merchantUserId: number = req.merchantUserId;
