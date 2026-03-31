@@ -180,7 +180,7 @@ merchantAuthRouter.post("/merchant/auth/forgot-password", async (req, res) => {
       .set({ resetToken: token, resetTokenExpiresAt: expiresAt, updatedAt: new Date() })
       .where(eq(merchantUsersTable.id, user.id));
 
-    const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/merchant-portal`;
+    const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/portal-supermercado`;
     const resetLink = `${baseUrl}?reset=${token}`;
 
     const registrations = await db

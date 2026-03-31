@@ -209,7 +209,7 @@ adminRouter.post("/admin/partnerships/:id/approve", async (req, res) => {
     });
 
     // Enviar e-mail de boas-vindas com credenciais de acesso
-    const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/merchant-portal`;
+    const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/portal-supermercado`;
     const emailResult = await sendMerchantWelcome({
       to: claim.requesterEmail,
       ownerName: claim.requesterName,
@@ -346,7 +346,7 @@ adminRouter.post("/admin/merchant-registrations/:id/approve", async (req, res) =
 
       merchantUser = created;
 
-      const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/merchant-portal`;
+      const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/portal-supermercado`;
       emailResult = await sendMerchantWelcome({
         to: email,
         ownerName: reg.ownerName ?? "Lojista",
@@ -402,7 +402,7 @@ adminRouter.post("/admin/merchant-registrations/:id/reset-password", async (req,
       .limit(1);
 
     const reg = regs[0];
-    const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/merchant-portal`;
+    const baseUrl = process.env.MERCHANT_PORTAL_URL ?? `https://${process.env.REPLIT_DEV_DOMAIN}/api/portal-supermercado`;
     const emailResult = await sendMerchantWelcome({
       to: user.email,
       ownerName: reg?.ownerName ?? "Lojista",

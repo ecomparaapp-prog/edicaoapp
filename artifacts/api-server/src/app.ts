@@ -54,8 +54,12 @@ app.get("/api/admin", (_req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
 });
 
+app.get("/api/portal-supermercado", (_req, res) => {
+  res.sendFile(path.join(__dirname, "portal-supermercado.html"));
+});
+
 app.get("/api/merchant-portal", (_req, res) => {
-  res.sendFile(path.join(__dirname, "merchant-portal.html"));
+  res.redirect(301, "/api/portal-supermercado");
 });
 
 app.get("/api/anunciantes", (_req, res) => {

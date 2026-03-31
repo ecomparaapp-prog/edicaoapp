@@ -615,7 +615,7 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, retai
             </Pressable>
 
             <Pressable
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/merchant-portal" as any); }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/portal-supermercado" as any); }}
               style={{ backgroundColor: isDark ? "#1E293B" : "#0F172A", borderRadius: 14, padding: 16, flexDirection: "row", alignItems: "center", gap: 12 }}
             >
               <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" }}>
