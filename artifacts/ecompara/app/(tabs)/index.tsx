@@ -37,7 +37,7 @@ export default function HomeScreen() {
   const C = isDark ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user, isLoggedIn, stores, storesLoading, loadNearbyStores, submitStoreClaim } = useApp();
+  const { user, isLoggedIn, merchantSession, stores, storesLoading, loadNearbyStores, submitStoreClaim } = useApp();
   const { toggleTheme } = useTheme();
   const [activeBanner, setActiveBanner] = useState(0);
 
@@ -140,7 +140,17 @@ export default function HomeScreen() {
             >
               <Feather name={isDark ? "sun" : "moon"} size={18} color={C.text} />
             </Pressable>
-            {!isLoggedIn ? (
+            {merchantSession ? (
+              <Pressable
+                style={[styles.avatarBtn, { backgroundColor: C.primary + "22" }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push("/(auth)/merchant-login");
+                }}
+              >
+                <MaterialCommunityIcons name="store-outline" size={20} color={C.primary} />
+              </Pressable>
+            ) : !isLoggedIn ? (
               <Pressable
                 style={[styles.loginBtn, { backgroundColor: C.primary }]}
                 onPress={() => {
