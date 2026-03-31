@@ -7,6 +7,7 @@ import * as ExpoClipboard from "expo-clipboard";
 import {
   Alert,
   FlatList,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -55,6 +56,7 @@ export default function ProfileScreen() {
   const { user, setUser, isLoggedIn, activeTab, setActiveTab, retailerStore, updateRetailerProduct, finalizedLists, processedNFCe, merchantSession, merchantLogin, merchantLogout } = useApp();
   const { toggleTheme } = useTheme();
 
+  const [loginLoading, setLoginLoading] = useState(false);
   const [editingEan, setEditingEan] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
   const [showMerchantLogin, setShowMerchantLogin] = useState(false);
@@ -127,6 +129,25 @@ export default function ProfileScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : 90;
 
+  const handleProfileLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLoginLoading(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    const mockUser: User = {
+      id: "u_local_" + Date.now(),
+      name: "João da Silva",
+      email: "joao.silva@gmail.com",
+      photo: "",
+      role: "customer",
+      points: 320,
+      rank: 12,
+      totalPriceUpdates: 16,
+    };
+    await setUser(mockUser);
+    setLoginLoading(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
   const handleLogout = () => {
     Alert.alert("Sair", "Deseja sair da sua conta?", [
       { text: "Cancelar", style: "cancel" },
@@ -177,12 +198,10 @@ export default function ProfileScreen() {
     }
   };
 
-  // Tela de visitante: sem login de cliente nem sessão de comerciante
   if (!isLoggedIn && !merchantSession) {
     return (
-      <View style={[styles.container, { backgroundColor: C.background }]}>
-        <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: C.background }]}>
-          <Text style={[styles.title, { color: C.text }]}>Perfil</Text>
+      <View style={[styles.container, { backgroundColor: C.background, paddingHorizontal: 24 }]}>
+        <View style={{ paddingTop: topPad + 8, alignItems: "flex-end", paddingBottom: 4 }}>
           <Pressable
             style={[styles.iconBtnSm, { backgroundColor: C.backgroundSecondary }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}
@@ -190,28 +209,80 @@ export default function ProfileScreen() {
             <Feather name={isDark ? "sun" : "moon"} size={16} color={C.text} />
           </Pressable>
         </View>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 }}>
-          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.backgroundSecondary, alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-            <Feather name="user" size={34} color={C.textMuted} />
+
+        <View style={{ flex: 1, justifyContent: "center", gap: 32 }}>
+          <View style={{ alignItems: "center", gap: 6 }}>
+            <Image
+              source={isDark ? require("@/assets/images/logo-light.png") : require("@/assets/images/logo-dark.png")}
+              style={{ width: 260, height: 66 }}
+              resizeMode="contain"
+            />
+            <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: C.primary, textAlign: "center", marginTop: 4 }}>
+              O Waze dos supermercados
+            </Text>
+            <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center" }}>
+              Compare preços, economize mais
+            </Text>
           </View>
-          <Text style={{ fontSize: 20, fontFamily: "Inter_700Bold", color: C.text, textAlign: "center", marginBottom: 8 }}>
-            Entre na sua conta
-          </Text>
-          <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", lineHeight: 21, marginBottom: 28 }}>
-            Acompanhe seus pontos, histórico de preços e configurações personalizadas.
-          </Text>
+
+          <View style={{ borderRadius: 18, padding: 20, gap: 14, backgroundColor: C.backgroundSecondary }}>
+            {[
+              { icon: "map-pin", text: "Encontre os melhores preços num raio de até 50km" },
+              { icon: "shopping-cart", text: "Monte sua lista e compare automaticamente" },
+              { icon: "award", text: "Ganhe pontos atualizando preços e troque por dinheiro real" },
+            ].map((b, i) => (
+              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: C.primary + "20" }}>
+                  <Feather name={b.icon as any} size={16} color={C.primary} />
+                </View>
+                <Text style={{ flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, color: C.textSecondary }}>{b.text}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={{ gap: 12, paddingBottom: isWeb ? 34 : insets.bottom + 8 }}>
           <Pressable
-            style={{ backgroundColor: C.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, width: "100%", alignItems: "center", marginBottom: 12 }}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(auth)/login"); }}
+            style={{ backgroundColor: loginLoading ? C.primary + "80" : C.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, borderRadius: 16, paddingVertical: 16 }}
+            onPress={handleProfileLogin}
+            disabled={loginLoading}
           >
-            <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" }}>Entrar / Criar conta</Text>
+            {loginLoading ? (
+              <Text style={{ color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" }}>Entrando...</Text>
+            ) : (
+              <>
+                <View style={{ width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.2)" }}>
+                  <Feather name="log-in" size={18} color="#fff" />
+                </View>
+                <Text style={{ color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" }}>Continuar com Google</Text>
+              </>
+            )}
           </Pressable>
+
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+            <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.textMuted }}>ou</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+          </View>
+
           <Pressable
-            style={{ borderWidth: 1.5, borderColor: C.border, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 32, width: "100%", alignItems: "center" }}
+            style={{ flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, borderWidth: 1.5, borderColor: "#8B0000", backgroundColor: isDark ? "#1A1A1A" : "#FFF", opacity: loginLoading ? 0.6 : 1 }}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(auth)/merchant-login"); }}
+            disabled={loginLoading}
           >
-            <Text style={{ color: C.text, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Área Supermercado</Text>
+            <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#8B000015" }}>
+              <Feather name="store" size={18} color="#8B0000" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: "#8B0000" }}>Área Supermercado</Text>
+              <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted, marginTop: 1 }}>Área exclusiva para supermercados parceiros</Text>
+            </View>
+            <Feather name="chevron-right" size={16} color="#8B0000" />
           </Pressable>
+
+          <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 16, color: C.textMuted }}>
+            Ao entrar, você concorda com os Termos de Uso e Política de Privacidade do eCompara.
+          </Text>
         </View>
       </View>
     );
@@ -222,8 +293,14 @@ export default function ProfileScreen() {
       <>
         <RetailerPanel
           topPad={topPad} bottomPad={bottomPad} isDark={isDark} C={C}
-          onSwitchToCustomer={() => setActiveTab("customer")}
-          onMerchantLogout={() => merchantLogout()}
+          onSwitchToCustomer={() => {
+            if (isLoggedIn) {
+              setActiveTab("customer");
+            } else {
+              router.push("/(auth)/login");
+            }
+          }}
+          onMerchantLogout={() => { merchantLogout(); router.push("/(auth)/merchant-login"); }}
           retailerStore={retailerStore}
           merchantSession={merchantSession}
           editingEan={editingEan} setEditingEan={setEditingEan}
