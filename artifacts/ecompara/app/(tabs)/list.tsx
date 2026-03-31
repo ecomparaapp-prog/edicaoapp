@@ -390,18 +390,25 @@ export default function ShoppingListScreen() {
           </View>
         )}
 
-        {/* Iniciar Compras / Finalizar — only when idle and list has items */}
+        {/* Card informativo — início automático via geolocalização */}
         {shoppingList.length > 0 && shopStatus === "idle" && (
           <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-            <Pressable
-              style={[styles.startBtn, { backgroundColor: "#CC0000" }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowStoreSheet(true); }}
-            >
-              <MaterialCommunityIcons name="map-marker-check" size={20} color="#fff" />
-              <Text style={styles.startBtnTxt}>Iniciar Compras no Local</Text>
-              <View style={styles.startBtnBadge}><Text style={styles.startBtnBadgeTxt}>+200 pts</Text></View>
-            </Pressable>
-            <Text style={[styles.startHint, { color: C.textMuted }]}>Valide sua presença no mercado e ganhe pontos</Text>
+            <View style={[styles.startCard, { backgroundColor: isDark ? "#2A0A0A" : "#FFF5F5", borderColor: "#CC000030" }]}>
+              <View style={[styles.startCardIcon, { backgroundColor: "#CC000018" }]}>
+                <MaterialCommunityIcons name="map-marker-check" size={22} color="#CC0000" />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={[styles.startCardTitle, { color: isDark ? "#fff" : "#1A0000" }]}>Iniciar Compras no Local</Text>
+                  <View style={[styles.startBtnBadge, { backgroundColor: "#CC000018" }]}>
+                    <Text style={[styles.startBtnBadgeTxt, { color: "#CC0000" }]}>+200 pts</Text>
+                  </View>
+                </View>
+                <Text style={[styles.startCardSub, { color: C.textMuted }]}>
+                  O timer inicia automaticamente ao detectar sua presença em um mercado
+                </Text>
+              </View>
+            </View>
           </View>
         )}
 
@@ -1001,11 +1008,12 @@ const styles = StyleSheet.create({
   progressRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   bannerProgress: { color: "rgba(255,255,255,0.8)", fontSize: 11, fontFamily: "Inter_500Medium" },
   /* start btn */
-  startBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 16, paddingVertical: 15 },
-  startBtnTxt: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
-  startBtnBadge: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  startBtnBadgeTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
-  startHint: { textAlign: "center", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 7 },
+  startCard: { flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 16, padding: 14, borderWidth: 1 },
+  startCardIcon: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  startCardTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  startCardSub: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  startBtnBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  startBtnBadgeTxt: { fontSize: 11, fontFamily: "Inter_700Bold" },
   /* finalize bar */
   finalizeBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#1A1A1A", paddingHorizontal: 16, paddingTop: 12, gap: 0 },
   finalizeHint: { color: "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "Inter_400Regular", marginBottom: 5 },
