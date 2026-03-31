@@ -1,0 +1,35 @@
+PROMPT DE CONFIGURAÇÃO: ACESSO DE TESTE PERSISTENTE (SEEDS & SECRETS)
+Objetivo: Configurar credenciais de teste permanentes para o Portal Supermercado e Portal Marcas que persistam após reinicializações e sincronizações de Git, utilizando o gerenciador de segredos do Replit.
+
+1. CONFIGURAÇÃO DE AMBIENTE (REPLIT SECRETS)
+Ação: Peça para a IA verificar se existem as seguintes chaves no gerenciador de Secrets do Replit. Caso não existam, utilize estes valores padrão para o ambiente de desenvolvimento:
+
+TEST_USER_SUPERMERCADO: teste@supermercado.com.br
+
+TEST_PASS_SUPERMERCADO: super123
+
+TEST_USER_MARCAS: teste@marcas.com.br
+
+TEST_PASS_MARCAS: marca123
+
+2. SCRIPT DE AUTO-SEEDING (BANCO DE DATOS)
+Lógica: Implementar uma função no arquivo de inicialização do servidor (ex: index.js ou main.py) que verifique a existência desses usuários no banco de dados toda vez que o sistema iniciar.
+
+Comando: "Se o usuário TEST_USER_SUPERMERCADO não existir na tabela de parceiros, crie-o automaticamente com o status: ACTIVE, vinculado ao Plano Plus (R$ 599,90) e com a ROLE_SUPERMERCADO."
+
+Comando: "Se o usuário TEST_USER_MARCAS não existir, crie-o automaticamente com status: ACTIVE e a ROLE_ADVERTISER."
+
+3. PERSISTÊNCIA E SEGURANÇA
+Git: Garanta que esses usuários sejam criados apenas em ambiente de Desenvolvimento/Teste. No ambiente de Produção, essa função deve ser ignorada por uma condicional if (process.env.NODE_ENV !== 'production').
+
+Criptografia: Certifique-se de que a senha salva no banco de dados passe pelo mesmo processo de hash (BCrypt) que as senhas reais, para que o sistema de login funcione corretamente sem precisar de comandos manuais.
+
+4. ACESSO RÁPIDO NO FRONTEND
+Sugestão de UI: Apenas no ambiente de teste, adicione dois pequenos botões discretos ("Login de Teste Supermercado" e "Login de Teste Marcas") na tela de login para preencher automaticamente os campos de e-mail e senha com as variáveis de ambiente.
+
+🛡️ Por que fazer assim?
+Segurança: Suas senhas de teste não vão parar no GitHub (onde qualquer um poderia ver).
+
+Praticidade: Você nunca mais precisará digitar e-mail e senha durante o desenvolvimento; o sistema já "nasce" com esses usuários prontos para uso.
+
+Coerência: O Replit vai tratar esses usuários como se fossem reais, testando todo o fluxo de autenticação que criamos.
