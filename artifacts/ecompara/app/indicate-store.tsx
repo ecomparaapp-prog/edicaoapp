@@ -91,13 +91,11 @@ export default function IndicateStoreScreen() {
       const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
       if (results.length > 0) {
         const r = results[0];
-        // Build a rich address: Street Number, Street, District, City - State
         const streetPart = [r.street, r.streetNumber].filter(Boolean).join(", ");
         const localityPart = [r.district || r.subregion, r.city].filter(Boolean).join(" — ");
         const statePart = r.region ? ` - ${r.region}` : "";
         const parts = [streetPart, localityPart].filter(Boolean);
-        const formatted = parts.join(", ") + statePart;
-        setStoreAddress(formatted);
+        setStoreAddress(parts.join(", ") + statePart);
       }
     } catch {
       // silent — user can type manually
@@ -130,17 +128,16 @@ export default function IndicateStoreScreen() {
       return;
     }
     if (!markerCoords) {
-      Alert.alert("Localização obrigatória", "Toque no mapa para marcar onde fica o mercado.");
+      Alert.alert("Localização obrigatória", "Role até o mapa e toque para marcar onde fica o mercado.");
       return;
     }
 
-    const userId = user.id;
     setSubmitting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
       const result = await indicateStore({
-        user_id: userId,
+        user_id: user.id,
         name: storeName.trim(),
         address: storeAddress.trim() || undefined,
         lat: markerCoords.lat,
@@ -159,10 +156,7 @@ export default function IndicateStoreScreen() {
       setSuccess(true);
       playSuccessAnimation();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      setTimeout(() => {
-        router.back();
-      }, 3000);
+      setTimeout(() => router.back(), 3000);
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +164,7 @@ export default function IndicateStoreScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
-      {/* Header */}
+      {/* Header fixo */}
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: C.background, borderBottomColor: C.border }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
           <Feather name="x" size={22} color={C.text} />
@@ -185,86 +179,115 @@ export default function IndicateStoreScreen() {
         </View>
       </View>
 
-      {/* Reward Banner */}
-      <View style={[styles.rewardBanner, { backgroundColor: isDark ? "#1B2A1B" : "#E8F5E9", borderColor: isDark ? "#2E7D32" : "#A5D6A7" }]}>
-        <MaterialCommunityIcons name="map-marker-plus" size={20} color="#2E7D32" />
-        <Text style={[styles.rewardText, { color: isDark ? "#A5D6A7" : "#1B5E20" }]}>
-          Mapeie um mercado novo e ajude sua comunidade! O mercado ficará disponível para todos em até 10km.
-        </Text>
-      </View>
-
-      {/* Map */}
-      <View style={styles.mapContainer}>
-        {loadingLocation ? (
-          <View style={[styles.mapPlaceholder, { backgroundColor: C.backgroundSecondary }]}>
-            <ActivityIndicator size="large" color={C.primary} />
-            <Text style={[styles.mapHint, { color: C.textMuted }]}>Carregando localização...</Text>
+      {/* Tudo em um único ScrollView para scroll sem travamento */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled={false}
+        >
+          {/* Banner de recompensa */}
+          <View style={[styles.rewardBanner, { backgroundColor: isDark ? "#1B2A1B" : "#E8F5E9", borderColor: isDark ? "#2E7D32" : "#A5D6A7" }]}>
+            <MaterialCommunityIcons name="map-marker-plus" size={20} color="#2E7D32" />
+            <Text style={[styles.rewardText, { color: isDark ? "#A5D6A7" : "#1B5E20" }]}>
+              Mapeie um mercado novo e ajude sua comunidade! O mercado ficará disponível para todos em até 10km.
+            </Text>
           </View>
-        ) : region ? (
-          <>
-            <MapView
-              style={styles.map}
-              initialRegion={region}
-              onPress={handleMapPress}
-              showsUserLocation
-              showsMyLocationButton
-            >
-              {markerCoords && (
-                <Marker
-                  coordinate={{ latitude: markerCoords.lat, longitude: markerCoords.lng }}
-                  title={storeName || "Mercado indicado"}
-                  pinColor="#2E7D32"
-                />
-              )}
-            </MapView>
-            <View style={[styles.mapHintBox, { backgroundColor: C.background + "EE" }]}>
-              <Feather name="map-pin" size={13} color={C.primary} />
-              <Text style={[styles.mapHint, { color: C.textSecondary }]}>
-                {markerCoords ? "Marcador posicionado — ajuste se necessário" : "Toque no mapa para marcar o mercado"}
-              </Text>
+
+          {/* ─── FORMULÁRIO (topo) ─── */}
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: C.textSecondary }]}>Nome do Mercado *</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.backgroundSecondary, color: C.text, borderColor: C.border }]}
+              placeholder="Ex: Mercadinho do Zé, Empório São João..."
+              placeholderTextColor={C.textMuted}
+              value={storeName}
+              onChangeText={setStoreName}
+              returnKeyType="next"
+              maxLength={80}
+            />
+
+            <Text style={[styles.label, { color: C.textSecondary, marginTop: 14 }]}>Endereço (opcional)</Text>
+            <TextInput
+              style={[
+                styles.input,
+                { backgroundColor: C.backgroundSecondary, color: C.text, borderColor: C.border },
+                geocoding && { opacity: 0.6 },
+              ]}
+              placeholder="Preenchido automaticamente ao tocar no mapa"
+              placeholderTextColor={C.textMuted}
+              value={storeAddress}
+              onChangeText={setStoreAddress}
+              returnKeyType="done"
+              maxLength={200}
+            />
+            {geocoding && (
+              <View style={styles.geocodingRow}>
+                <ActivityIndicator size="small" color={C.primary} />
+                <Text style={[styles.geocodingText, { color: C.textMuted }]}>Obtendo endereço…</Text>
+              </View>
+            )}
+          </View>
+
+          {/* ─── MAPA (base) ─── */}
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: C.textSecondary }]}>Localização no Mapa *</Text>
+            <Text style={[styles.mapInstruction, { color: C.textMuted }]}>
+              Toque no mapa para marcar o local exato do mercado
+            </Text>
+
+            {/* Wrapper com altura fixa — o mapa não captura o scroll da página */}
+            <View style={[styles.mapContainer, { borderColor: markerCoords ? "#A5D6A7" : C.border }]}>
+              {loadingLocation ? (
+                <View style={[styles.mapPlaceholder, { backgroundColor: C.backgroundSecondary }]}>
+                  <ActivityIndicator size="large" color={C.primary} />
+                  <Text style={[styles.mapHint, { color: C.textMuted }]}>Carregando localização...</Text>
+                </View>
+              ) : region ? (
+                <>
+                  <MapView
+                    style={StyleSheet.absoluteFillObject}
+                    initialRegion={region}
+                    onPress={handleMapPress}
+                    showsUserLocation
+                    showsMyLocationButton
+                    scrollEnabled={true}
+                    zoomEnabled={true}
+                    pitchEnabled={false}
+                    rotateEnabled={false}
+                  >
+                    {markerCoords && (
+                      <Marker
+                        coordinate={{ latitude: markerCoords.lat, longitude: markerCoords.lng }}
+                        title={storeName || "Mercado indicado"}
+                        pinColor="#2E7D32"
+                      />
+                    )}
+                  </MapView>
+                  <View style={[styles.mapHintBox, { backgroundColor: C.background + "EE" }]}>
+                    <Feather name="map-pin" size={13} color={markerCoords ? "#2E7D32" : C.primary} />
+                    <Text style={[styles.mapHint, { color: markerCoords ? "#2E7D32" : C.textSecondary }]}>
+                      {markerCoords ? "Marcador posicionado — ajuste se necessário" : "Toque no mapa para marcar o mercado"}
+                    </Text>
+                  </View>
+                </>
+              ) : null}
             </View>
-          </>
-        ) : null}
-      </View>
 
-      {/* Form */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <ScrollView style={[styles.form, { backgroundColor: C.background }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <Text style={[styles.label, { color: C.textSecondary }]}>Nome do Mercado *</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.backgroundSecondary, color: C.text, borderColor: C.border }]}
-            placeholder="Ex: Mercadinho do Zé, Empório São João..."
-            placeholderTextColor={C.textMuted}
-            value={storeName}
-            onChangeText={setStoreName}
-            returnKeyType="next"
-            maxLength={80}
-          />
+            {/* Indicador de coordenadas */}
+            {markerCoords && (
+              <View style={[styles.coordRow, { backgroundColor: isDark ? "#1A2A1A" : "#F1F8E9", borderColor: "#A5D6A7" }]}>
+                <Feather name="check-circle" size={13} color="#388E3C" />
+                <Text style={[styles.coordText, { color: isDark ? "#A5D6A7" : "#2E7D32" }]}>
+                  Localização: {markerCoords.lat.toFixed(5)}, {markerCoords.lng.toFixed(5)}
+                </Text>
+              </View>
+            )}
+          </View>
 
-          <Text style={[styles.label, { color: C.textSecondary, marginTop: 12 }]}>Endereço (opcional)</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.backgroundSecondary, color: C.text, borderColor: C.border }]}
-            placeholder="Preenchido automaticamente ao tocar no mapa"
-            placeholderTextColor={C.textMuted}
-            value={storeAddress}
-            onChangeText={setStoreAddress}
-            returnKeyType="done"
-            maxLength={200}
-          />
-
-          {/* Coordinates indicator */}
-          {markerCoords && (
-            <View style={[styles.coordRow, { backgroundColor: isDark ? "#1A2A1A" : "#F1F8E9", borderColor: "#A5D6A7" }]}>
-              <Feather name="check-circle" size={13} color="#388E3C" />
-              <Text style={[styles.coordText, { color: isDark ? "#A5D6A7" : "#2E7D32" }]}>
-                Localização: {markerCoords.lat.toFixed(5)}, {markerCoords.lng.toFixed(5)}
-              </Text>
-            </View>
-          )}
-
+          {/* ─── BOTÃO ENVIAR ─── */}
           <Pressable
             style={[
               styles.submitBtn,
@@ -283,6 +306,7 @@ export default function IndicateStoreScreen() {
             )}
           </Pressable>
 
+          {/* Regras */}
           <View style={[styles.rulesBox, { backgroundColor: C.backgroundSecondary, borderColor: C.border }]}>
             <Text style={[styles.rulesTitle, { color: C.textSecondary }]}>Regras da indicação</Text>
             <Text style={[styles.rulesText, { color: C.textMuted }]}>
@@ -291,12 +315,10 @@ export default function IndicateStoreScreen() {
               • Indicações de locais que não são mercados serão removidas.
             </Text>
           </View>
-
-          <View style={{ height: insets.bottom + 24 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Success Overlay */}
+      {/* Overlay de sucesso */}
       {success && (
         <View style={styles.successOverlay}>
           <Animated.View style={[styles.successCard, { transform: [{ scale: successScale }] }]}>
@@ -336,21 +358,67 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   pointsBadgeText: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#E65100" },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 0,
+  },
   rewardBanner: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
+    marginBottom: 18,
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
   },
   rewardText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
-  mapContainer: { height: 240, marginHorizontal: 16, marginTop: 10, borderRadius: 16, overflow: "hidden" },
-  mapPlaceholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, borderRadius: 16 },
-  map: { flex: 1 },
+  section: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+  },
+  geocodingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 6,
+  },
+  geocodingText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+  },
+  mapInstruction: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 10,
+  },
+  mapContainer: {
+    height: 260,
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1.5,
+    position: "relative",
+  },
+  mapPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
   mapHintBox: {
     position: "absolute",
     bottom: 8,
@@ -364,16 +432,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   mapHint: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  form: { paddingHorizontal: 16, paddingTop: 16 },
-  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-  },
   coordRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -390,13 +448,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginTop: 20,
+    marginBottom: 16,
     paddingVertical: 15,
     borderRadius: 14,
   },
   submitText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
   rulesBox: {
-    marginTop: 16,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,

@@ -1,0 +1,32 @@
+PROMPT DE CORREÇÃO DE UI: INVERSÃO DE LAYOUT E FIX DE SCROLL
+Contexto: No formulário de cadastro/edição da Área Supermercado, existe um erro de rolagem (overflow) que impede o preenchimento total dos dados após a inserção do pino no mapa. Preciso de uma refatoração estrutural no layout.
+
+1. REORGANIZAÇÃO DO LAYOUT (INVERSÃO)
+Posicionamento: Inverta a ordem dos elementos na tela. Os Campos de Preenchimento (Inputs/Formulário) devem ser movidos para a parte superior da página, e o Mapa (Seleção de Localização) deve ser movido para a parte inferior.
+
+Hierarquia: O formulário deve ser o elemento principal de interação inicial, deixando o mapa como a etapa de confirmação geográfica ao final.
+
+2. RESOLUÇÃO DO BUG DE ROLAGEM (SCROLL FIX)
+Overflow Control: Certifique-se de que o container pai do formulário tenha a propriedade overflow-y: auto e uma altura definida (ex: 100vh ou calc(100% - footer_height)), permitindo que o usuário role a tela livremente.
+
+Isolamento do Mapa: O componente do mapa deve ter uma altura fixa (ex: 300px ou 40% da viewport) e não deve impedir a propagação do evento de rolagem da página principal.
+
+Touch Action: Se estiver usando bibliotecas como Leaflet ou Google Maps, garanta que o mapa não capture o foco de rolagem do corpo da página (Body Scroll) involuntariamente.
+
+3. REQUISITOS TÉCNICOS (CÓDIGO)
+Se estiver usando Flexbox, altere a flex-direction: column e reordene os divs.
+
+Se estiver usando CSS Grid, ajuste as grid-template-areas para refletir a nova ordem (Form Top / Map Bottom).
+
+Certifique-se de que o botão de "Confirmar/Salvar" esteja sempre visível ou acessível ao final da rolagem, abaixo do mapa.
+
+🧪 TESTE DE VALIDAÇÃO (O QUE A IA DEVE ENTREGAR)
+Após aplicar as mudanças, valide os seguintes pontos:
+
+Acesso: O usuário consegue visualizar os primeiros campos (Nome, CNPJ, etc.) imediatamente ao abrir a tela.
+
+Rolagem: Ao preencher os campos superiores, o usuário consegue rolar para baixo suavemente até chegar ao mapa.
+
+Interação: O pino pode ser colocado no mapa sem que a tela "trave" ou "pule" de volta para o topo.
+
+Finalização: O botão de envio está clicável e visível após a interação com o mapa.
