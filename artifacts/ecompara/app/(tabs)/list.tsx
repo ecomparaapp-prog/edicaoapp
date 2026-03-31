@@ -2,6 +2,7 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -161,6 +162,14 @@ export default function ShoppingListScreen() {
   const [showScanSheet, setShowScanSheet] = useState(false);
   const [completionResult, setCompletionResult] = useState<{ points: number; status: "full" | "partial" | "fraud" } | null>(null);
 
+  /* — geolocation auto-detection — */
+  const [nearbyStore, setNearbyStore] = useState<Store | null>(null);
+  const [showNearbyConfirm, setShowNearbyConfirm] = useState(false);
+  const geoCheckedRef = useRef(false);
+
+  /* — nudge after 5 min — */
+  const [showNudge, setShowNudge] = useState(false);
+
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 84 : (insets.bottom ? insets.bottom + 60 : 80);
 
@@ -168,10 +177,36 @@ export default function ShoppingListScreen() {
   useEffect(() => {
     if (shopStatus !== "shopping" || shopStartTime === null) return;
     const interval = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - shopStartTime) / 1000));
+      const secs = Math.floor((Date.now() - shopStartTime) / 1000);
+      setElapsedSeconds(secs);
+      if (secs >= 300 && !showNudge) setShowNudge(true);
     }, 1000);
     return () => clearInterval(interval);
-  }, [shopStatus, shopStartTime]);
+  }, [shopStatus, shopStartTime, showNudge]);
+
+  /* auto-detect nearby store on mount when list has items */
+  useEffect(() => {
+    if (shopStatus !== "idle" || shoppingList.length === 0 || geoCheckedRef.current || stores.length === 0) return;
+    geoCheckedRef.current = true;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
+        await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        // Use the pre-computed distance from the stores list to find nearest within 500m
+        const nearby = stores.reduce<Store | null>((best, s) => {
+          if (s.distance <= 0.5) return !best || s.distance < best.distance ? s : best;
+          return best;
+        }, null);
+        if (nearby) {
+          setNearbyStore(nearby);
+          setShowNearbyConfirm(true);
+        }
+      } catch {
+        // silent — permissions denied or unavailable
+      }
+    })();
+  }, [shopStatus, shoppingList.length, stores]);
 
   const checked = shoppingList.filter((i) => i.checked);
   const unchecked = shoppingList.filter((i) => !i.checked);
@@ -231,6 +266,8 @@ export default function ShoppingListScreen() {
     setShopStartTime(null);
     setElapsedSeconds(0);
     setCompletionResult(null);
+    setShowNudge(false);
+    geoCheckedRef.current = false;
   };
 
   const listData = [...unchecked, ...checked];
@@ -281,6 +318,26 @@ export default function ShoppingListScreen() {
             </View>
           </View>
         </LinearGradient>
+      )}
+
+      {/* Nudge — após 5 min de compras */}
+      {shopStatus === "shopping" && showNudge && (
+        <Pressable
+          style={styles.nudgeBanner}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowNudge(false); router.push("/nfce-scanner"); }}
+        >
+          <View style={styles.nudgeIcon}>
+            <MaterialCommunityIcons name="receipt" size={18} color="#E65100" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.nudgeTitle}>Finalizar a lista e enviar cupom fiscal</Text>
+            <Text style={styles.nudgeSub}>para receber seus pontos</Text>
+          </View>
+          <Feather name="arrow-right" size={16} color="#E65100" />
+          <Pressable onPress={(e) => { e.stopPropagation?.(); setShowNudge(false); }} hitSlop={8} style={{ padding: 4 }}>
+            <Feather name="x" size={14} color="#E65100" />
+          </Pressable>
+        </Pressable>
       )}
 
       {/* Search / Add input */}
@@ -529,6 +586,37 @@ export default function ShoppingListScreen() {
         </View>
       </Modal>
 
+      {/* Modal — Supermercado próximo detectado */}
+      <Modal visible={showNearbyConfirm} transparent animationType="fade" onRequestClose={() => setShowNearbyConfirm(false)}>
+        <View style={styles.resultBackdrop}>
+          <View style={[styles.resultCard, { backgroundColor: C.backgroundSecondary }]}>
+            <View style={[styles.resultIcon, { backgroundColor: "#CC000015" }]}>
+              <MaterialCommunityIcons name="map-marker-radius" size={32} color="#CC0000" />
+            </View>
+            <Text style={[styles.resultTitle, { color: C.text }]}>Você está em um mercado!</Text>
+            <Text style={[styles.resultSub, { color: C.textMuted }]}>
+              Detectamos que você está próximo de{"\n"}
+              <Text style={{ fontFamily: "Inter_700Bold", color: C.text }}>{nearbyStore?.name}</Text>
+              {"\n"}Deseja iniciar o timer de compras?
+            </Text>
+            <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
+              <Pressable
+                style={[styles.resultBtn, { backgroundColor: C.backgroundTertiary, flex: 1 }]}
+                onPress={() => { setShowNearbyConfirm(false); setShowStoreSheet(true); }}
+              >
+                <Text style={[styles.resultBtnTxt, { color: C.text }]}>Outro mercado</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.resultBtn, { backgroundColor: "#CC0000", flex: 1 }]}
+                onPress={() => { setShowNearbyConfirm(false); if (nearbyStore) handleStartShopping(nearbyStore); }}
+              >
+                <Text style={[styles.resultBtnTxt, { color: "#fff" }]}>Confirmar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Completion Result Modal */}
       <Modal visible={completionResult !== null} transparent animationType="fade" onRequestClose={handleResetShop}>
         <View style={styles.resultBackdrop}>
@@ -590,7 +678,42 @@ function ItemRow({ item, C, onToggle, onRemove, onQuantityChange }: {
   onRemove: () => void;
   onQuantityChange: (qty: number) => void;
 }) {
+  const [qtyInput, setQtyInput] = useState(String(item.quantity));
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (!editing) setQtyInput(String(item.quantity));
+  }, [item.quantity, editing]);
+
+  const commitQty = () => {
+    setEditing(false);
+    const parsed = parseInt(qtyInput, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed !== item.quantity) {
+      onQuantityChange(parsed);
+    } else {
+      setQtyInput(String(item.quantity));
+    }
+  };
+
+  const handleDecrement = (e: any) => {
+    e.stopPropagation?.();
+    const next = item.quantity - 1;
+    if (next < 1) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setQtyInput(String(next));
+    onQuantityChange(next);
+  };
+
+  const handleIncrement = (e: any) => {
+    e.stopPropagation?.();
+    const next = item.quantity + 1;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setQtyInput(String(next));
+    onQuantityChange(next);
+  };
+
   const total = item.bestPrice != null ? item.bestPrice * item.quantity : null;
+
   return (
     <Pressable
       style={[styles.item, { backgroundColor: C.surfaceElevated, borderColor: item.checked ? C.success : C.border, opacity: item.checked ? 0.65 : 1 }]}
@@ -615,20 +738,23 @@ function ItemRow({ item, C, onToggle, onRemove, onQuantityChange }: {
         )}
       </View>
       <View style={styles.itemActions}>
-        <View style={[styles.qtyRow, { backgroundColor: C.backgroundSecondary, borderColor: C.border }]}>
-          <Pressable
-            onPress={(e) => { e.stopPropagation?.(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onQuantityChange(item.quantity - 1); }}
-            style={styles.qtyBtn}
-            hitSlop={6}
-          >
+        <View style={[styles.qtyRow, { backgroundColor: C.backgroundSecondary, borderColor: editing ? C.primary : C.border }]}>
+          <Pressable onPress={handleDecrement} style={styles.qtyBtn} hitSlop={6}>
             <Feather name="minus" size={13} color={item.quantity <= 1 ? C.textMuted : C.primary} />
           </Pressable>
-          <Text style={[styles.qtyNum, { color: C.text }]}>{item.quantity}</Text>
-          <Pressable
-            onPress={(e) => { e.stopPropagation?.(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onQuantityChange(item.quantity + 1); }}
-            style={styles.qtyBtn}
-            hitSlop={6}
-          >
+          <TextInput
+            style={[styles.qtyInput, { color: C.text }]}
+            value={qtyInput}
+            onChangeText={(v) => { setEditing(true); setQtyInput(v.replace(/[^0-9]/g, "")); }}
+            onFocus={() => { setEditing(true); }}
+            onBlur={commitQty}
+            onSubmitEditing={commitQty}
+            keyboardType="number-pad"
+            selectTextOnFocus
+            maxLength={3}
+            returnKeyType="done"
+          />
+          <Pressable onPress={handleIncrement} style={styles.qtyBtn} hitSlop={6}>
             <Feather name="plus" size={13} color={C.primary} />
           </Pressable>
         </View>
@@ -850,7 +976,31 @@ const styles = StyleSheet.create({
   qtyRow: { flexDirection: "row", alignItems: "center", borderRadius: 9, borderWidth: 1, overflow: "hidden" },
   qtyBtn: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
   qtyNum: { width: 28, textAlign: "center", fontSize: 13, fontFamily: "Inter_700Bold" },
+  qtyInput: { width: 32, textAlign: "center", fontSize: 13, fontFamily: "Inter_700Bold", padding: 0 },
   removeBtn: { padding: 4 },
+  nudgeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#FFF3E0",
+    borderWidth: 1,
+    borderColor: "#E6510030",
+  },
+  nudgeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#E6510015",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nudgeTitle: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#E65100" },
+  nudgeSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#BF360C", marginTop: 1 },
   /* shopping */
   shoppingBanner: { marginHorizontal: 16, marginBottom: 10, borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center" },
   activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#fff", opacity: 0.9 },

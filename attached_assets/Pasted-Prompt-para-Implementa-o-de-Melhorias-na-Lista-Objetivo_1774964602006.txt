@@ -1,0 +1,33 @@
+Prompt para Implementação de Melhorias na Lista
+Objetivo: Refatorar o componente de lista de compras para melhorar a experiência do usuário (UX) e automatizar o início do timer via geolocalização.
+
+1. Refatoração do Contador de Itens:
+
+Agilidade: Otimize a resposta dos botões + e - para que o incremento/decremento seja instantâneo (use estados otimistas no front-end).
+
+Input Editável: Transforme a área central (entre os botões + e -) em um campo de texto editável (<input type="number">). O usuário deve conseguir digitar diretamente a quantidade (ex: "12") sem precisar clicar várias vezes no botão de soma.
+
+2. Inteligência de Geolocalização e Timer:
+
+Detecção Automática: Ao abrir a lista, utilize a API de Geolocalização para identificar o supermercado mais próximo.
+
+Fluxo de Confirmação: O app deve exibir uma mensagem: "Detectamos que você está no [Nome do Supermercado]. Confirmar?".
+
+Se o usuário confirmar (ou se o local estiver correto), inicie o timer automaticamente.
+
+Se não for o local correto, abra um modal/card para que o usuário selecione o supermercado em uma lista de opções próximas.
+
+Condição de Ativação: O timer de compras só deve ser liberado para início quando o usuário estiver dentro do raio de georreferenciamento do estabelecimento.
+
+3. Gatilho de Finalização (Nudging):
+
+Lógica de Tempo: Após 5 minutos do timer iniciado, exiba uma área de sugestão ou notificação discreta no topo da tela com o texto: ''Finalizar a lista e enviar cupom fiscal para receber pontos''.
+
+Ação: Este elemento deve levar o usuário diretamente para o fluxo de encerramento e upload da foto do cupom.
+
+Dicas extras para o seu projeto:
+No Replit: Se você estiver usando o Replit Agent, certifique-se de que ele tem permissão para acessar bibliotecas de geolocalização (como a Geolocation API nativa do navegador ou bibliotecas como react-leaflet se houver mapa).
+
+UX do Input: Para o campo central editável, uma boa prática é garantir que, ao clicar, o texto existente seja selecionado automaticamente para facilitar a substituição rápida do número.
+
+Performance: Para os botões ficarem mais "ágeis", peça para a IA remover qualquer delay de clique (comum em dispositivos móveis) usando CSS touch-action: manipulation;.
