@@ -442,11 +442,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (merchantSession) {
       const reg = merchantSession.registration;
+      // O plano vive em merchantUser (tabela merchant_users), não em registration
+      const plan: "normal" | "plus" = merchantSession.merchantUser?.plan || "normal";
       setRetailerStore({
         id: reg.id?.toString() || "1",
         name: reg.storeName || "Minha Loja",
         address: reg.address || "",
-        plan: (reg.plan as "normal" | "plus") || "normal",
+        plan,
         subscribers: 1240,
         campaignBudget: 500,
         totalViews: 48500,
@@ -477,7 +479,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (!prev) return prev;
           return {
             ...prev,
-            registration: { ...prev.registration, plan: newPlan },
+            plan: newPlan,
+            merchantUser: prev.merchantUser
+              ? { ...prev.merchantUser, plan: newPlan }
+              : prev.merchantUser,
           };
         });
       }
