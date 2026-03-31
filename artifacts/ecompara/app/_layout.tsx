@@ -42,7 +42,6 @@ function RootLayoutNav() {
       <Stack.Screen name="settings/notifications" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="settings/help" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="settings/profile-edit" options={{ presentation: "card", headerShown: false }} />
-      <Stack.Screen name="portal-supermercado" options={{ presentation: "card", headerShown: false }} />
     </Stack>
   );
 }
