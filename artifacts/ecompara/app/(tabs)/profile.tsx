@@ -724,35 +724,41 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
   return (
     <View style={[styles.container, { backgroundColor: C.background }]}>
       {/* Header */}
-      <LinearGradient colors={["#CC0000", "#8B0000"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.retailerHeaderGrad, { paddingTop: topPad + 10 }]}>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-            <Feather name="store" size={14} color="rgba(255,255,255,0.75)" />
-            <Text style={styles.retailerHeaderLabel}>Área Supermercado</Text>
-          </View>
-          <Text style={styles.retailerStoreName} numberOfLines={1}>{retailerStore?.name || "Minha Loja"}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <View style={[styles.planPill, { backgroundColor: retailerStore?.plan === "plus" ? "#FFD700" : "rgba(255,255,255,0.2)" }]}>
-              {retailerStore?.plan === "plus" && <Ionicons name="star" size={9} color="#8B6914" />}
-              <Text style={[styles.planPillText, { color: retailerStore?.plan === "plus" ? "#8B6914" : "rgba(255,255,255,0.9)" }]}>
-                {retailerStore?.plan === "plus" ? "eCompara Plus" : "Plano Normal"}
-              </Text>
-            </View>
-            <View style={[styles.activeDot, { backgroundColor: "#4CAF50" }]} />
-            <Text style={styles.activeLabel}>Loja ativa</Text>
-          </View>
-        </View>
-        <View style={{ alignItems: "flex-end", gap: 6 }}>
+      <LinearGradient colors={["#CC0000", "#8B0000"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.retailerHeaderGrad, { paddingTop: topPad + 12 }]}>
+        {/* Top row: logo + logout */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <Image
+            source={require("@/assets/images/logo-light.png")}
+            style={{ height: 22, width: 110, resizeMode: "contain" }}
+          />
           <TouchableOpacity
-            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.12)" }}
+            style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" }}
             onPress={() => Alert.alert("Sair da Área Supermercado", "Deseja encerrar a sessão do supermercado?", [
               { text: "Cancelar", style: "cancel" },
               { text: "Sair", style: "destructive", onPress: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); onMerchantLogout(); } },
             ])}
           >
-            <Feather name="log-out" size={11} color="rgba(255,255,255,0.7)" />
-            <Text style={{ fontSize: 10, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.7)" }}>Sair</Text>
+            <Feather name="log-out" size={12} color="rgba(255,255,255,0.85)" />
+            <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.85)" }}>Sair</Text>
           </TouchableOpacity>
+        </View>
+        {/* Store info row */}
+        <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.retailerStoreName} numberOfLines={1}>{retailerStore?.name || "Minha Loja"}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
+              <View style={[styles.planPill, { backgroundColor: retailerStore?.plan === "plus" ? "#FFD700" : "rgba(255,255,255,0.2)" }]}>
+                {retailerStore?.plan === "plus" && <Ionicons name="star" size={9} color="#8B6914" />}
+                <Text style={[styles.planPillText, { color: retailerStore?.plan === "plus" ? "#8B6914" : "rgba(255,255,255,0.9)" }]}>
+                  {retailerStore?.plan === "plus" ? "eCompara Plus" : "Plano Normal"}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View style={[styles.activeDot, { backgroundColor: "#4CAF50" }]} />
+                <Text style={styles.activeLabel}>Loja ativa</Text>
+              </View>
+            </View>
+          </View>
         </View>
       </LinearGradient>
 
