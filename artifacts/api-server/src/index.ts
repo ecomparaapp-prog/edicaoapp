@@ -1,5 +1,6 @@
 import app from "./app";
 import { ensureSchema } from "./services/ensureSchema";
+import { seedTestUsers } from "./services/seedTestUsers";
 import { startWeeklyResetCron } from "./services/weeklyReset";
 
 const rawPort = process.env["PORT"];
@@ -18,6 +19,7 @@ if (Number.isNaN(port) || port <= 0) {
 
 async function start() {
   await ensureSchema();
+  await seedTestUsers();
   startWeeklyResetCron();
   app.listen(port, () => {
     console.log(`Server listening on port ${port}`);

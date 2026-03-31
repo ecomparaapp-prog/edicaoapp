@@ -159,6 +159,28 @@ export default function MerchantLoginScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Botões de teste (apenas em desenvolvimento) */}
+        {__DEV__ && (
+          <View style={[styles.devBox, { backgroundColor: C.backgroundSecondary, borderColor: "#F39C12" }]}>
+            <View style={styles.devHeader}>
+              <Feather name="zap" size={12} color="#F39C12" />
+              <Text style={[styles.devLabel, { color: "#F39C12" }]}>ACESSO RÁPIDO — TESTE</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.devBtn, { backgroundColor: "#8B000015", borderColor: "#8B000040" }]}
+              onPress={() => {
+                setEmail("teste@supermercado.com.br");
+                setPassword("super123");
+                setError("");
+              }}
+              activeOpacity={0.7}
+            >
+              <Feather name="store" size={13} color="#8B0000" />
+              <Text style={[styles.devBtnText, { color: "#8B0000" }]}>Login de Teste Supermercado</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Rodapé informativo */}
         <View style={[styles.infoBox, { backgroundColor: C.backgroundSecondary, borderColor: C.border }]}>
           <Feather name="info" size={14} color={C.textMuted} />
@@ -283,5 +305,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     lineHeight: 17,
+  },
+  devBox: {
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    gap: 10,
+  },
+  devHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  devLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.8,
+  },
+  devBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+  },
+  devBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
   },
 });
