@@ -13,6 +13,7 @@ import pointsRouter from "./points";
 import prizesRouter from "./prizes";
 import advertisersRouter from "./advertisers";
 import merchantAuthRouter from "./merchant-auth";
+import biRouter from "./bi";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(pointsRouter);
 router.use(prizesRouter);
 router.use(advertisersRouter);
 router.use(merchantAuthRouter);
+router.use(biRouter);
 
 export default router;

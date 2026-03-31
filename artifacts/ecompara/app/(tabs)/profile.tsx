@@ -26,6 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/colors";
 import { useApp, type User } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
+import RetailerBI from "@/components/RetailerBI";
 
 const MOCK_ALERTS = [
   { id: "a1", type: "price_report", product: "Leite Parmalat 1L", reported: "R$ 4,89", current: "R$ 5,49", reporter: "Ana S.", time: "Há 12 min", urgent: true },
@@ -627,7 +628,7 @@ function WeeklyChart({ C }: { C: any }) {
 }
 
 function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMerchantLogout, retailerStore, merchantSession, editingEan, setEditingEan, editPrice, setEditPrice, handleSavePrice, finalizedLists, processedNFCe }: any) {
-  const [section, setSection] = useState<"dashboard" | "alertas" | "products" | "plan">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "analytics" | "alertas" | "products" | "plan">("dashboard");
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [campaignName, setCampaignName] = useState("");
   const [campaignBudget, setCampaignBudget] = useState("500");
@@ -663,7 +664,8 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
   const healthScore = 74;
 
   const tabs: { id: typeof section; label: string; icon: string; badge?: number }[] = [
-    { id: "dashboard", label: "Dashboard", icon: "bar-chart-2" },
+    { id: "dashboard", label: "Visão Geral", icon: "bar-chart-2" },
+    { id: "analytics", label: "Análise BI", icon: "activity" },
     { id: "alertas", label: "Alertas", icon: "bell", badge: urgentCount },
     { id: "products", label: "Produtos", icon: "package" },
     { id: "plan", label: "Plano", icon: "star" },
@@ -705,7 +707,7 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
       </LinearGradient>
 
       {/* Section Tabs */}
-      <View style={[styles.retailerTabs, { backgroundColor: C.background, borderBottomColor: C.border }]}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.retailerTabs, { backgroundColor: C.background, borderBottomColor: C.border }]} contentContainerStyle={{ flexGrow: 1 }}>
         {tabs.map((t) => (
           <Pressable key={t.id} style={[styles.retailerTab, section === t.id && { borderBottomColor: C.primary }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSection(t.id); }}>
             <View style={{ position: "relative" }}>
@@ -719,7 +721,7 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
             <Text style={[styles.retailerTabText, { color: section === t.id ? C.primary : C.textMuted }]}>{t.label}</Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
 
       {/* Campaign Creation Modal */}
       <Modal visible={showCampaignModal} transparent animationType="slide" onRequestClose={() => setShowCampaignModal(false)}>
@@ -1071,6 +1073,17 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
             </View>
           )}
         </ScrollView>
+      )}
+
+      {/* ANÁLISE BI */}
+      {section === "analytics" && (
+        <RetailerBI
+          C={C}
+          isDark={isDark}
+          merchantSession={merchantSession}
+          bottomPad={bottomPad}
+          onUpgrade={() => setSection("plan")}
+        />
       )}
 
       {/* ALERTAS */}

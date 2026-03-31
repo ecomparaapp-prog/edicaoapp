@@ -1,0 +1,61 @@
+Este é o prompt definitivo para transformar o Portal Supermercado em uma central de Business Intelligence (BI) de alto nível. Ele foi estruturado para que a IA do Replit crie a lógica de captura de dados (Backend), o processamento analítico e a visualização no Dashboard (Frontend), respeitando a hierarquia de planos.
+
+🚀 PROMPT DE IMPLEMENTAÇÃO: MOTOR DE INTELIGÊNCIA E DATA ANALYTICS (BI SUPERMERCADO)
+Objetivo: Implementar um fluxo completo de captura, processamento e exibição de métricas baseadas no comportamento real do usuário. O sistema deve diferenciar as entregas entre o Plano Normal e o Plano Plus, adotando uma interface profissional, coesa e sem emojis.
+
+1. CAMADA DE CAPTURA DE DADOS (DATA PIPELINE)
+Configure gatilhos (triggers) para alimentar as métricas através das seguintes interações:
+
+Geofencing & GPS: Registrar o "Tempo em Loja" (entrada e saída do raio do supermercado) e "Confirmação de Compra" (cruzamento de localização com upload de NFC-e).
+
+Logs de Busca: Registrar produtos buscados na região, conversões via banners e o "Share of Search" (quais produtos foram buscados mas não indicados por falta de preço/estoque validado).
+
+Pós-Venda (NPS): Após a validação de uma nota fiscal, disparar uma pesquisa de satisfação (1 a 10). Se a nota for < 7, abrir subcategorias: Atendimento, Agilidade nos Caixas, Preço, Estrutura, Limpeza, Variedade e Estacionamento.
+
+2. ESTRUTURA DE MÉTRICAS POR PLANO (TIERING)
+NÍVEL 1: PLANO NORMAL (Métricas de Exposição e Conversão)
+Implementar dashboard para:
+
+Indicações Convertidas: Total de vendas originadas por 1) Banners, 2) Card de "Melhor Compra" e 3) Proximidade Geográfica.
+
+Performance de Fluxo: Tempo médio dos usuários dentro do estabelecimento e volume de confirmações de compra.
+
+NÍVEL 2: PLANO PLUS (Inteligência de Mercado e Gestão Estratégica)
+Liberar acesso aos seguintes módulos analíticos:
+
+Comportamento e Fidelidade: Ticket Médio, Frequência de Compra Mensal, Taxa de Churn (Abandono) e Relatório Detalhado de NPS.
+
+Fluxo de Clientes: Gráfico de calor por dia/hora e identificação de picos de movimento para ajuste de equipe.
+
+Tomada de Decisão (Preço): * IP (Índice de Competitividade): Comparativo em tempo real com concorrentes diretos no raio de 10km.
+
+Elasticidade de Preço: Correlação entre alteração de valor e volume de vendas (Identificar se o produto é sensível a preço).
+
+Share de Ofertas: Percentual de vendas vindas de itens promocionais.
+
+Sortimento e Giro (Curva ABC):
+
+Classificação automática de produtos (A: Alta relevância/80% faturamento, B: Intermediário, C: Baixo giro).
+
+Market Share Interno: Participação das marcas dentro de cada categoria (Ex: Qual marca de arroz domina as vendas na loja).
+
+3. FILTROS E GLOBALIZAÇÃO
+Temporalidade: Todos os relatórios devem ser filtráveis por Dia, Semana, Mês e Ano.
+
+Benefício Adicional Plus: Incluir no painel de faturamento do Plano Plus um aviso de crédito: "Benefício Plus Ativo: R$ 100,00 de cashback disponível para o lançamento da sua próxima campanha".
+
+4. REQUISITOS TÉCNICOS E UI/UX
+Interface: Design estilo "SaaS Dashboard", utilizando gráficos de linha, barras e tabelas dinâmicas.
+
+Linguagem: Termos estritamente profissionais (Ex: "Taxa de Conversão", "Análise de Elasticidade", "Indicadores de Lealdade").
+
+Sincronização: Garantir que os dados capturados via App (Área Supermercado) sejam espelhados instantaneamente no Portal Supermercado (Web).
+
+🧪 TESTE DE LÓGICA (VALIDAÇÃO DA IA)
+Solicite que a IA simule o seguinte cálculo para validar a Curva ABC:
+
+Entrada: Lista de 10 produtos com volume de vendas e preço unitário.
+
+Processamento: A IA deve classificar os produtos que somam os primeiros 80% do faturamento como "Categoria A".
+
+Saída: Exibir no dashboard um card sugerindo: "O produto [X] representa 30% do seu faturamento (Categoria A). Considere negociar melhores condições com o fornecedor ou destacar em nova campanha".
