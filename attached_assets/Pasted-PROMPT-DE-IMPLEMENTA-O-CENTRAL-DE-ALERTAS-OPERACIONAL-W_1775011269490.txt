@@ -1,0 +1,41 @@
+PROMPT DE IMPLEMENTAÇÃO: CENTRAL DE ALERTAS OPERACIONAL (WEB & APP)
+Objetivo: Transformar a Central de Alertas do Portal Supermercado (Web) e da Área Supermercado (App) em uma ferramenta funcional. Os cards de alerta devem deixar de ser apenas visuais e passar a ser gatilhos de resolução de problemas, com espelhamento em tempo real.
+
+1. TRANSFORMAÇÃO DOS CARDS (UI ACIONÁVEL)
+Converta os componentes estáticos em elementos interativos seguindo esta lógica de "Clique para Resolver":
+
+Alerta de Divergência de Preço (OCR/Usuário): Ao clicar, abrir interface para "Confirmar Novo Preço" ou "Solicitar Re-validação".
+
+Alerta de NPS Negativo (< 7): Ao clicar, abrir os detalhes do feedback (Ex: Limpeza, Atendimento) com opção de "Marcar como Ciente/Resolvido".
+
+Alerta de Ruptura de Estoque (BI): Ao clicar, direcionar para o gerenciador de produtos para atualizar disponibilidade ou lançar oferta relâmpago.
+
+Alerta de Plano (Expiração/Upgrade): Ao clicar, direcionar para a tela de faturamento ou seleção de planos (Normal/Plus).
+
+2. FLUXO DE RESOLUÇÃO E ESTADO (BACKEND)
+Status de Alerta: Implementar estados para cada card: PENDING (Pendente), IN_PROGRESS (Em andamento) e RESOLVED (Resolvido).
+
+Sincronização Obrigatória: A ação de "Resolver" um alerta via Portal Web deve alterar instantaneamente o status e remover/ocultar o card na Área Supermercado do App (e vice-versa), utilizando a arquitetura de Single Source of Truth.
+
+Log de Ação: Registrar qual usuário (gerente/dono) resolveu o alerta e o timestamp da resolução.
+
+3. INTEGRAÇÃO E ESPELHAMENTO (APP & WEB)
+Notificações Críticas: Alertas de alta prioridade (ex: preço muito abaixo da média da região) devem gerar uma notificação push no App e um destaque visual (border-pulse) no Portal Web.
+
+Interface Coesa: Manter o padrão visual corporativo: tipografia sóbria, logo oficial (sem fundo), sem emojis e uso de ícones funcionais (check, alert-triangle, edit).
+
+Layout Adaptável: No App, o alerta deve abrir uma tela de ação simplificada; na Web, pode abrir um modal lateral (Drawer) para manter o contexto do dashboard.
+
+4. REQUISITOS TÉCNICOS
+Protocolo: Utilizar WebSockets ou uma estratégia de revalidação de cache (ex: TanStack Query ou SWR) para que o espelhamento seja perceptível em menos de 1 segundo.
+
+Consistência de Dados: Garantir que o contador de alertas pendentes no cabeçalho (Badge) seja atualizado globalmente assim que uma ação for concluída.
+
+🧪 CENÁRIOS DE TESTE (VALIDAÇÃO DE SUCESSO)
+Para garantir que a integração está perfeita, a IA deve validar:
+
+Cenário 1: Um alerta de "Preço Defasado" aparece em ambas as plataformas. O lojista clica no card via App, corrige o preço e salva. O card deve desaparecer imediatamente do Portal Web.
+
+Cenário 2: O lojista clica em um alerta de "Feedback de Cliente" no Portal Web, escreve uma resposta interna e marca como "Resolvido". O status deve ser atualizado na lista de "Atividade Recente" do App.
+
+Cenário 3: Um lojista do Plano Plus clica em um alerta de "Baixa Competitividade". O sistema deve abrir o gráfico de IP (Índice de Competitividade) com a sugestão de ajuste de preço baseada nos concorrentes.

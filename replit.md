@@ -243,6 +243,31 @@ Updated root layout:
 - Sets up notification channel + push handler on mount
 - Listens for notification taps → navigates to mission detail screen
 
+### Central de Alertas — Lojista
+
+**Backend (`artifacts/api-server/src/routes/merchant-alerts.ts`):**
+- `GET /api/merchant/alerts` — lista alertas do lojista autenticado (filtros: `status`, `type`, `priority`)
+- `GET /api/merchant/alerts/count` — contagem de alertas pendentes (para badge)
+- `PATCH /api/merchant/alerts/:id/status` — altera status (`PENDING` → `IN_PROGRESS` → `RESOLVED`)
+- `PATCH /api/merchant/alerts/:id/resolve` — resolve com `actionNote`, `newPrice`, `ean`
+- `POST /api/merchant/alerts/seed` — cria alertas demo (idempotente, não duplica)
+
+**WebSocket:** emite `alert:updated`, `alert:resolved` com `{ alert, pendingCount }` para o lojista autenticado.
+
+**Tabela:** `merchant_alerts` — campos: `id`, `merchant_user_id`, `type`, `status`, `priority`, `title`, `description`, `metadata` (JSONB), `resolved_by`, `resolved_at`, `action_note`.
+
+**Portal Web (`portal-supermercado.html` — seção `alertas`):**
+- Lista real via API (sem mocks), cache em `alertsCache[]`
+- Abas: Todos / Pendentes / Resolvidos com contadores
+- Drawer lateral com ação contextual por tipo (preço, ranking, competitividade, plano)
+- Badge de notificação atualiza ao login e via WebSocket em tempo real
+
+**App mobile (`artifacts/ecompara/app/merchant-alerts.tsx`):**
+- Tela dedicada acessível via botão na aba "Alertas" do perfil de lojista
+- Lista filtrada por status, com pull-to-refresh e polling a cada 15s
+- Drawer bottom-sheet animado com ações contextuais (confirmar preço, re-validar, ignorar)
+- Serviço: `artifacts/ecompara/services/alertService.ts`
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.

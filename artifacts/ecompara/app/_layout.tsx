@@ -36,6 +36,7 @@ function RootLayoutNav() {
       <Stack.Screen name="retailer-scanner" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="missions/[placeId]" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="merchant-register" options={{ presentation: "card", headerShown: false }} />
+      <Stack.Screen name="merchant-alerts" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="register-price" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="settings/location" options={{ presentation: "card", headerShown: false }} />
       <Stack.Screen name="settings/privacy" options={{ presentation: "card", headerShown: false }} />

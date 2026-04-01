@@ -1088,55 +1088,48 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
 
       {/* ALERTAS */}
       {section === "alertas" && (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPad, gap: 10 }}>
-          {urgentCount > 0 && (
-            <View style={[styles.alertBanner, { backgroundColor: "#FF572218", borderColor: "#FF5722" }]}>
-              <Feather name="alert-triangle" size={15} color="#FF5722" />
-              <Text style={[styles.alertBannerText, { color: "#FF5722" }]}>
-                {urgentCount} alerta{urgentCount > 1 ? "s" : ""} urgente{urgentCount > 1 ? "s" : ""} — Preços denunciados por clientes
-              </Text>
-            </View>
-          )}
-          <Text style={[styles.sectionLabel, { color: C.textMuted }]}>DENÚNCIAS DE PREÇO</Text>
-          {MOCK_ALERTS.filter((a) => a.type === "price_report" || a.type === "verification").map((alert) => (
-            <View key={alert.id} style={[styles.alertCard, { backgroundColor: C.surfaceElevated, borderColor: alert.urgent ? "#FF572260" : C.border, borderLeftColor: alert.urgent ? "#FF5722" : "#FFC107", borderLeftWidth: 3 }]}>
-              <View style={{ flex: 1, gap: 4 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  {alert.urgent && <View style={[styles.urgentDot, { backgroundColor: "#FF5722" }]} />}
-                  <Text style={[styles.alertProduct, { color: C.text }]}>{alert.product}</Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={[styles.pricePill, { backgroundColor: C.backgroundTertiary }]}>
-                    <Text style={[styles.pricePillLabel, { color: C.textMuted }]}>Atual</Text>
-                    <Text style={[styles.pricePillVal, { color: C.text }]}>{alert.current}</Text>
-                  </View>
-                  <Feather name="arrow-right" size={14} color={C.textMuted} style={{ alignSelf: "center" }} />
-                  <View style={[styles.pricePill, { backgroundColor: "#FF572218" }]}>
-                    <Text style={[styles.pricePillLabel, { color: C.textMuted }]}>Denunciado</Text>
-                    <Text style={[styles.pricePillVal, { color: "#FF5722" }]}>{alert.reported}</Text>
-                  </View>
-                </View>
-                <Text style={[styles.alertMeta, { color: C.textMuted }]}>Por {alert.reporter} · {alert.time}</Text>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPad, gap: 12 }}>
+          <View style={{ backgroundColor: "#0F172A", borderRadius: 14, padding: 20, gap: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
+                <Feather name="bell" size={20} color="#fff" />
               </View>
-              <View style={{ gap: 6, marginLeft: 8 }}>
-                <TouchableOpacity
-                  style={[styles.alertBtn, { backgroundColor: C.success }]}
-                  onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); Alert.alert("Preço atualizado", "O preço foi confirmado e atualizado com sucesso."); }}
-                >
-                  <Feather name="check" size={13} color="#fff" />
-                  <Text style={styles.alertBtnText}>Confirmar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.alertBtn, { backgroundColor: C.backgroundTertiary }]}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Alert.alert("Denúncia rejeitada", "A denúncia foi rejeitada. O preço não será alterado."); }}
-                >
-                  <Feather name="x" size={13} color={C.textMuted} />
-                  <Text style={[styles.alertBtnText, { color: C.textMuted }]}>Rejeitar</Text>
-                </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Central de Alertas</Text>
+                <Text style={{ fontSize: 12, color: "#94A3B8", marginTop: 1 }}>Gerencie notificacoes e pendencias</Text>
               </View>
             </View>
-          ))}
-
+            <Text style={{ fontSize: 13, color: "#CBD5E1", lineHeight: 19 }}>
+              Veja e resolva alertas de preco, ranking, competitividade e mais — tudo em um so lugar.
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: "#CC0000", borderRadius: 10, padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push("/merchant-alerts"); }}
+            >
+              <Feather name="bell" size={15} color="#fff" />
+              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>Abrir Central de Alertas</Text>
+              <Feather name="arrow-right" size={14} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          <View style={{ backgroundColor: C.surfaceElevated, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, gap: 12 }}>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: C.textMuted, textTransform: "uppercase", letterSpacing: 1 }}>Tipos de Alertas</Text>
+            {[
+              { icon: "alert-triangle", color: "#CC0000", bg: "#FEF2F2", label: "Divergencia de preco", desc: "Precos reportados por usuarios" },
+              { icon: "trending-down", color: "#D97706", bg: "#FFF7ED", label: "Queda no ranking", desc: "Perda de posicao competitiva" },
+              { icon: "bar-chart-2", color: "#D97706", bg: "#FFF7ED", label: "Competitividade", desc: "Analise frente a concorrencia" },
+              { icon: "check-circle", color: "#16A34A", bg: "#F0FDF4", label: "NF-e validada", desc: "Notas fiscais processadas" },
+            ].map((item, i) => (
+              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: item.bg, alignItems: "center", justifyContent: "center" }}>
+                  <Feather name={item.icon as any} size={15} color={item.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: C.text }}>{item.label}</Text>
+                  <Text style={{ fontSize: 11, color: C.textMuted }}>{item.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       )}
 

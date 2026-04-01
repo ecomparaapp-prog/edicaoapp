@@ -56,7 +56,10 @@ export type WSEventType =
   | "csv:import:error"
   | "plan:changed"
   | "session:invalidated"
-  | "bi:refresh";
+  | "bi:refresh"
+  | "alert:updated"
+  | "alert:resolved"
+  | "alert:created";
 
 export interface WSEvent {
   type: WSEventType;
