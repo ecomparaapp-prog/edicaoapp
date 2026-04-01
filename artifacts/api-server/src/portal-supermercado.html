@@ -1162,7 +1162,7 @@ function renderDashboard(bi) {
     </div>
   </div>
 
-  ${isPlus && loyalty.avgTicket ? `
+  ${isPlus ? `
   <!-- KPIs Plus — Metricas de Publico -->
   <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
@@ -1248,8 +1248,9 @@ function renderDashboard(bi) {
 
     <!-- NPS Breakdown (Plus) ou Atividade Recente (Normal) -->
     <div class="card">
-      ${isPlus && loyalty.npsBreakdown ? `
+      ${isPlus ? `
       <div class="card-title">NPS Detalhado</div>
+      ${!(loyalty.npsBreakdown||[]).length ? `<div style="padding:20px 0;text-align:center;color:var(--slate);font-size:12px">Coletando avaliacoes… os dados aparecerao aqui em breve.</div>` : ''}
       ${(loyalty.npsBreakdown||[]).map(item => {
         const pct = item.score;
         const color = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
