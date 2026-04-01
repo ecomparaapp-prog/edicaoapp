@@ -1144,6 +1144,18 @@ function renderDashboard(bi) {
     </div>
   </div>
 
+  <!-- Insight — Metricas de Exposicao -->
+  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#1E40AF;line-height:1.6">
+    <strong>Insight:</strong>
+    ${conversionRate >= 10
+      ? `Sua taxa de conversao de <strong>${fmt(conversionRate,1)}%</strong> esta acima da media do setor (~8%) — ${fmt(Math.round(conversionRate))} em cada 100 visitantes chegou ate sua loja. Continue investindo em banners e atualizacao de precos para manter esse ritmo.`
+      : conversionRate >= 5
+      ? `Sua taxa de conversao e de <strong>${fmt(conversionRate,1)}%</strong>. Ha espaco para crescer: lojas que manteem precos atualizados e banners ativos chegam a 10%+. Tente publicar uma Oferta Relampago nos horarios de pico.`
+      : `Sua taxa de conversao esta em <strong>${fmt(conversionRate,1)}%</strong>. Para melhorar, atualize os precos dos produtos mais buscados e ative um banner de oferta — clientes que veem precos competitivos tem 3x mais chance de visitar sua loja.`
+    }
+    ${flow.peakDay ? ` Seu horario de maior movimento e <strong>${flow.peakDay} as ${flow.peakHour||'—'}h</strong> — garanta que seus precos estejam atualizados antes desse horario.` : ''}
+  </div>
+
   ${isPlus && loyalty.avgTicket ? `
   <!-- KPIs Plus — Metricas de Publico -->
   <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate);margin-bottom:10px;margin-top:4px">Metricas de Publico — Plano Plus</div>
@@ -1173,6 +1185,21 @@ function renderDashboard(bi) {
       ${delta(loyalty.prevChurnRate, loyalty.churnRate)}
     </div>
   </div>
+  <!-- Insight — Metricas de Publico Plus -->
+  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#1E40AF;line-height:1.6">
+    <strong>Insight:</strong>
+    ${loyalty.avgTicket
+      ? `Seu ticket medio de <strong>R$ ${fmt(loyalty.avgTicket)}</strong> mostra o quanto cada cliente gasta por visita. Para aumentar esse valor, experimente destacar combos de produtos relacionados — por exemplo, arroz + feijao + oleo — no banner da loja.`
+      : 'Assim que houver compras confirmadas pelo app, o ticket medio vai aparecer aqui.'
+    }
+    ${loyalty.churnRate > 15
+      ? ` Atencao: o churn de <strong>${fmt(loyalty.churnRate,1)}%</strong> indica que alguns clientes pararam de visitar sua loja. Considere ativar uma Oferta Relampago para reconquista-los.`
+      : loyalty.churnRate <= 15 && loyalty.churnRate > 0
+      ? ` Seu churn de <strong>${fmt(loyalty.churnRate,1)}%</strong> esta sob controle — continue atualizando precos regularmente para manter a fidelidade dos clientes.`
+      : ''
+    }
+    ${loyalty.purchaseFrequency ? ` Frequencia de compra de <strong>${fmt(loyalty.purchaseFrequency,1)}x por semana</strong> — clientes frequentes sao os mais valiosos: priorize manter precos competitivos nos itens basicos que eles compram toda semana.` : ''}
+  </div>
   ` : ''}
 
   <div class="grid-3-1">
@@ -1197,6 +1224,14 @@ function renderDashboard(bi) {
         <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Total Conversoes</div><div style="font-size:18px;font-weight:700;color:var(--navy)">${fmt(totalConv)}</div></div>
         <div><div style="font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Taxa de Conversao</div><div style="font-size:18px;font-weight:700;color:var(--red)">${fmt(conversionRate,1)}%</div></div>
       </div>
+      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:12px;color:#1E40AF;line-height:1.6">
+        <strong>Insight:</strong>
+        ${(() => {
+          const max = Math.max(conv.fromBanners||0, conv.fromBestDeal||0, conv.fromProximity||0, 1);
+          const top = conv.fromBanners >= conv.fromBestDeal && conv.fromBanners >= conv.fromProximity ? `Banner (${fmt(conv.fromBanners)} visitas)` : conv.fromBestDeal >= conv.fromProximity ? `Melhor Compra (${fmt(conv.fromBestDeal)} visitas)` : `Proximidade (${fmt(conv.fromProximity)} visitas)`;
+          return `O canal que mais trouxe clientes foi <strong>${top}</strong>. ${conv.fromBanners > conv.fromBestDeal ? 'Isso confirma que seus banners estao sendo eficientes — mantenha a frequencia de publicacao.' : 'Clientes que buscam o melhor preco ja chegam decididos a comprar — certifique-se de que seus precos estejam competitivos nesses momentos.'} Com <strong>${fmt(totalConv)} conversoes</strong> no periodo, cada ponto percentual de aumento na taxa representa mais clientes na loja.`;
+        })()}
+      </div>
     </div>
 
     <!-- NPS Breakdown (Plus) ou Atividade Recente (Normal) -->
@@ -1208,12 +1243,22 @@ function renderDashboard(bi) {
         const color = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
         return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text2)">${item.label}</span><span style="font-weight:700;color:${color}">${item.score}</span></div><div class="csv-progress-wrap" style="margin:0"><div class="csv-progress-bar" style="width:${pct}%;background:${color}"></div></div></div>`;
       }).join('')}
+      ${(() => {
+        const items = loyalty.npsBreakdown || [];
+        if (!items.length) return '';
+        const worst = items.reduce((a,b) => a.score < b.score ? a : b);
+        const best = items.reduce((a,b) => a.score > b.score ? a : b);
+        return `<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-top:14px;font-size:11px;color:#1E40AF;line-height:1.6"><strong>Insight:</strong> Seu ponto mais forte e <strong>${best.label}</strong> (${best.score} pts) — destaque isso nos materiais da loja. Ja <strong>${worst.label}</strong> (${worst.score} pts) e a area que mais precisa de atencao: pequenas melhorias aqui podem aumentar muito a nota geral da loja no app.</div>`;
+      })()}
       ` : `
       <div class="card-title">Atividade Recente</div>
       <div class="activity-item"><div class="activity-dot" style="background:#2196F3"></div><div class="activity-text"><strong>${fmt(Math.round((flow.totalVisits||0)*0.12))} novos usuarios</strong> viram sua loja</div><div class="activity-time">Hoje</div></div>
       <div class="activity-item"><div class="activity-dot" style="background:#9C27B0"></div><div class="activity-text"><strong>${fmt(conv.fromBanners||0)} cliques</strong> no banner</div><div class="activity-time">Hoje</div></div>
       <div class="activity-item"><div class="activity-dot" style="background:#4CAF50"></div><div class="activity-text"><strong>${fmt(purchaseConf)} compras</strong> confirmadas</div><div class="activity-time">${periodLabels[biPeriod]||''}</div></div>
       <div class="activity-item"><div class="activity-dot" style="background:#FF5722"></div><div class="activity-text">Pico de fluxo: <strong>${flow.peakDay||'—'} as ${flow.peakHour||'—'}h</strong></div><div class="activity-time">Padrao</div></div>
+      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-top:14px;font-size:11px;color:#1E40AF;line-height:1.6">
+        <strong>Insight:</strong> Voce teve <strong>${fmt(purchaseConf)} compras confirmadas</strong> no periodo — cada confirmacao e um cliente que saiu satisfeito e ajuda a melhorar sua reputacao no app. Para ver analises mais detalhadas de publico e NPS, considere o Plano Plus.
+      </div>
       `}
     </div>
   </div>
@@ -1240,6 +1285,15 @@ function renderDashboard(bi) {
           </div>`).join('')}
         </div>
       </div>
+      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:11px;color:#1E40AF;line-height:1.6">
+        <strong>Insight:</strong>
+        ${d.competition.ip <= 0.95
+          ? `Seu IP geral de <strong>${fmt(d.competition.ip,2)}</strong> esta abaixo de 1 — seus precos estao mais baixos que a concorrencia. Isso atrai clientes comparadores, mas monitore sua margem para que essa estrategia seja sustentavel.`
+          : d.competition.ip <= 1.05
+          ? `Seu IP geral de <strong>${fmt(d.competition.ip,2)}</strong> esta alinhado ao mercado — seus precos sao justos e competitivos. Para se destacar, considere ofertas pontuais nas categorias com IP acima de 1.`
+          : `Seu IP geral de <strong>${fmt(d.competition.ip,2)}</strong> indica precos acima da media regional. ${(d.competition.categories||[]).filter(c=>c.ip>1.05).length ? `Ajuste precos nas categorias <strong>${(d.competition.categories||[]).filter(c=>c.ip>1.05).map(c=>c.name).join(', ')}</strong> para nao perder clientes para concorrentes.` : 'Revise os itens mais comparados para recuperar competitividade.'}`
+        }
+      </div>
     </div>
     <div class="card">
       <div class="card-title">Elasticidade de Preco & Share de Ofertas</div>
@@ -1255,6 +1309,17 @@ function renderDashboard(bi) {
         </div>
         <div style="font-size:11px;color:var(--slate)">Elasticidade: <strong>${p.elasticity}</strong> | Impacto na receita: <strong>+${p.revenueImpact}%</strong></div>
       </div>`).join('')}
+      ${(() => {
+        const prods = d.elasticity?.products || [];
+        if (!prods.length) return '';
+        const highImpact = prods.reduce((a,b) => (b.revenueImpact||0) > (a.revenueImpact||0) ? b : a);
+        const highSens = prods.filter(p => p.sensitivity === 'Alta');
+        return `<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:11px;color:#1E40AF;line-height:1.6">
+          <strong>Insight:</strong> O produto <strong>${highImpact.name}</strong> tem o maior impacto potencial de receita (+${highImpact.revenueImpact}%) — uma reducao estrategica de preco nele pode gerar um retorno imediato de clientes.
+          ${highSens.length ? ` Produtos com elasticidade <strong>Alta</strong> (${highSens.map(p=>p.name).join(', ')}) reagem muito a variacoes de preco: qualquer aumento acima da concorrencia pode afastar compradores rapidamente.` : ''}
+          ${(d.elasticity?.shareOfPromo||0) >= 30 ? ' Voce ja tem um bom share de ofertas — priorize qualidade sobre quantidade para nao desvalorizar sua margem.' : (d.elasticity?.shareOfPromo||0) < 15 ? ' Seu share de ofertas esta baixo. Ative mais promocoes nos itens de alta elasticidade para atrair novos clientes.' : ''}
+        </div>`;
+      })()}
     </div>
   </div>
   ` : ''}
@@ -1326,6 +1391,9 @@ function renderDashboard(bi) {
         <div style="flex:1"><div class="product-name">Oleo Liza 900ml</div><div class="product-ean">EAN 7891108116007</div></div>
         <div style="text-align:right"><div class="product-views">64</div><div class="product-views-label">visualizacoes</div></div>
       </div>
+      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-top:14px;font-size:11px;color:#1E40AF;line-height:1.6">
+        <strong>Insight:</strong> Estes sao os produtos que os clientes mais pesquisam no seu perfil. <strong>Leite Parmalat 1L</strong> lidera com 284 visualizacoes — certifique-se de que ele sempre esteja com preco atualizado e em estoque, pois e ele que atrai o cliente para dentro da loja. Produtos vitrine como esses criam a primeira impressao do comparador de precos.
+      </div>
     </div>
 
     <!-- Relatorio Plus -->
@@ -1339,8 +1407,8 @@ function renderDashboard(bi) {
           <div class="chart-row" style="margin-bottom:6px"><div class="chart-label" style="font-size:11px;color:var(--text2)">Segunda</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:70%;background:var(--navy)"></div></div><div class="chart-val" style="font-size:11px">+22%</div></div>
           <div class="chart-row"><div class="chart-label" style="font-size:11px;color:var(--text2)">Domingo</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:45%;background:var(--slate3)"></div></div><div class="chart-val" style="font-size:11px">-8%</div></div>
         </div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.6">
-          <strong style="color:var(--navy)">Oportunidade identificada:</strong> Sua concorrencia registra pico de trafego aos sabados (+34%) e segundas-feiras (+22%). Ajuste precos estrategicos nesses dias para capturar maior participacao de mercado. Evite reducoes aos domingos, quando o volume cai 8%.
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.6">
+          <strong>Insight:</strong> Sua concorrencia registra pico de trafego aos <strong>sabados (+34%)</strong> e <strong>segundas-feiras (+22%)</strong>. Nesses dias os clientes estao mais propensos a comparar precos — tenha suas ofertas ativas e precos atualizados antes das 8h da manha. Aos domingos o volume cai 8%, entao evite reducoes de preco que nao serao aproveitadas pelo volume de trafego.
         </div>
       </div>
       ` : `
