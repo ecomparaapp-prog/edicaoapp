@@ -633,7 +633,10 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [campaignName, setCampaignName] = useState("");
   const [campaignBudget, setCampaignBudget] = useState("500");
-  const [campaignType, setCampaignType] = useState<"banner" | "oferta" | "destaque">("banner");
+  const [campaignType, setCampaignType] = useState<"banner_home" | "search_boost" | "flash_deal">("search_boost");
+  const [campaignEans, setCampaignEans] = useState<string[]>(["", "", "", "", "", ""]);
+  const [campaignSingleEan, setCampaignSingleEan] = useState("");
+  const [campaignPromoPrice, setCampaignPromoPrice] = useState("");
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [campStats, setCampStats] = useState<any>(null);
   const [campCreating, setCampCreating] = useState(false);
@@ -675,21 +678,35 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
   const handleCreateCampaign = async () => {
     if (!campaignName.trim()) { Alert.alert("Campo obrigatório", "Informe o nome da campanha."); return; }
     if (!merchantSession?.token) return;
+    if (campaignType === "banner_home") {
+      const filled = campaignEans.filter(e => /^\d{8,14}$/.test(e.trim()));
+      if (filled.length !== 6) { Alert.alert("EANs incompletos", "Preencha os 6 EANs do banner (somente numeros, 8-14 digitos)."); return; }
+    } else {
+      if (!campaignSingleEan.trim() || !/^\d{8,14}$/.test(campaignSingleEan.trim())) { Alert.alert("EAN obrigatorio", "Informe o EAN do produto (somente numeros, 8-14 digitos)."); return; }
+      if (campaignType === "flash_deal" && !campaignPromoPrice.trim()) { Alert.alert("Preco obrigatorio", "Informe o preco promocional para Alerta Flash."); return; }
+    }
     setCampCreating(true);
     try {
       const { getApiBaseUrl } = await import("@/lib/apiBaseUrl");
       const base = getApiBaseUrl();
+      const payload: any = { name: campaignName.trim(), campaignType, budget: campaignBudget };
+      if (campaignType === "banner_home") {
+        payload.eanList = campaignEans.map(e => e.trim());
+      } else {
+        payload.productEan = campaignSingleEan.trim();
+        if (campaignType === "flash_deal") payload.promotionalPrice = campaignPromoPrice.trim();
+      }
       const r = await fetch(`${base}/campaigns`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${merchantSession.token}` },
-        body: JSON.stringify({ name: campaignName.trim(), campaignType, budget: campaignBudget }),
+        body: JSON.stringify(payload),
       });
       const data = await r.json();
       if (!r.ok) {
         if (data.error === "limite_plano") {
           Alert.alert("Limite do Plano", data.message);
         } else {
-          Alert.alert("Erro", data.error || "Não foi possível criar a campanha.");
+          Alert.alert("Erro", data.message || data.error || "Nao foi possivel criar a campanha.");
         }
         return;
       }
@@ -697,10 +714,13 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
       setShowCampaignModal(false);
       setCampaignName("");
       setCampaignBudget("500");
-      setCampaignType("banner");
+      setCampaignType("search_boost");
+      setCampaignEans(["", "", "", "", "", ""]);
+      setCampaignSingleEan("");
+      setCampaignPromoPrice("");
       await fetchCampaigns();
-      Alert.alert("Campanha criada!", `"${data.campaign.name}" está ativa agora.`);
-    } catch { Alert.alert("Erro", "Falha de conexão."); }
+      Alert.alert("Campanha publicada!", `"${data.campaign.name}" esta ativa agora.`);
+    } catch { Alert.alert("Erro", "Falha de conexao."); }
     finally { setCampCreating(false); }
   };
 
@@ -782,9 +802,12 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
       {/* Campaign Creation Modal */}
       <Modal visible={showCampaignModal} transparent animationType="slide" onRequestClose={() => setShowCampaignModal(false)}>
         <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }} onPress={() => setShowCampaignModal(false)} />
-        <View style={{ backgroundColor: C.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36, gap: 14, position: "absolute", bottom: 0, left: 0, right: 0 }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: "center", marginBottom: 4 }} />
-          <Text style={{ fontSize: 18, fontFamily: "Inter_700Bold", color: C.text }}>Nova Campanha</Text>
+        <View style={{ backgroundColor: C.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "90%" }}>
+          <View style={{ padding: 20, paddingBottom: 4 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: "center", marginBottom: 12 }} />
+            <Text style={{ fontSize: 18, fontFamily: "Inter_700Bold", color: C.text }}>Nova Campanha</Text>
+          </View>
+          <ScrollView style={{ paddingHorizontal: 20 }} contentContainerStyle={{ gap: 14, paddingBottom: 36 }} showsVerticalScrollIndicator={false}>
 
           <View style={{ gap: 6 }}>
             <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>NOME DA CAMPANHA</Text>
@@ -798,18 +821,75 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
           </View>
 
           <View style={{ gap: 6 }}>
-            <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>TIPO DE CAMPANHA</Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {(["banner", "oferta", "destaque"] as const).map((t) => (
-                <Pressable key={t} onPress={() => setCampaignType(t)} style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center", backgroundColor: campaignType === t ? C.primary : C.surfaceElevated, borderWidth: 1, borderColor: campaignType === t ? C.primary : C.border }}>
-                  <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: campaignType === t ? "#fff" : C.textMuted, textTransform: "capitalize" }}>{t}</Text>
+            <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>FORMATO DA CAMPANHA</Text>
+            <View style={{ gap: 8 }}>
+              {([
+                { key: "search_boost", label: "Topo de Busca", desc: "1º resultado nas buscas. Etiqueta Patrocinado." },
+                { key: "flash_deal",   label: "Alerta Flash",   desc: "Pin no mapa + push. Preco imbativel. (Plus)" },
+                { key: "banner_home",  label: "Banner de Ofertas", desc: "Carrossel com 6 produtos na tela inicial. (Plus)" },
+              ] as const).map((t) => (
+                <Pressable key={t.key} onPress={() => setCampaignType(t.key)} style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, backgroundColor: campaignType === t.key ? (isDark ? "#3a0000" : "#fff5f5") : C.surfaceElevated, borderWidth: 1.5, borderColor: campaignType === t.key ? C.primary : C.border }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: campaignType === t.key ? C.primary : C.border }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: campaignType === t.key ? C.primary : C.text }}>{t.label}</Text>
+                    <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted, marginTop: 1 }}>{t.desc}</Text>
+                  </View>
                 </Pressable>
               ))}
             </View>
           </View>
 
+          {campaignType === "banner_home" ? (
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>6 PRODUTOS DO BANNER (EAN)</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {campaignEans.map((ean, idx) => (
+                  <TextInput
+                    key={idx}
+                    value={ean}
+                    onChangeText={(v) => { const arr = [...campaignEans]; arr[idx] = v; setCampaignEans(arr); }}
+                    placeholder={`EAN ${idx + 1}`}
+                    placeholderTextColor={C.textMuted}
+                    keyboardType="numeric"
+                    maxLength={14}
+                    style={{ width: "47%", backgroundColor: C.surfaceElevated, borderRadius: 10, padding: 11, color: C.text, fontFamily: "Inter_400Regular", fontSize: 13, borderWidth: 1, borderColor: ean && /^\d{8,14}$/.test(ean) ? "#16a34a" : C.border }}
+                  />
+                ))}
+              </View>
+              <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted }}>{campaignEans.filter(e => /^\d{8,14}$/.test(e)).length}/6 EANs validos</Text>
+            </View>
+          ) : (
+            <View style={{ gap: 10 }}>
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>EAN DO PRODUTO *</Text>
+                <TextInput
+                  value={campaignSingleEan}
+                  onChangeText={setCampaignSingleEan}
+                  placeholder="7891234567890"
+                  placeholderTextColor={C.textMuted}
+                  keyboardType="numeric"
+                  maxLength={14}
+                  style={{ backgroundColor: C.surfaceElevated, borderRadius: 12, padding: 14, color: C.text, fontFamily: "Inter_400Regular", fontSize: 14, borderWidth: 1, borderColor: C.border }}
+                />
+              </View>
+              {campaignType === "flash_deal" && (
+                <View style={{ gap: 6 }}>
+                  <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>PRECO PROMOCIONAL (R$) *</Text>
+                  <TextInput
+                    value={campaignPromoPrice}
+                    onChangeText={setCampaignPromoPrice}
+                    placeholder="0,00"
+                    placeholderTextColor={C.textMuted}
+                    keyboardType="decimal-pad"
+                    style={{ backgroundColor: C.surfaceElevated, borderRadius: 12, padding: 14, color: C.text, fontFamily: "Inter_400Regular", fontSize: 14, borderWidth: 1, borderColor: C.border }}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+
           <View style={{ gap: 6 }}>
-            <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>ORÇAMENTO (R$)</Text>
+            <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.textMuted }}>ORCAMENTO (R$)</Text>
             <TextInput
               value={campaignBudget}
               onChangeText={setCampaignBudget}
@@ -822,8 +902,9 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
 
           <Pressable onPress={handleCreateCampaign} disabled={campCreating} style={{ backgroundColor: campCreating ? "#aaa" : C.primary, borderRadius: 14, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 4 }}>
             <Feather name="zap" size={16} color="#fff" />
-            <Text style={{ color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 }}>{campCreating ? "Criando..." : "Criar Campanha"}</Text>
+            <Text style={{ color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 }}>{campCreating ? "Publicando..." : "Publicar Campanha"}</Text>
           </Pressable>
+          </ScrollView>
         </View>
       </Modal>
 

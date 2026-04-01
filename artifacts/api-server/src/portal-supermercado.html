@@ -2643,7 +2643,7 @@ function updateCampBadge(campaigns) {
   badge.style.display = count > 0 ? 'inline-block' : 'none';
 }
 
-const CAMP_TYPE_LABELS = { banner: 'Banner', oferta: 'Oferta Flash', destaque: 'Destaque' };
+const CAMP_TYPE_LABELS = { banner_home: 'Banner de Ofertas', search_boost: 'Topo de Busca', flash_deal: 'Alerta Flash' };
 const CAMP_STATUS_LABELS = { active: 'Ativa', paused: 'Pausada', ended: 'Encerrada' };
 
 function renderCampaigns(campaigns, stats) {
@@ -2797,7 +2797,7 @@ function selectCampType(type) {
     c.classList.toggle('selected', c.dataset.type === type);
   });
   document.getElementById('campFieldsBannerHome').style.display = type === 'banner_home' ? 'block' : 'none';
-  document.getElementById('campFieldsSingle').style.display = type === 'search_boost' ? 'block' : 'none';
+  document.getElementById('campFieldsSingle').style.display = (type === 'search_boost' || type === 'flash_deal') ? 'block' : 'none';
   document.getElementById('campFieldsFlash').style.display = type === 'flash_deal' ? 'block' : 'none';
   document.getElementById('campExposure').style.display = 'block';
   document.getElementById('campSubmitBtn').disabled = false;
@@ -3009,7 +3009,7 @@ init();
   <div id="drawerBody" class="drawer-body"></div>
   <div id="drawerFooter" class="drawer-footer"></div>
 </div>
-<!-- ═══ Campaign Modal ═══ -->
+<!-- ═══ Campaign Builder Modal ═══ -->
 <div id="campModal" class="modal-overlay" onclick="if(event.target===this)closeCampModal()">
   <div class="modal-box">
     <div class="modal-header">
@@ -3019,64 +3019,133 @@ init();
       </button>
     </div>
     <div class="modal-body">
-      <form id="campForm" onsubmit="event.preventDefault()">
-        <div id="campModalErr" class="modal-error"></div>
-        <div class="modal-field">
-          <label class="modal-label" for="campName">Nome da Campanha *</label>
-          <input class="modal-input" id="campName" type="text" placeholder="Ex: Ofertas de Final de Semana" maxlength="80" required>
+      <div class="camp-modal-layout">
+        <!-- ── Left: Form ── -->
+        <div class="camp-modal-form">
+          <div id="campModalErr" class="modal-error"></div>
+          <!-- Campaign name -->
+          <div class="modal-field">
+            <label class="modal-label" for="campName">Nome da Campanha <span style="color:var(--red)">*</span></label>
+            <input class="modal-input" id="campName" type="text" placeholder="Ex: Ofertas de Final de Semana" maxlength="80" oninput="updateCampPreview()">
+          </div>
+          <!-- Type cards -->
+          <div class="camp-section">Formato da Campanha</div>
+          <div class="camp-type-grid">
+            <div class="camp-type-card" data-type="banner_home" onclick="selectCampType('banner_home')">
+              <div class="camp-type-icon" style="background:#e8f4fd">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0c5fa8" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              </div>
+              <div class="camp-type-name">Banner de Ofertas</div>
+              <div class="camp-type-desc">Topo da tela inicial. Carrossel com 6 produtos em destaque.</div>
+              <div class="camp-plan-badge">Plus</div>
+            </div>
+            <div class="camp-type-card" data-type="search_boost" onclick="selectCampType('search_boost')">
+              <div class="camp-type-icon" style="background:#f0fff4">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </div>
+              <div class="camp-type-name">Topo de Busca</div>
+              <div class="camp-type-desc">Primeiro resultado nas buscas por categoria. Etiqueta "Patrocinado".</div>
+            </div>
+            <div class="camp-type-card" data-type="flash_deal" onclick="selectCampType('flash_deal')">
+              <div class="camp-type-icon" style="background:#fff5f5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cc0000" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
+              <div class="camp-type-name">Alerta Flash</div>
+              <div class="camp-type-desc">Pin no mapa e notificacao push. Preco imbativel com contagem regressiva.</div>
+              <div class="camp-plan-badge">Plus</div>
+            </div>
+          </div>
+          <!-- Banner Home: 6 EAN grid -->
+          <div id="campFieldsBannerHome" style="display:none">
+            <div class="camp-section">6 Produtos do Banner <span style="color:var(--red)">*</span></div>
+            <div class="camp-ean-grid">
+              <div class="camp-ean-item"><span class="camp-ean-num">1</span><input class="camp-ean-inp" id="campEan1" type="text" placeholder="EAN" maxlength="14" oninput="onEanInput(1)"><span class="camp-ean-status" id="campEanSt1"></span></div>
+              <div class="camp-ean-item"><span class="camp-ean-num">2</span><input class="camp-ean-inp" id="campEan2" type="text" placeholder="EAN" maxlength="14" oninput="onEanInput(2)"><span class="camp-ean-status" id="campEanSt2"></span></div>
+              <div class="camp-ean-item"><span class="camp-ean-num">3</span><input class="camp-ean-inp" id="campEan3" type="text" placeholder="EAN" maxlength="14" oninput="onEanInput(3)"><span class="camp-ean-status" id="campEanSt3"></span></div>
+              <div class="camp-ean-item"><span class="camp-ean-num">4</span><input class="camp-ean-inp" id="campEan4" type="text" placeholder="EAN" maxlength="14" oninput="onEanInput(4)"><span class="camp-ean-status" id="campEanSt4"></span></div>
+              <div class="camp-ean-item"><span class="camp-ean-num">5</span><input class="camp-ean-inp" id="campEan5" type="text" placeholder="EAN" maxlength="14" oninput="onEanInput(5)"><span class="camp-ean-status" id="campEanSt5"></span></div>
+              <div class="camp-ean-item"><span class="camp-ean-num">6</span><input class="camp-ean-inp" id="campEan6" type="text" placeholder="EAN" maxlength="14" oninput="onEanInput(6)"><span class="camp-ean-status" id="campEanSt6"></span></div>
+            </div>
+            <div id="campEanCounter" class="camp-ean-counter"><span>0</span> de 6 EANs preenchidos</div>
+          </div>
+          <!-- Single EAN: search_boost + flash_deal -->
+          <div id="campFieldsSingle" style="display:none">
+            <div class="camp-section">Produto <span style="color:var(--red)">*</span></div>
+            <div class="modal-row">
+              <div class="modal-field" style="margin-bottom:0">
+                <label class="modal-label" for="campSingleEan">EAN do Produto *</label>
+                <input class="modal-input" id="campSingleEan" type="text" placeholder="7891234567890" maxlength="14" oninput="updateCampPreview()">
+              </div>
+              <div class="modal-field" style="margin-bottom:0">
+                <label class="modal-label" for="campProductName">Nome do Produto</label>
+                <input class="modal-input" id="campProductName" type="text" placeholder="Nome do produto" oninput="updateCampPreview()">
+              </div>
+            </div>
+          </div>
+          <!-- Flash Deal: price -->
+          <div id="campFieldsFlash" style="display:none">
+            <div class="camp-section">Preco Promocional <span style="color:var(--red)">*</span></div>
+            <div class="modal-field" style="margin-bottom:0">
+              <label class="modal-label" for="campPrice">Preco Promocional (R$)</label>
+              <input class="modal-input" id="campPrice" type="number" step="0.01" min="0.01" placeholder="0,00" oninput="updateCampPreview()">
+            </div>
+          </div>
+          <!-- Exposure / Targeting -->
+          <div id="campExposure" style="display:none">
+            <div class="camp-section">Exposicao e Alcance</div>
+            <div class="modal-row">
+              <div class="modal-field" style="margin-bottom:0">
+                <label class="modal-label" for="campRadius">Raio de Alcance</label>
+                <select class="modal-select" id="campRadius">
+                  <option value="5">5 km — Padrao</option>
+                  <option value="10">10 km — Plus</option>
+                </select>
+              </div>
+              <div class="modal-field" style="margin-bottom:0">
+                <label class="modal-label" for="campBudget">Orcamento (R$)</label>
+                <input class="modal-input" id="campBudget" type="number" step="1" min="50" value="500" placeholder="500">
+              </div>
+            </div>
+            <div class="camp-section" style="margin-top:14px">Publico-Alvo</div>
+            <div class="camp-audience">
+              <button class="camp-audience-btn selected" data-val="all" onclick="setAudience('all')">Todos os usuarios</button>
+              <button class="camp-audience-btn" data-val="favorited" onclick="setAudience('favorited')">Favoritos da loja</button>
+            </div>
+            <div class="camp-section" style="margin-top:14px">Periodo de Veiculacao</div>
+            <div class="modal-row">
+              <div class="modal-field" style="margin-bottom:0">
+                <label class="modal-label" for="campStartDate">Data de Inicio</label>
+                <input class="modal-input" id="campStartDate" type="date">
+              </div>
+              <div class="modal-field" style="margin-bottom:0">
+                <label class="modal-label" for="campEndDate">Data de Encerramento</label>
+                <input class="modal-input" id="campEndDate" type="date">
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="modal-row">
-          <div class="modal-field">
-            <label class="modal-label" for="campType">Tipo de Campanha</label>
-            <select class="modal-select" id="campType">
-              <option value="banner">Banner</option>
-              <option value="oferta">Oferta Flash</option>
-              <option value="destaque">Destaque</option>
-            </select>
+        <!-- ── Right: Live Preview ── -->
+        <div class="camp-preview-panel">
+          <div class="camp-preview-title">Preview no App</div>
+          <div class="camp-mockup">
+            <div class="camp-mockup-bar">
+              <div class="camp-mockup-dot"></div>
+              <div class="camp-mockup-dot"></div>
+              <div class="camp-mockup-dot"></div>
+            </div>
+            <div class="camp-mockup-body" id="campPreviewBody">
+              <div class="camp-mockup-placeholder">Selecione o formato de campanha para ver a previsao</div>
+            </div>
           </div>
-          <div class="modal-field">
-            <label class="modal-label" for="campRadius">Raio de Alcance (km)</label>
-            <select class="modal-select" id="campRadius">
-              <option value="5">5 km</option>
-              <option value="10">10 km</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-row">
-          <div class="modal-field">
-            <label class="modal-label" for="campProductName">Produto (opcional)</label>
-            <input class="modal-input" id="campProductName" type="text" placeholder="Nome do produto">
-          </div>
-          <div class="modal-field">
-            <label class="modal-label" for="campProductEan">EAN / Codigo (opcional)</label>
-            <input class="modal-input" id="campProductEan" type="text" placeholder="7891234567890">
+          <div style="margin-top:10px;font-size:10px;color:var(--slate);line-height:1.5">
+            A previsao e aproximada. A exibicao final pode variar conforme o dispositivo.
           </div>
         </div>
-        <div class="modal-row">
-          <div class="modal-field">
-            <label class="modal-label" for="campPrice">Preco Promocional (R$)</label>
-            <input class="modal-input" id="campPrice" type="number" step="0.01" min="0" placeholder="0,00">
-          </div>
-          <div class="modal-field">
-            <label class="modal-label" for="campBudget">Orcamento (R$)</label>
-            <input class="modal-input" id="campBudget" type="number" step="1" min="50" value="500" placeholder="500">
-          </div>
-        </div>
-        <div class="modal-row">
-          <div class="modal-field">
-            <label class="modal-label" for="campStartDate">Data de Inicio</label>
-            <input class="modal-input" id="campStartDate" type="date">
-          </div>
-          <div class="modal-field">
-            <label class="modal-label" for="campEndDate">Data de Encerramento</label>
-            <input class="modal-input" id="campEndDate" type="date">
-          </div>
-        </div>
-      </form>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeCampModal()">Cancelar</button>
-      <button class="btn-submit" id="campSubmitBtn" onclick="submitCampModal()">Criar Campanha</button>
+      <button class="btn-submit" id="campSubmitBtn" onclick="submitCampModal()" disabled>Publicar Campanha</button>
     </div>
   </div>
 </div>
