@@ -456,6 +456,26 @@ export async function ensureSchema(): Promise<void> {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_merchant_users_email ON merchant_users (email);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_merchant_users_reg ON merchant_users (merchant_registration_id);`);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS merchant_alerts (
+        id SERIAL PRIMARY KEY,
+        merchant_user_id INTEGER NOT NULL REFERENCES merchant_users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        priority TEXT NOT NULL DEFAULT 'medium',
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        metadata JSONB DEFAULT '{}',
+        resolved_by TEXT,
+        resolved_at TIMESTAMPTZ,
+        action_note TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_merchant_alerts_user ON merchant_alerts (merchant_user_id);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_merchant_alerts_status ON merchant_alerts (merchant_user_id, status);`);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);
