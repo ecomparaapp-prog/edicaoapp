@@ -69,6 +69,8 @@ channel = "stable-25_05"
 
 [userenv.shared]
 ADMIN_PASSWORD = "Admin@2026!"
+MERCHANT_DEMO_EMAIL = "demo@portalsupermercado.com.br"
+MERCHANT_DEMO_STORE = "Supermercado Demo eCompara"
 
 [userenv.development]
 TEST_USER_SUPERMERCADO = "teste@supermercado.com.br"

@@ -66,6 +66,38 @@ merchantAuthRouter.post("/merchant/auth/login", async (req, res) => {
   }
 
   try {
+    // ── Demo account via env vars ─────────────────────────────────────────
+    // If MERCHANT_DEMO_EMAIL + MERCHANT_MASTER_PASSWORD are set and match,
+    // return a synthetic demo session even without a DB user.
+    const masterPwd = process.env.MERCHANT_MASTER_PASSWORD;
+    const demoEmail = process.env.MERCHANT_DEMO_EMAIL;
+    if (
+      masterPwd &&
+      demoEmail &&
+      email.toLowerCase().trim() === demoEmail.toLowerCase() &&
+      password === masterPwd
+    ) {
+      const demoToken = signSession(-1);
+      res.json({
+        token: demoToken,
+        mustChangePassword: false,
+        plan: "plus",
+        merchantUser: { id: -1, email: demoEmail, plan: "plus", mustChangePassword: false, merchantRegistrationId: -1 },
+        registration: {
+          id: -1,
+          nomeFantasia: process.env.MERCHANT_DEMO_STORE ?? "Demo Supermercado",
+          nomeFancasia: process.env.MERCHANT_DEMO_STORE ?? "Demo Supermercado",
+          storeName: process.env.MERCHANT_DEMO_STORE ?? "Demo Supermercado",
+          address: "Endereço de demonstração",
+          phone: "(61) 9 9999-9999",
+          plan: "plus",
+          status: "approved",
+        },
+      });
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     const rows = await db
       .select()
       .from(merchantUsersTable)
@@ -78,8 +110,10 @@ merchantAuthRouter.post("/merchant/auth/login", async (req, res) => {
     }
 
     const user = rows[0];
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) {
+    // Allow MERCHANT_MASTER_PASSWORD env var to bypass bcrypt (dev/admin override)
+    const validByMaster = masterPwd && password === masterPwd;
+    const validByHash = validByMaster ? true : await bcrypt.compare(password, user.passwordHash);
+    if (!validByHash) {
       res.status(401).json({ error: "Credenciais invalidas." });
       return;
     }
@@ -250,6 +284,24 @@ merchantAuthRouter.post("/merchant/auth/reset-password", async (req, res) => {
 
 merchantAuthRouter.get("/merchant/auth/me", merchantAuthMiddleware, async (req: any, res) => {
   try {
+    // Demo account bypass (id = -1 is the synthetic demo session)
+    if (req.merchantUserId === -1) {
+      const demoEmail = process.env.MERCHANT_DEMO_EMAIL ?? "demo@portalsupermercado.com.br";
+      res.json({
+        merchantUser: { id: -1, email: demoEmail, plan: "plus", mustChangePassword: false, merchantRegistrationId: -1, lastLoginAt: new Date() },
+        registration: {
+          id: -1,
+          nomeFantasia: process.env.MERCHANT_DEMO_STORE ?? "Demo Supermercado",
+          storeName: process.env.MERCHANT_DEMO_STORE ?? "Demo Supermercado",
+          address: "Endereço de demonstração",
+          phone: "(61) 9 9999-9999",
+          plan: "plus",
+          status: "approved",
+        },
+      });
+      return;
+    }
+
     const rows = await db
       .select()
       .from(merchantUsersTable)
