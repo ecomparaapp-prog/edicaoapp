@@ -147,7 +147,7 @@ router.patch("/merchant/alerts/:id/resolve", async (req: any, res) => {
     if (newPrice && ean) {
       await db.execute(sql`
         UPDATE price_reports
-        SET price = ${newPrice}, updated_at = NOW(), is_verified = true
+        SET price = ${newPrice}, is_verified = true
         WHERE product_ean = ${ean}
           AND place_id IN (
             SELECT mr.google_place_id FROM merchant_registrations mr
