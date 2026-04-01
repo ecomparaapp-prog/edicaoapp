@@ -197,6 +197,12 @@ router.patch("/merchant/alerts/:id/resolve", async (req: any, res) => {
 router.post("/merchant/alerts/seed", async (req: any, res) => {
   const merchantUserId: number = req.merchantUserId;
 
+  // Demo account (id=-1) doesn't exist in DB — return mock success
+  if (merchantUserId === -1) {
+    res.json({ ok: true, message: "Alertas de demonstracao carregados." });
+    return;
+  }
+
   try {
     const existing = await db
       .select({ id: merchantAlertsTable.id })
