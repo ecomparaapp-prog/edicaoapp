@@ -335,13 +335,60 @@
   /* Campaign Modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
   .modal-overlay.show{display:flex}
-  .modal-box{background:#fff;border-radius:16px;width:480px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-  .modal-header{padding:22px 24px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .modal-box{background:#fff;border-radius:16px;width:700px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
   .modal-title{font-size:16px;font-weight:700;color:var(--navy)}
   .modal-close{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--slate)}
   .modal-close:hover{background:var(--bg)}
-  .modal-body{flex:1;overflow-y:auto;padding:22px 24px}
-  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+  .modal-body{flex:1;overflow-y:auto;padding:20px 24px}
+  .modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+  /* Campaign Type Cards */
+  .camp-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .camp-type-card{border:2px solid var(--border);border-radius:12px;padding:16px 14px;cursor:pointer;transition:all .15s;text-align:left;background:#fff;position:relative}
+  .camp-type-card:hover{border-color:#c0c0c0;background:var(--bg)}
+  .camp-type-card.selected{border-color:var(--red);background:#fff5f5}
+  .camp-type-card.locked{opacity:.5;cursor:not-allowed}
+  .camp-type-card.locked:hover{border-color:var(--border);background:#fff}
+  .camp-type-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .camp-type-name{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
+  .camp-type-desc{font-size:11px;color:var(--slate);line-height:1.45}
+  .camp-type-lock{position:absolute;top:10px;right:10px;background:#f0a500;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px}
+  .camp-plan-badge{position:absolute;top:10px;right:10px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#e8f4fd;color:#0c5fa8}
+  /* EAN Grid */
+  .camp-ean-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  .camp-ean-item{position:relative}
+  .camp-ean-num{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:var(--slate);pointer-events:none}
+  .camp-ean-inp{width:100%;box-sizing:border-box;padding:9px 10px 9px 26px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
+  .camp-ean-inp:focus{border-color:var(--red)}
+  .camp-ean-inp.valid{border-color:#27ae60}
+  .camp-ean-inp.invalid{border-color:var(--red)}
+  .camp-ean-status{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:14px}
+  /* Audience Toggle */
+  .camp-audience{display:flex;gap:8px;margin-top:8px}
+  .camp-audience-btn{flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;color:var(--slate);text-align:center;transition:all .15s}
+  .camp-audience-btn:hover{border-color:#aaa}
+  .camp-audience-btn.selected{border-color:var(--red);background:#fff5f5;color:var(--red)}
+  /* Preview Mockup */
+  .camp-modal-layout{display:flex;gap:20px}
+  .camp-modal-form{flex:1;min-width:0}
+  .camp-preview-panel{width:200px;flex-shrink:0}
+  .camp-preview-title{font-size:11px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+  .camp-mockup{border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.12);background:#f4f5f7;border:6px solid #1a1a2e}
+  .camp-mockup-bar{background:#1a1a2e;padding:8px 10px;display:flex;align-items:center;gap:6px}
+  .camp-mockup-dot{width:5px;height:5px;border-radius:50%;background:#555}
+  .camp-mockup-body{padding:10px 8px}
+  .camp-mockup-app-header{background:var(--red);border-radius:8px;padding:8px 10px;color:#fff;font-size:9px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .camp-mockup-search{background:#fff;border-radius:6px;padding:6px 8px;font-size:8px;color:#aaa;margin-bottom:8px;display:flex;align-items:center;gap:4px}
+  .camp-mockup-banner{background:#fff;border-radius:8px;overflow:hidden;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .camp-mockup-sponsored{background:#e8f4fd;border-radius:8px;padding:7px 8px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .camp-mockup-flash{background:linear-gradient(135deg,#ff4757,#ff6b81);border-radius:8px;padding:8px;color:#fff;margin-bottom:8px}
+  .camp-mockup-placeholder{height:80px;background:var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--slate);text-align:center;padding:8px}
+  .camp-ean-counter{font-size:11px;color:var(--slate);margin-top:6px}
+  .camp-ean-counter span{font-weight:700;color:var(--navy)}
+  .camp-ean-counter.done{color:#27ae60}
+  .camp-ean-counter.done span{color:#27ae60}
+  /* Section label in modal */
+  .camp-section{font-size:11px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px}
   .modal-field{margin-bottom:16px}
   .modal-label{display:block;font-size:12px;font-weight:600;color:var(--slate);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
   .modal-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);box-sizing:border-box}
@@ -2689,22 +2736,156 @@ function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function openCampModal(campId) {
-  const modal = document.getElementById('campModal');
-  const form = document.getElementById('campForm');
-  const errEl = document.getElementById('campModalErr');
-  const titleEl = document.getElementById('campModalTitle');
-  const submitBtn = document.getElementById('campSubmitBtn');
-  form.reset();
-  errEl.style.display = 'none';
-  titleEl.textContent = 'Nova Campanha';
-  submitBtn.textContent = 'Criar Campanha';
-  submitBtn.dataset.editId = '';
-  modal.classList.add('show');
+// ── Campaign Builder ──────────────────────────────────────────────────────────
+let _campSelectedType = null;
+let _campAudience = 'all';
+let _campAllowedTypes = ['banner_home','search_boost','flash_deal'];
+
+function openCampModal() {
+  _campSelectedType = null;
+  _campAudience = 'all';
+  document.getElementById('campModalErr').style.display = 'none';
+  document.getElementById('campName').value = '';
+  document.getElementById('campBudget').value = '500';
+  document.getElementById('campStartDate').value = '';
+  document.getElementById('campEndDate').value = '';
+  // Reset EAN fields
+  for (let i = 1; i <= 6; i++) {
+    const el = document.getElementById(`campEan${i}`);
+    if (el) { el.value = ''; el.className = 'camp-ean-inp'; }
+    const st = document.getElementById(`campEanSt${i}`);
+    if (st) st.textContent = '';
+  }
+  const sEan = document.getElementById('campSingleEan');
+  if (sEan) sEan.value = '';
+  const sName = document.getElementById('campProductName');
+  if (sName) sName.value = '';
+  const sPrice = document.getElementById('campPrice');
+  if (sPrice) sPrice.value = '';
+  // Audience reset
+  document.querySelectorAll('.camp-audience-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector('.camp-audience-btn[data-val="all"]')?.classList.add('selected');
+  // Type cards: apply plan restriction
+  const stats = window._lastCampStats || {};
+  _campAllowedTypes = stats.allowedTypes || ['banner_home','search_boost','flash_deal'];
+  const isPlus = stats.plan === 'plus';
+  document.querySelectorAll('.camp-type-card').forEach(card => {
+    const t = card.dataset.type;
+    card.classList.remove('selected','locked');
+    if (!_campAllowedTypes.includes(t)) {
+      card.classList.add('locked');
+    }
+  });
+  // Hide dynamic sections
+  document.getElementById('campFieldsBannerHome').style.display = 'none';
+  document.getElementById('campFieldsSingle').style.display = 'none';
+  document.getElementById('campFieldsFlash').style.display = 'none';
+  document.getElementById('campExposure').style.display = 'none';
+  document.getElementById('campSubmitBtn').disabled = true;
+  updateCampPreview();
+  document.getElementById('campModal').classList.add('show');
 }
 
 function closeCampModal() {
   document.getElementById('campModal').classList.remove('show');
+}
+
+function selectCampType(type) {
+  if (!_campAllowedTypes.includes(type)) return;
+  _campSelectedType = type;
+  document.querySelectorAll('.camp-type-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.type === type);
+  });
+  document.getElementById('campFieldsBannerHome').style.display = type === 'banner_home' ? 'block' : 'none';
+  document.getElementById('campFieldsSingle').style.display = type === 'search_boost' ? 'block' : 'none';
+  document.getElementById('campFieldsFlash').style.display = type === 'flash_deal' ? 'block' : 'none';
+  document.getElementById('campExposure').style.display = 'block';
+  document.getElementById('campSubmitBtn').disabled = false;
+  updateCampPreview();
+}
+
+function setAudience(val) {
+  _campAudience = val;
+  document.querySelectorAll('.camp-audience-btn').forEach(b => b.classList.toggle('selected', b.dataset.val === val));
+}
+
+function onEanInput(idx) {
+  const val = document.getElementById(`campEan${idx}`).value.trim();
+  const stEl = document.getElementById(`campEanSt${idx}`);
+  const inpEl = document.getElementById(`campEan${idx}`);
+  if (!val) {
+    inpEl.className = 'camp-ean-inp';
+    stEl.textContent = '';
+  } else if (/^\d{8,14}$/.test(val)) {
+    inpEl.className = 'camp-ean-inp valid';
+    stEl.textContent = '✓';
+    stEl.style.color = '#27ae60';
+  } else {
+    inpEl.className = 'camp-ean-inp invalid';
+    stEl.textContent = '✗';
+    stEl.style.color = 'var(--red)';
+  }
+  // Counter
+  const filled = [1,2,3,4,5,6].filter(i => {
+    const v = document.getElementById(`campEan${i}`)?.value.trim();
+    return v && /^\d{8,14}$/.test(v);
+  }).length;
+  const counter = document.getElementById('campEanCounter');
+  if (counter) {
+    counter.innerHTML = `<span>${filled}</span> de 6 EANs preenchidos`;
+    counter.className = filled === 6 ? 'camp-ean-counter done' : 'camp-ean-counter';
+  }
+  updateCampPreview();
+}
+
+function updateCampPreview() {
+  const preview = document.getElementById('campPreviewBody');
+  if (!preview) return;
+  const type = _campSelectedType;
+  const name = document.getElementById('campName')?.value.trim() || 'Campanha';
+  if (!type) {
+    preview.innerHTML = `<div class="camp-mockup-placeholder">Selecione o tipo de campanha para ver a previsão</div>`;
+    return;
+  }
+  if (type === 'banner_home') {
+    const eans = [1,2,3,4,5,6].map(i => document.getElementById(`campEan${i}`)?.value.trim() || '');
+    const filled = eans.filter(e => e && /^\d{8,14}$/.test(e)).length;
+    const grid = eans.map((e,i) => `<div style="background:${e&&/^\d{8,14}$/.test(e)?'#e8f4fd':'#f0f0f0'};border-radius:4px;padding:4px 2px;text-align:center;font-size:7px;color:#666;line-height:1.2">${e?e.slice(-4):'EAN'}<br/><span style="font-size:6px;color:#aaa">Produto ${i+1}</span></div>`).join('');
+    preview.innerHTML = `
+      <div class="camp-mockup-app-header"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> eCompara</div>
+      <div style="background:#fff;border-radius:8px;padding:8px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+        <div style="font-size:8px;font-weight:700;color:#c0392b;margin-bottom:6px">DESTAQUE DA SEMANA</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">${grid}</div>
+        <div style="font-size:7px;color:#888;margin-top:5px;text-align:right">${filled}/6 produtos</div>
+      </div>
+      <div style="font-size:8px;color:#888;text-align:center">${filled===6?'Banner pronto para publicar':'Adicione os 6 EANs para completar'}</div>`;
+  } else if (type === 'search_boost') {
+    const ean = document.getElementById('campSingleEan')?.value.trim() || '—';
+    const pname = document.getElementById('campProductName')?.value.trim() || 'Produto Patrocinado';
+    preview.innerHTML = `
+      <div class="camp-mockup-app-header"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Resultados da Busca</div>
+      <div class="camp-mockup-sponsored">
+        <div style="width:28px;height:28px;background:#e0e0e0;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#888">IMG</div>
+        <div>
+          <div style="font-size:8px;font-weight:700;color:#1a1a2e">${pname.slice(0,22)}</div>
+          <div style="font-size:7px;color:#888">EAN: ${ean.slice(0,13) || '—'}</div>
+          <div style="font-size:7px;background:#e8f4fd;color:#0c5fa8;padding:1px 4px;border-radius:3px;display:inline-block;margin-top:2px">Patrocinado</div>
+        </div>
+      </div>
+      <div style="font-size:8px;color:#888;text-align:center">Aparece no topo das buscas</div>`;
+  } else if (type === 'flash_deal') {
+    const ean = document.getElementById('campSingleEan')?.value.trim() || '—';
+    const price = document.getElementById('campPrice')?.value || '0,00';
+    preview.innerHTML = `
+      <div class="camp-mockup-app-header"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Flash Deal</div>
+      <div class="camp-mockup-flash">
+        <div style="font-size:9px;font-weight:800;letter-spacing:.5px">PRECO IMBATIVEL</div>
+        <div style="font-size:8px;margin-top:3px">EAN: ${ean.slice(0,13) || '—'}</div>
+        <div style="font-size:16px;font-weight:900;margin-top:4px">R$ ${price || '0,00'}</div>
+        <div style="font-size:7px;opacity:.8;margin-top:2px">Menor preco da regiao</div>
+      </div>
+      <div style="font-size:8px;color:#888;text-align:center">Pin no mapa + Notificacao Push</div>`;
+  }
 }
 
 async function submitCampModal() {
@@ -2713,19 +2894,45 @@ async function submitCampModal() {
   errEl.style.display = 'none';
   const name = document.getElementById('campName').value.trim();
   if (!name) { errEl.textContent = 'Informe o nome da campanha.'; errEl.style.display = 'block'; return; }
+  if (!_campSelectedType) { errEl.textContent = 'Selecione o tipo de campanha.'; errEl.style.display = 'block'; return; }
   const body = {
     name,
-    productName: document.getElementById('campProductName').value.trim() || undefined,
-    productEan: document.getElementById('campProductEan').value.trim() || undefined,
-    campaignType: document.getElementById('campType').value,
-    promotionalPrice: document.getElementById('campPrice').value.trim() || undefined,
+    campaignType: _campSelectedType,
+    audience: _campAudience,
     radius: parseInt(document.getElementById('campRadius').value),
     budget: document.getElementById('campBudget').value.trim() || '500',
     startDate: document.getElementById('campStartDate').value || undefined,
     endDate: document.getElementById('campEndDate').value || undefined,
   };
+  if (_campSelectedType === 'banner_home') {
+    const eans = [1,2,3,4,5,6].map(i => document.getElementById(`campEan${i}`)?.value.trim()).filter(Boolean);
+    if (eans.length !== 6) {
+      errEl.textContent = 'Para este formato, são necessários exatamente 06 produtos cadastrados.';
+      errEl.style.display = 'block';
+      return;
+    }
+    body.eanList = eans;
+  } else {
+    const singleEan = document.getElementById('campSingleEan')?.value.trim();
+    if (!singleEan) {
+      errEl.textContent = 'EAN do produto é obrigatório.';
+      errEl.style.display = 'block';
+      return;
+    }
+    body.productEan = singleEan;
+    body.productName = document.getElementById('campProductName')?.value.trim() || undefined;
+    if (_campSelectedType === 'flash_deal') {
+      const price = document.getElementById('campPrice')?.value;
+      if (!price) {
+        errEl.textContent = 'Informe o preço promocional para Flash Deal.';
+        errEl.style.display = 'block';
+        return;
+      }
+      body.promotionalPrice = price;
+    }
+  }
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Salvando...';
+  submitBtn.textContent = 'Publicando...';
   try {
     const r = await fetch(`${API}/campaigns`, {
       method: 'POST',
@@ -2739,10 +2946,10 @@ async function submitCampModal() {
       return;
     }
     closeCampModal();
-    showToast('Campanha criada com sucesso!');
+    showToast('Campanha publicada com sucesso!');
     await loadAndRenderCampaigns();
   } catch { errEl.textContent = 'Falha de conexao.'; errEl.style.display = 'block'; }
-  finally { submitBtn.disabled = false; submitBtn.textContent = 'Criar Campanha'; }
+  finally { submitBtn.disabled = false; submitBtn.textContent = 'Publicar Campanha'; }
 }
 
 async function toggleCamp(id, newStatus) {

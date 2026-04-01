@@ -476,6 +476,32 @@ export async function ensureSchema(): Promise<void> {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_merchant_alerts_user ON merchant_alerts (merchant_user_id);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_merchant_alerts_status ON merchant_alerts (merchant_user_id, status);`);
 
+    // ── Campaigns (Módulo de Campanhas) ───────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS campaigns (
+        id SERIAL PRIMARY KEY,
+        merchant_user_id INTEGER NOT NULL REFERENCES merchant_users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        campaign_type TEXT NOT NULL DEFAULT 'search_boost',
+        ean_list JSONB,
+        product_ean TEXT,
+        product_name TEXT,
+        promotional_price TEXT,
+        radius INTEGER NOT NULL DEFAULT 5,
+        audience TEXT NOT NULL DEFAULT 'all',
+        budget TEXT NOT NULL DEFAULT '500',
+        status TEXT NOT NULL DEFAULT 'active',
+        start_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        end_date TIMESTAMPTZ,
+        impressions INTEGER NOT NULL DEFAULT 0,
+        clicks INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_campaigns_user ON campaigns (merchant_user_id);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns (merchant_user_id, status);`);
+
     console.log("[Schema] All tables verified/created.");
   } catch (err) {
     console.error("[Schema] Setup error:", err);
