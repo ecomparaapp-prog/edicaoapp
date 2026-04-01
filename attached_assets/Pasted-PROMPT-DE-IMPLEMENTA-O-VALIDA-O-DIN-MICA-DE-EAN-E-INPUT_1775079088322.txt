@@ -1,0 +1,44 @@
+PROMPT DE IMPLEMENTAÇÃO: VALIDAÇÃO DINÂMICA DE EAN E INPUT DE OFERTA
+Objetivo: Implementar um gatilho de busca automática (Fetch) que, ao detectar a inserção de um EAN válido, retorne a identidade visual do produto e libere o campo de edição de preço promocional.
+
+1. LÓGICA DE GATILHO (EVENT TRIGGER)
+Ação: No formulário de criação de campanha (Banner, Topo de Busca ou Flash Deal), adicione um listener de evento (onChange ou onBlur) nos campos de entrada de EAN.
+
+Debounce: Implementar um breve atraso (ex: 500ms) para evitar chamadas excessivas à API enquanto o usuário digita.
+
+2. RESPOSTA VISUAL IMEDIATA (FEEDBACK DO PRODUTO)
+Assim que um EAN de 13 dígitos for detectado e validado no banco de dados:
+
+Exibição do SKU: O sistema deve renderizar um Card de Confirmação contendo:
+
+Imagem do Produto: Buscada na biblioteca oficial do eCompara.
+
+Nome Completo: Descrição técnica do item (ex: "Leite Integral Parmalat 1L").
+
+Preço Atual Orgânico: O último preço registrado pelo supermercado para esse item, servindo como referência de comparação.
+
+Estado de Erro: Caso o EAN não seja encontrado, exibir uma mensagem profissional: "Produto não identificado na base. Verifique o código ou realize o cadastro manual do item."
+
+3. LIBERAÇÃO DO CAMPO DE VALOR (PROMO PRICE)
+Interatividade: O campo "Preço da Campanha" ou "Valor Promocional" deve permanecer desabilitado (disabled) ou oculto até que o produto seja validado via EAN.
+
+Cálculo de Desconto: Ao preencher o novo valor, o sistema deve calcular e exibir automaticamente a porcentagem de desconto real em relação ao preço orgânico para que o lojista visualize a agressividade da oferta.
+
+4. SINCRONIZAÇÃO E UI/UX
+Single Source of Truth: Esta lógica deve ser idêntica na Área Supermercado (App) e no Portal Supermercado (Web).
+
+Estética Corporativa: Utilize tipografia Inter ou Roboto, cores sólidas e ícones funcionais. Proibido o uso de emojis.
+
+Logo: O logotipo oficial (sem fundo) deve estar presente no cabeçalho de confirmação da campanha.
+
+5. REQUISITOS DE BACKEND (API)
+Criar ou ajustar o endpoint /api/v1/products/ean/:code para retornar um JSON estruturado com {name, image_url, current_price, category}.
+
+🧪 TESTE DE FUNCIONALIDADE (VALIDAÇÃO DE SUCESSO)
+A IA do Replit deve garantir que:
+
+Cenário 1: O lojista digita o EAN da "Mabel". Em menos de 1 segundo, a foto do biscoito aparece e o campo de preço fica disponível para digitação.
+
+Cenário 2: Se o lojista apagar o EAN, a foto deve desaparecer e o campo de preço deve ser bloqueado novamente.
+
+Cenário 3: No caso de um Banner de 6 itens, cada um dos 6 blocos de EAN deve ter sua própria resposta visual e campo de preço independente.
