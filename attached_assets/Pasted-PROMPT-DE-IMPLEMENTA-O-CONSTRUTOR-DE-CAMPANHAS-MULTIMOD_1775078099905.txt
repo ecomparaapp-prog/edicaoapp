@@ -1,0 +1,65 @@
+PROMPT DE IMPLEMENTAÇÃO: CONSTRUTOR DE CAMPANHAS MULTIMODAL (B2B)
+Objetivo: Implementar o formulário de criação de campanhas no Portal Supermercado (Web) e na Área Supermercado (App), com tipificação clara de ativos, validação obrigatória de EANs e definições de posicionamento (Placement).
+
+1. SELEÇÃO DO TIPO DE CAMPANHA (MENU DEFINITIVO)
+O lojista deve escolher entre os seguintes formatos, com comportamentos específicos para cada um:
+
+A. Formato: Banner de Ofertas Agrupadas (Home)
+
+Onde aparece: Topo da tela inicial do App (Destaque Principal).
+
+Como aparece: Carrossel horizontal ou Grid de destaque.
+
+Regra Técnica OBRIGATÓRIA: Espaço fixo para 06 Itens (SKUs).
+
+O lojista deve inserir 06 códigos EAN válidos.
+
+O sistema deve realizar o fetch automático das imagens e preços atuais no banco de dados para montar o layout do banner.
+
+Validação: O botão "Publicar" só é habilitado após o preenchimento dos 6 campos de EAN.
+
+B. Formato: Topo de Busca (Search Boost)
+
+Onde aparece: Primeiro resultado em buscas por categorias específicas (ex: "Bebidas", "Limpeza").
+
+Como aparece: Card individual com a etiqueta "Patrocinado".
+
+Regra Técnica: Inserção de 01 EAN. O sistema vincula o produto à palavra-chave da categoria correspondente.
+
+C. Formato: Alerta de Preço Imbatível (Flash Deal)
+
+Onde aparece: Pin destacado no Mapa e Notificação Push para usuários no raio de atuação.
+
+Como aparece: Card com contagem regressiva ou destaque de "Menor Preço da Região".
+
+Regra Técnica: Inserção de 01 EAN + Definição de Preço Promocional Temporário.
+
+2. LÓGICA DE BUSCA DE ATIVOS (IMAGE FETCHING)
+Automação: Ao inserir o EAN, o sistema deve buscar na biblioteca central de imagens do eCompara a foto em alta resolução do produto.
+
+Fallback: Caso o EAN não possua imagem tratada, o sistema deve solicitar que o lojista utilize a função de captura (OCR/Câmera) ou selecione do banco de imagens sugeridas.
+
+3. DEFINIÇÕES DE EXPOSIÇÃO (PLACEMENT & TARGETING)
+Em todos os tipos de campanha, o lojista deve configurar:
+
+Alcance Geográfico: Raio de 5km (Normal) ou 10km (Plus).
+
+Público-Alvo: Todos os usuários ou apenas usuários que já favoritaram o supermercado.
+
+Duração: Data e hora de início e término da veiculação.
+
+4. UI/UX E IDENTIDADE VISUAL
+Padrão: Design minimalista, tipografia sóbria (Inter ou Roboto), ausência total de emojis.
+
+Preview em Tempo Real: À medida que o lojista insere os EANs, um "Mockup" do App deve aparecer ao lado (na Web) ou em um modal (no App) mostrando como a campanha ficará para o cliente final.
+
+Logo: Exibir o logotipo oficial do eCompara (sem fundo) como selo de validade da plataforma.
+
+🧪 TESTE DE FLUXO (VALIDAÇÃO DE SUCESSO)
+A IA do Replit deve validar os seguintes comportamentos:
+
+Validação de Banner: O sistema deve impedir o salvamento de uma campanha de Banner com apenas 5 EANs. O erro deve ser explícito: "Para este formato, são necessários exatamente 06 produtos cadastrados".
+
+Sincronização de Preço: Se o preço de um dos 6 produtos do banner for alterado via planilha CSV, a campanha deve atualizar o valor exibido no banner automaticamente (Espelhamento Real).
+
+Controle de Planos: Validar se o lojista do Plano Normal consegue selecionar apenas o tipo "Topo de Busca" (ou se tem acesso limitado comparado ao Plus).
