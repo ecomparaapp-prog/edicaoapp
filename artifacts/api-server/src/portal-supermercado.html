@@ -299,6 +299,62 @@
   .competitiveness-bar{background:var(--bg);border-radius:8px;padding:16px;margin-bottom:14px}
   .comp-bar-wrap{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:8px 0}
   .comp-bar-fill{height:100%;background:var(--red);border-radius:4px;transition:width .5s}
+
+  /* Campaigns */
+  .camp-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+  .camp-title{font-size:16px;font-weight:700;color:var(--navy)}
+  .btn-camp-new{background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .btn-camp-new:hover{background:#c0392b}
+  .camp-table{width:100%;border-collapse:collapse;font-size:13px}
+  .camp-table th{text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--slate);border-bottom:2px solid var(--border)}
+  .camp-table td{padding:12px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+  .camp-table tr:last-child td{border-bottom:none}
+  .camp-table tr:hover td{background:var(--bg)}
+  .camp-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
+  .camp-badge.active{background:#d4edda;color:#155724}
+  .camp-badge.paused{background:#fff3cd;color:#856404}
+  .camp-badge.ended{background:#f8d7da;color:#721c24}
+  .camp-type-badge{padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;background:var(--bg);color:var(--navy)}
+  .camp-actions{display:flex;gap:6px}
+  .btn-camp-act{border:1px solid var(--border);background:#fff;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--navy)}
+  .btn-camp-act:hover{background:var(--bg)}
+  .btn-camp-act.danger{color:var(--red);border-color:#fcc}
+  .btn-camp-act.danger:hover{background:#fff0f0}
+  .camp-limit-banner{background:linear-gradient(135deg,#fff3e0,#fce4ec);border:1px solid #ffcc80;border-radius:12px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:14px}
+  .camp-limit-icon{width:36px;height:36px;border-radius:10px;background:#ff9800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .camp-limit-text{flex:1;font-size:13px;color:var(--text);line-height:1.5}
+  .camp-limit-text strong{color:var(--navy)}
+  .btn-camp-upgrade{background:var(--gold,#f0a500);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+  .camp-empty{text-align:center;padding:48px 24px;color:var(--slate)}
+  .camp-empty-icon{width:52px;height:52px;background:var(--bg);border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center}
+  .camp-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+  .camp-kpi{background:var(--bg);border-radius:10px;padding:14px;text-align:center}
+  .camp-kpi-val{font-size:22px;font-weight:800;color:var(--navy);line-height:1}
+  .camp-kpi-lbl{font-size:11px;color:var(--slate);margin-top:4px}
+
+  /* Campaign Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+  .modal-overlay.show{display:flex}
+  .modal-box{background:#fff;border-radius:16px;width:480px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal-header{padding:22px 24px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .modal-title{font-size:16px;font-weight:700;color:var(--navy)}
+  .modal-close{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--slate)}
+  .modal-close:hover{background:var(--bg)}
+  .modal-body{flex:1;overflow-y:auto;padding:22px 24px}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+  .modal-field{margin-bottom:16px}
+  .modal-label{display:block;font-size:12px;font-weight:600;color:var(--slate);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
+  .modal-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);box-sizing:border-box}
+  .modal-input:focus{outline:none;border-color:var(--red)}
+  .modal-select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:#fff;box-sizing:border-box}
+  .modal-select:focus{outline:none;border-color:var(--red)}
+  .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-error{color:var(--red);font-size:12px;margin-bottom:12px;padding:8px 12px;background:#fff0f0;border-radius:6px;display:none}
+  .btn-cancel{background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 18px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;color:var(--text)}
+  .btn-cancel:hover{background:var(--bg)}
+  .btn-submit{background:var(--red);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer}
+  .btn-submit:hover{background:#c0392b}
+  .btn-submit:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -389,6 +445,11 @@
       <div class="nav-item" data-section="produtos" onclick="nav(this,'produtos')">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Gestao de Inventario
+      </div>
+      <div class="nav-item" data-section="campanhas" onclick="nav(this,'campanhas')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+        Campanhas
+        <span id="campActiveBadge" style="margin-left:auto;background:var(--red);color:#fff;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700;display:none">0</span>
       </div>
       <div class="nav-item" data-section="alertas" onclick="nav(this,'alertas')">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -996,6 +1057,7 @@ function updateCSVProgress(processed, total, msg, state) {
 const NAV_META = {
   dashboard: { title: 'Dashboard', breadcrumb: 'Visao Geral de Indicadores de Performance' },
   produtos:  { title: 'Gestao de Inventario', breadcrumb: 'Catalogo de produtos e ofertas ativas' },
+  campanhas: { title: 'Gestao de Campanhas', breadcrumb: 'Ofertas patrocinadas e alcance geolocalizado' },
   alertas:   { title: 'Central de Alertas', breadcrumb: 'Notificacoes e avisos de performance' },
   plano:     { title: 'Plano & Assinatura', breadcrumb: 'Gerenciamento de plano e cobranca' },
   config:    { title: 'Configuracoes', breadcrumb: 'Dados do estabelecimento e seguranca' },
@@ -1018,8 +1080,9 @@ async function renderSection(section) {
       const biData = await loadBI(biPeriod);
       el.innerHTML = renderDashboard(biData);
       break;
-    case 'produtos':  el.innerHTML = renderProdutos(); setupCSVDrop(); break;
-    case 'alertas':   el.innerHTML = renderAlertas(); break;
+    case 'produtos':   el.innerHTML = renderProdutos(); setupCSVDrop(); break;
+    case 'campanhas':  el.innerHTML = campLoadingSkeleton(); await loadAndRenderCampaigns(); break;
+    case 'alertas':    el.innerHTML = renderAlertas(); break;
     case 'plano':     el.innerHTML = renderPlano(); break;
     case 'config':    el.innerHTML = renderConfig(); break;
   }
@@ -2494,6 +2557,222 @@ async function showCheckout() {
   } catch { showToast('Falha de conexao ao atualizar plano', true); }
 }
 
+/* ═══ Campaigns ═══ */
+let campCache = null;
+
+function campLoadingSkeleton() {
+  return `<div style="padding:8px 0">
+    <div class="camp-kpis">${[1,2,3,4].map(()=>`<div class="camp-kpi"><div class="bi-skeleton" style="width:50%;height:28px;margin:0 auto 6px"></div><div class="bi-skeleton" style="width:70%;height:12px;margin:0 auto"></div></div>`).join('')}</div>
+    <div class="card"><div class="bi-skeleton" style="margin-bottom:12px"></div>${[1,2,3].map(()=>`<div class="bi-skeleton" style="margin-bottom:8px"></div>`).join('')}</div>
+  </div>`;
+}
+
+async function loadCampaigns() {
+  const r = await fetch(`${API}/campaigns`, { headers: { Authorization: `Bearer ${session.token}` } });
+  if (!r.ok) return [];
+  const data = await r.json();
+  return data.campaigns || [];
+}
+
+async function loadCampStats() {
+  const r = await fetch(`${API}/campaigns/stats`, { headers: { Authorization: `Bearer ${session.token}` } });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+async function loadAndRenderCampaigns() {
+  const el = document.getElementById('contentArea');
+  const [campaigns, stats] = await Promise.all([loadCampaigns(), loadCampStats()]);
+  campCache = campaigns;
+  el.innerHTML = renderCampaigns(campaigns, stats);
+  updateCampBadge(campaigns);
+}
+
+function updateCampBadge(campaigns) {
+  const badge = document.getElementById('campActiveBadge');
+  if (!badge) return;
+  const count = campaigns.filter(c => c.status === 'active').length;
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline-block' : 'none';
+}
+
+const CAMP_TYPE_LABELS = { banner: 'Banner', oferta: 'Oferta Flash', destaque: 'Destaque' };
+const CAMP_STATUS_LABELS = { active: 'Ativa', paused: 'Pausada', ended: 'Encerrada' };
+
+function renderCampaigns(campaigns, stats) {
+  const isPlus = currentPlan === 'plus';
+  const canCreate = stats ? stats.canCreate : true;
+  const totalActive = stats ? stats.totalActive : 0;
+  const totalAll = stats ? stats.totalAll : 0;
+  const totalImpressions = campaigns.reduce((s, c) => s + (c.impressions || 0), 0);
+  const totalClicks = campaigns.reduce((s, c) => s + (c.clicks || 0), 0);
+  const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(1) : '0.0';
+
+  const kpis = `<div class="camp-kpis">
+    <div class="camp-kpi"><div class="camp-kpi-val">${totalAll}</div><div class="camp-kpi-lbl">Total campanhas</div></div>
+    <div class="camp-kpi"><div class="camp-kpi-val">${totalActive}</div><div class="camp-kpi-lbl">Ativas agora</div></div>
+    <div class="camp-kpi"><div class="camp-kpi-val">${fmt(totalImpressions)}</div><div class="camp-kpi-lbl">Impressoes</div></div>
+    <div class="camp-kpi"><div class="camp-kpi-val">${ctr}%</div><div class="camp-kpi-lbl">CTR medio</div></div>
+  </div>`;
+
+  const limitBanner = !isPlus ? `<div class="camp-limit-banner">
+    <div class="camp-limit-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+    <div class="camp-limit-text"><strong>Plano Normal:</strong> Voce pode ter <strong>1 campanha ativa</strong> por vez. ${!canCreate ? 'Limite atingido — pause a campanha ativa para criar outra.' : 'Voce pode criar mais 1 campanha ativa.'} Faca upgrade para campanhas ilimitadas.</div>
+    <button class="btn-camp-upgrade" onclick="nav(document.querySelector('[data-section=plano]'),'plano')">Ver Plano Plus</button>
+  </div>` : '';
+
+  const newBtn = `<button class="btn-camp-new" onclick="openCampModal()" ${!canCreate && !isPlus ? 'disabled style="opacity:.4;cursor:not-allowed"' : ''}>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nova Campanha
+  </button>`;
+
+  let tableHtml = '';
+  if (campaigns.length === 0) {
+    tableHtml = `<div class="card camp-empty">
+      <div class="camp-empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--slate)" stroke-width="1.5"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>
+      <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:6px">Nenhuma campanha criada</div>
+      <div style="font-size:13px;color:var(--slate);margin-bottom:16px">Crie sua primeira campanha e aumente a visibilidade do seu supermercado no app</div>
+      <button class="btn-camp-new" style="margin:0 auto" onclick="openCampModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Criar Primeira Campanha
+      </button>
+    </div>`;
+  } else {
+    const rows = campaigns.map(c => {
+      const startFmt = c.start_date ? new Date(c.start_date).toLocaleDateString('pt-BR') : '—';
+      const endFmt = c.end_date ? new Date(c.end_date).toLocaleDateString('pt-BR') : 'Sem prazo';
+      const typeLbl = CAMP_TYPE_LABELS[c.campaign_type] || c.campaign_type;
+      const statusLbl = CAMP_STATUS_LABELS[c.status] || c.status;
+      const toggleBtn = c.status === 'active'
+        ? `<button class="btn-camp-act" onclick="toggleCamp(${c.id},'paused')">Pausar</button>`
+        : c.status === 'paused'
+        ? `<button class="btn-camp-act" onclick="toggleCamp(${c.id},'active')">Ativar</button>`
+        : '';
+      const ctr = c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(1) + '%' : '—';
+      return `<tr>
+        <td><strong style="color:var(--navy)">${escHtml(c.name)}</strong>${c.product_name ? `<br><span style="color:var(--slate);font-size:11px">${escHtml(c.product_name)}</span>` : ''}</td>
+        <td><span class="camp-type-badge">${typeLbl}</span></td>
+        <td><span class="camp-badge ${c.status}">${statusLbl}</span></td>
+        <td>${startFmt} → ${endFmt}</td>
+        <td>${fmt(c.impressions)}</td>
+        <td>${ctr}</td>
+        <td>R$ ${c.promotional_price ? fmt(parseFloat(c.promotional_price), 2) : '—'}</td>
+        <td><div class="camp-actions">
+          ${toggleBtn}
+          <button class="btn-camp-act danger" onclick="deleteCamp(${c.id},'${escHtml(c.name)}')">Excluir</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+    tableHtml = `<div class="card" style="overflow-x:auto">
+      <table class="camp-table">
+        <thead><tr>
+          <th>Campanha</th><th>Tipo</th><th>Status</th><th>Periodo</th>
+          <th>Impressoes</th><th>CTR</th><th>Preco Promo</th><th>Acoes</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  return `<div style="padding:8px 0">
+    ${kpis}
+    ${limitBanner}
+    <div class="camp-toolbar">
+      <div class="camp-title">Suas Campanhas</div>
+      ${newBtn}
+    </div>
+    ${tableHtml}
+  </div>`;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openCampModal(campId) {
+  const modal = document.getElementById('campModal');
+  const form = document.getElementById('campForm');
+  const errEl = document.getElementById('campModalErr');
+  const titleEl = document.getElementById('campModalTitle');
+  const submitBtn = document.getElementById('campSubmitBtn');
+  form.reset();
+  errEl.style.display = 'none';
+  titleEl.textContent = 'Nova Campanha';
+  submitBtn.textContent = 'Criar Campanha';
+  submitBtn.dataset.editId = '';
+  modal.classList.add('show');
+}
+
+function closeCampModal() {
+  document.getElementById('campModal').classList.remove('show');
+}
+
+async function submitCampModal() {
+  const errEl = document.getElementById('campModalErr');
+  const submitBtn = document.getElementById('campSubmitBtn');
+  errEl.style.display = 'none';
+  const name = document.getElementById('campName').value.trim();
+  if (!name) { errEl.textContent = 'Informe o nome da campanha.'; errEl.style.display = 'block'; return; }
+  const body = {
+    name,
+    productName: document.getElementById('campProductName').value.trim() || undefined,
+    productEan: document.getElementById('campProductEan').value.trim() || undefined,
+    campaignType: document.getElementById('campType').value,
+    promotionalPrice: document.getElementById('campPrice').value.trim() || undefined,
+    radius: parseInt(document.getElementById('campRadius').value),
+    budget: document.getElementById('campBudget').value.trim() || '500',
+    startDate: document.getElementById('campStartDate').value || undefined,
+    endDate: document.getElementById('campEndDate').value || undefined,
+  };
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Salvando...';
+  try {
+    const r = await fetch(`${API}/campaigns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify(body),
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      errEl.textContent = data.message || data.error || 'Erro ao criar campanha.';
+      errEl.style.display = 'block';
+      return;
+    }
+    closeCampModal();
+    showToast('Campanha criada com sucesso!');
+    await loadAndRenderCampaigns();
+  } catch { errEl.textContent = 'Falha de conexao.'; errEl.style.display = 'block'; }
+  finally { submitBtn.disabled = false; submitBtn.textContent = 'Criar Campanha'; }
+}
+
+async function toggleCamp(id, newStatus) {
+  try {
+    const r = await fetch(`${API}/campaigns/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    const data = await r.json();
+    if (!r.ok) { showToast(data.message || 'Erro ao atualizar campanha', true); return; }
+    const lbl = newStatus === 'active' ? 'ativada' : 'pausada';
+    showToast(`Campanha ${lbl} com sucesso`);
+    await loadAndRenderCampaigns();
+  } catch { showToast('Falha de conexao', true); }
+}
+
+async function deleteCamp(id, name) {
+  if (!confirm(`Excluir a campanha "${name}"? Esta acao nao pode ser desfeita.`)) return;
+  try {
+    const r = await fetch(`${API}/campaigns/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session.token}` },
+    });
+    if (!r.ok) { showToast('Erro ao excluir campanha', true); return; }
+    showToast('Campanha excluida');
+    await loadAndRenderCampaigns();
+  } catch { showToast('Falha de conexao', true); }
+}
+
 // Keyboard shortcuts
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
@@ -2522,6 +2801,77 @@ init();
   </div>
   <div id="drawerBody" class="drawer-body"></div>
   <div id="drawerFooter" class="drawer-footer"></div>
+</div>
+<!-- ═══ Campaign Modal ═══ -->
+<div id="campModal" class="modal-overlay" onclick="if(event.target===this)closeCampModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div id="campModalTitle" class="modal-title">Nova Campanha</div>
+      <button class="modal-close" onclick="closeCampModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="campForm" onsubmit="event.preventDefault()">
+        <div id="campModalErr" class="modal-error"></div>
+        <div class="modal-field">
+          <label class="modal-label" for="campName">Nome da Campanha *</label>
+          <input class="modal-input" id="campName" type="text" placeholder="Ex: Ofertas de Final de Semana" maxlength="80" required>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label class="modal-label" for="campType">Tipo de Campanha</label>
+            <select class="modal-select" id="campType">
+              <option value="banner">Banner</option>
+              <option value="oferta">Oferta Flash</option>
+              <option value="destaque">Destaque</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="campRadius">Raio de Alcance (km)</label>
+            <select class="modal-select" id="campRadius">
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label class="modal-label" for="campProductName">Produto (opcional)</label>
+            <input class="modal-input" id="campProductName" type="text" placeholder="Nome do produto">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="campProductEan">EAN / Codigo (opcional)</label>
+            <input class="modal-input" id="campProductEan" type="text" placeholder="7891234567890">
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label class="modal-label" for="campPrice">Preco Promocional (R$)</label>
+            <input class="modal-input" id="campPrice" type="number" step="0.01" min="0" placeholder="0,00">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="campBudget">Orcamento (R$)</label>
+            <input class="modal-input" id="campBudget" type="number" step="1" min="50" value="500" placeholder="500">
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label class="modal-label" for="campStartDate">Data de Inicio</label>
+            <input class="modal-input" id="campStartDate" type="date">
+          </div>
+          <div class="modal-field">
+            <label class="modal-label" for="campEndDate">Data de Encerramento</label>
+            <input class="modal-input" id="campEndDate" type="date">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeCampModal()">Cancelar</button>
+      <button class="btn-submit" id="campSubmitBtn" onclick="submitCampModal()">Criar Campanha</button>
+    </div>
+  </div>
 </div>
 </body>
 </html>

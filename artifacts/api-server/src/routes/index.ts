@@ -16,6 +16,7 @@ import merchantAuthRouter from "./merchant-auth";
 import biRouter from "./bi";
 import merchantOperationsRouter from "./merchant-operations";
 import merchantAlertsRouter from "./merchant-alerts";
+import campaignsRouter from "./campaigns";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(merchantAuthRouter);
 router.use(biRouter);
 router.use(merchantOperationsRouter);
 router.use(merchantAlertsRouter);
+router.use(campaignsRouter);
 
 export default router;

@@ -633,7 +633,26 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
   const [campaignName, setCampaignName] = useState("");
   const [campaignBudget, setCampaignBudget] = useState("500");
   const [campaignType, setCampaignType] = useState<"banner" | "oferta" | "destaque">("banner");
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campStats, setCampStats] = useState<any>(null);
+  const [campCreating, setCampCreating] = useState(false);
   const urgentCount = MOCK_ALERTS.filter((a) => a.urgent).length;
+
+  const fetchCampaigns = useCallback(async () => {
+    if (!merchantSession?.token) return;
+    try {
+      const { getApiBaseUrl } = await import("@/lib/apiBaseUrl");
+      const base = getApiBaseUrl();
+      const [campRes, statsRes] = await Promise.all([
+        fetch(`${base}/campaigns`, { headers: { Authorization: `Bearer ${merchantSession.token}` } }),
+        fetch(`${base}/campaigns/stats`, { headers: { Authorization: `Bearer ${merchantSession.token}` } }),
+      ]);
+      if (campRes.ok) { const d = await campRes.json(); setCampaigns(d.campaigns || []); }
+      if (statsRes.ok) { const d = await statsRes.json(); setCampStats(d); }
+    } catch {}
+  }, [merchantSession?.token]);
+
+  useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
 
   const handleShare = async () => {
     try {
@@ -644,14 +663,36 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
     } catch {}
   };
 
-  const handleCreateCampaign = () => {
+  const handleCreateCampaign = async () => {
     if (!campaignName.trim()) { Alert.alert("Campo obrigatório", "Informe o nome da campanha."); return; }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowCampaignModal(false);
-    setCampaignName("");
-    setCampaignBudget("500");
-    setCampaignType("banner");
-    Alert.alert("Campanha criada!", `"${campaignName}" foi criada com orçamento de R$ ${campaignBudget}.\nSua campanha entrará em revisão e será ativada em até 24h.`);
+    if (!merchantSession?.token) return;
+    setCampCreating(true);
+    try {
+      const { getApiBaseUrl } = await import("@/lib/apiBaseUrl");
+      const base = getApiBaseUrl();
+      const r = await fetch(`${base}/campaigns`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${merchantSession.token}` },
+        body: JSON.stringify({ name: campaignName.trim(), campaignType, budget: campaignBudget }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        if (data.error === "limite_plano") {
+          Alert.alert("Limite do Plano", data.message);
+        } else {
+          Alert.alert("Erro", data.error || "Não foi possível criar a campanha.");
+        }
+        return;
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowCampaignModal(false);
+      setCampaignName("");
+      setCampaignBudget("500");
+      setCampaignType("banner");
+      await fetchCampaigns();
+      Alert.alert("Campanha criada!", `"${data.campaign.name}" está ativa agora.`);
+    } catch { Alert.alert("Erro", "Falha de conexão."); }
+    finally { setCampCreating(false); }
   };
 
   const metrics = [
@@ -764,9 +805,9 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
             />
           </View>
 
-          <Pressable onPress={handleCreateCampaign} style={{ backgroundColor: C.primary, borderRadius: 14, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 4 }}>
+          <Pressable onPress={handleCreateCampaign} disabled={campCreating} style={{ backgroundColor: campCreating ? "#aaa" : C.primary, borderRadius: 14, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 4 }}>
             <Feather name="zap" size={16} color="#fff" />
-            <Text style={{ color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 }}>Criar Campanha</Text>
+            <Text style={{ color: "#fff", fontFamily: "Inter_700Bold", fontSize: 15 }}>{campCreating ? "Criando..." : "Criar Campanha"}</Text>
           </Pressable>
         </View>
       </Modal>
@@ -880,45 +921,84 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
           {/* Active Campaign */}
           <View style={{ gap: 10 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <Text style={[styles.sectionLabel, { color: C.textMuted }]}>CAMPANHA ATIVA</Text>
-              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCampaignModal(true); }} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Text style={[styles.sectionLabel, { color: C.textMuted }]}>
+                CAMPANHAS {campaigns.filter(c => c.status === "active").length > 0 ? `(${campaigns.filter(c => c.status === "active").length} ATIVA${campaigns.filter(c => c.status === "active").length > 1 ? "S" : ""})` : ""}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  if (campStats && !campStats.canCreate && campStats.plan !== "plus") {
+                    Alert.alert("Limite do Plano", "Seu plano permite 1 campanha ativa. Pause a campanha atual para criar outra, ou faça upgrade para o Plano Plus.");
+                    return;
+                  }
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowCampaignModal(true);
+                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+              >
                 <Feather name="plus" size={12} color={C.primary} />
                 <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: C.primary }}>Nova</Text>
               </Pressable>
             </View>
-            <View style={[styles.campaignCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
-              <View style={styles.campaignHeader}>
+
+            {campaigns.length === 0 ? (
+              <Pressable
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCampaignModal(true); }}
+                style={{ backgroundColor: C.surfaceElevated, borderRadius: 14, padding: 20, alignItems: "center", gap: 8, borderWidth: 1, borderColor: C.border, borderStyle: "dashed" }}
+              >
+                <Feather name="send" size={22} color={C.textMuted} />
+                <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.text }}>Nenhuma campanha ainda</Text>
+                <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center" }}>Toque para criar sua primeira campanha e alcançar mais clientes</Text>
+              </Pressable>
+            ) : (
+              campaigns.slice(0, 3).map((camp) => {
+                const isActive = camp.status === "active";
+                const isPaused = camp.status === "paused";
+                const ctr = camp.impressions > 0 ? ((camp.clicks / camp.impressions) * 100).toFixed(1) : "0.0";
+                const TYPE_LABELS: Record<string, string> = { banner: "Banner", oferta: "Oferta Flash", destaque: "Destaque" };
+                return (
+                  <View key={camp.id} style={[styles.campaignCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
+                    <View style={styles.campaignHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={1}>{camp.name}</Text>
+                        <Text style={[styles.campaignSub, { color: C.textMuted }]}>{TYPE_LABELS[camp.campaign_type] || camp.campaign_type}{camp.product_name ? ` • ${camp.product_name}` : ""}</Text>
+                      </View>
+                      <View style={[styles.activeBadge, { backgroundColor: isActive ? C.success : isPaused ? "#FFC107" : "#9E9E9E" }]}>
+                        <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: "#fff", marginRight: 4 }} />
+                        <Text style={styles.activeBadgeText}>{isActive ? "Ativo" : isPaused ? "Pausado" : "Encerrado"}</Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                      <View style={[styles.campStat, { backgroundColor: C.backgroundSecondary }]}>
+                        <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: C.text }}>{camp.impressions.toLocaleString("pt-BR")}</Text>
+                        <Text style={{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }}>impressões</Text>
+                      </View>
+                      <View style={[styles.campStat, { backgroundColor: C.backgroundSecondary }]}>
+                        <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: C.text }}>{camp.clicks.toLocaleString("pt-BR")}</Text>
+                        <Text style={{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }}>cliques</Text>
+                      </View>
+                      <View style={[styles.campStat, { backgroundColor: C.backgroundSecondary }]}>
+                        <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: "#4CAF50" }}>{ctr}%</Text>
+                        <Text style={{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }}>CTR</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+
+            {!campStats?.canCreate && campStats?.plan !== "plus" && (
+              <Pressable
+                onPress={() => setSection("plan")}
+                style={{ backgroundColor: "#FFF3E0", borderRadius: 12, padding: 12, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: "#FFB74D" }}
+              >
+                <Ionicons name="star" size={16} color="#FF9800" />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.campaignTitle, { color: C.text }]}>Promoção Segunda e Terça</Text>
-                  <Text style={[styles.campaignSub, { color: C.textMuted }]}>Banner • Filé Mignon até 40% off</Text>
+                  <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#E65100" }}>Limite atingido</Text>
+                  <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: "#BF360C" }}>Faça upgrade para o Plano Plus e crie campanhas ilimitadas</Text>
                 </View>
-                <View style={[styles.activeBadge, { backgroundColor: C.success }]}>
-                  <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: "#fff", marginRight: 4 }} />
-                  <Text style={styles.activeBadgeText}>Ativo</Text>
-                </View>
-              </View>
-              <View style={[styles.progressBarBg, { backgroundColor: C.backgroundTertiary }]}>
-                <View style={[styles.progressBarFill, { backgroundColor: C.primary, width: "65%" }]} />
-              </View>
-              <View style={styles.campaignFooter}>
-                <Text style={[styles.campaignBudget, { color: C.textMuted }]}>Orçamento: R$ {retailerStore?.campaignBudget || 500}</Text>
-                <Text style={[styles.campaignUsed, { color: C.primary }]}>65% usado · R$ 175 restante</Text>
-              </View>
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-                <View style={[styles.campStat, { backgroundColor: C.backgroundSecondary }]}>
-                  <Text style={[{ fontSize: 13, fontFamily: "Inter_700Bold", color: C.text }]}>2.080</Text>
-                  <Text style={[{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }]}>impressões</Text>
-                </View>
-                <View style={[styles.campStat, { backgroundColor: C.backgroundSecondary }]}>
-                  <Text style={[{ fontSize: 13, fontFamily: "Inter_700Bold", color: C.text }]}>147</Text>
-                  <Text style={[{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }]}>cliques</Text>
-                </View>
-                <View style={[styles.campStat, { backgroundColor: C.backgroundSecondary }]}>
-                  <Text style={[{ fontSize: 13, fontFamily: "Inter_700Bold", color: "#4CAF50" }]}>7,1%</Text>
-                  <Text style={[{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }]}>CTR</Text>
-                </View>
-              </View>
-            </View>
+                <Feather name="chevron-right" size={14} color="#FF9800" />
+              </Pressable>
+            )}
           </View>
 
           {/* Top Products */}

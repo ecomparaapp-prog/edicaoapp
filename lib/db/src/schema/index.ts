@@ -11,3 +11,4 @@ export * from "./nfceRecords";
 export * from "./referrals";
 export * from "./merchantUsers";
 export * from "./merchantAlerts";
+export * from "./campaigns";
