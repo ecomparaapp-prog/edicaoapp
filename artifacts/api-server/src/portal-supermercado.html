@@ -440,6 +440,71 @@
   </main>
 </div>
 
+<!-- Add Product Modal -->
+<div class="modal-overlay" id="addProductModal" onclick="if(event.target===this)closeAddProductModal()">
+  <div class="modal" style="width:480px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="modal-title">Adicionar Produto ao Catalogo</div>
+      <button onclick="closeAddProductModal()" style="background:none;border:none;cursor:pointer;color:var(--slate);padding:4px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-sub">Informe o codigo de barras (EAN) e o preco praticado no seu estabelecimento.</div>
+    <div id="addProductError" class="auth-error"></div>
+
+    <div class="field-group">
+      <label class="field-label">Codigo EAN (codigo de barras)</label>
+      <div style="display:flex;gap:8px">
+        <input class="field-input" id="apEan" type="text" inputmode="numeric" placeholder="Ex: 7891025123417" maxlength="14"
+          style="flex:1;margin-bottom:0" oninput="onApEanInput()" onkeydown="if(event.key==='Enter')lookupEan()">
+        <button id="apLookupBtn" onclick="lookupEan()"
+          style="padding:0 16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+          Buscar
+        </button>
+      </div>
+    </div>
+
+    <div id="apProductInfo" style="display:none;background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:none">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="apProductThumb" style="width:40px;height:40px;background:var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--slate2)" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div id="apProductName" style="font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+          <div id="apProductBrand" style="font-size:11px;color:var(--slate);margin-top:2px"></div>
+        </div>
+        <svg id="apProductOk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+
+    <div class="field-group" id="apNameGroup" style="display:none">
+      <label class="field-label">Nome do Produto <span style="font-weight:400;color:var(--slate)">(nao encontrado automaticamente — informe manualmente)</span></label>
+      <input class="field-input" id="apName" type="text" placeholder="Ex: Leite Integral 1L">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Preco Praticado na Sua Loja (R$)</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px;font-weight:700;color:var(--slate)">R$</span>
+        <input class="field-input" id="apPrice" type="text" inputmode="decimal" placeholder="0,00"
+          style="flex:1;margin-bottom:0;font-size:15px;font-weight:700;color:var(--navy)"
+          onkeydown="if(event.key==='Enter')submitAddProduct()">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button onclick="closeAddProductModal()"
+        style="flex:1;padding:12px;background:none;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;color:var(--slate);cursor:pointer">
+        Cancelar
+      </button>
+      <button id="apSubmitBtn" onclick="submitAddProduct()"
+        style="flex:2;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+        Adicionar ao Catalogo
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Change Password Modal -->
 <div class="modal-overlay" id="changePwdModal">
   <div class="modal">
@@ -471,6 +536,16 @@ let currentPlan = 'normal';
 let wsSocket = null;
 let biCache = null;
 let biPeriod = 'week';
+let apLookedUp = false;
+let apProductData = null;
+let catalogProducts = [
+  {ean:'7891025123417',name:'Leite Parmalat 1L',price:'R$ 5,49',pos:'#1 na regiao',active:true,oferta:true},
+  {ean:'7896006716015',name:'Arroz Tio Joao 5kg',price:'R$ 24,90',pos:'#2 na regiao',active:true,oferta:false},
+  {ean:'7896006716220',name:'Feijao Camil 1kg',price:'R$ 8,99',pos:'#3 na regiao',active:true,oferta:false},
+  {ean:'7891108116007',name:'Oleo Liza 900ml',price:'R$ 7,49',pos:'#1 na regiao',active:true,oferta:true},
+  {ean:'7894900011517',name:'Coca-Cola 2L',price:'R$ 9,99',pos:'#4 na regiao',active:false,oferta:false},
+  {ean:'7891000055120',name:'Acucar Uniao 1kg',price:'R$ 4,89',pos:'#2 na regiao',active:true,oferta:false},
+];
 
 /* ═══ Router ═══ */
 async function init() {
@@ -1220,56 +1295,179 @@ function renderProdutos() {
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="catalogCard">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div class="card-title" style="margin:0">Catalogo de Produtos do Supermercado</div>
-      <button class="btn-primary" style="width:auto;padding:10px 20px;margin:0;font-size:12px" onclick="showToast('Adicionar produto em breve')">+ Adicionar Produto</button>
+      <button class="btn-primary" style="width:auto;padding:10px 20px;margin:0;font-size:12px" onclick="openAddProductModal()">+ Adicionar Produto</button>
     </div>
     <table class="product-table">
       <thead><tr>
         <th>EAN</th><th>Produto</th><th>Preco Atual</th><th>Posicionamento</th><th>Status</th><th>Em Oferta</th>
       </tr></thead>
-      <tbody>
-        ${[
-          {ean:'7891025123417',name:'Leite Parmalat 1L',price:'R$ 5,49',pos:'#1 na regiao',active:true,oferta:true},
-          {ean:'7896006716015',name:'Arroz Tio Joao 5kg',price:'R$ 24,90',pos:'#2 na regiao',active:true,oferta:false},
-          {ean:'7896006716220',name:'Feijao Camil 1kg',price:'R$ 8,99',pos:'#3 na regiao',active:true,oferta:false},
-          {ean:'7891108116007',name:'Oleo Liza 900ml',price:'R$ 7,49',pos:'#1 na regiao',active:true,oferta:true},
-          {ean:'7894900011517',name:'Coca-Cola 2L',price:'R$ 9,99',pos:'#4 na regiao',active:false,oferta:false},
-          {ean:'7891000055120',name:'Acucar Uniao 1kg',price:'R$ 4,89',pos:'#2 na regiao',active:true,oferta:false},
-        ].map((p,i) => {
-          const safeOferta = p.active ? p.oferta : false;
-          return `
-        <tr style="${!p.active?'opacity:0.65':''}">
-          <td style="font-family:monospace;font-size:11px;color:var(--slate)">${p.ean}</td>
-          <td style="font-weight:500;color:var(--navy)">${p.name}</td>
-          <td style="font-weight:700;color:var(--red)">${p.price}</td>
-          <td><span class="status-badge ${p.active?'active':'inactive'}">${p.pos}</span></td>
-          <td><span class="status-badge ${p.active?'active':'inactive'}">${p.active?'Ativo':'Inativo'}</span></td>
-          <td>
-            <div style="display:flex;align-items:center;gap:6px">
-              <button
-                class="toggle-btn ${safeOferta?'on':'off'} ${!p.active?'toggle-disabled':''}"
-                title="${!p.active?'Ative o produto antes de marcar em oferta':''}"
-                onclick="${!p.active
-                  ? `showToast('Reative o produto antes de marcar em oferta.',true)`
-                  : `(function(btn){
-                      const isOn=btn.className.includes(' on');
-                      btn.className='toggle-btn '+(isOn?'off':'on');
-                      showToast('Oferta '+(isOn?'desativada':'ativada')+' com sucesso');
-                    })(this)`
-                }"
-              >
-                <div class="toggle-knob"></div>
-              </button>
-              ${!p.active?`<span style="font-size:10px;color:var(--slate);font-style:italic">N/A</span>`:''}
-            </div>
-          </td>
-        </tr>`;
-        }).join('')}
+      <tbody id="catalogTbody">
+        ${renderCatalogRows()}
       </tbody>
     </table>
   </div>`;
+}
+
+/* ═══ Catalog helpers ═══ */
+function renderCatalogRows() {
+  return catalogProducts.map((p) => {
+    const safeOferta = p.active ? p.oferta : false;
+    return `
+    <tr style="${!p.active?'opacity:0.65':''}">
+      <td style="font-family:monospace;font-size:11px;color:var(--slate)">${p.ean}</td>
+      <td style="font-weight:500;color:var(--navy)">${p.name}</td>
+      <td style="font-weight:700;color:var(--red)">${p.price}</td>
+      <td><span class="status-badge ${p.active?'active':'inactive'}">${p.pos}</span></td>
+      <td><span class="status-badge ${p.active?'active':'inactive'}">${p.active?'Ativo':'Inativo'}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button
+            class="toggle-btn ${safeOferta?'on':'off'} ${!p.active?'toggle-disabled':''}"
+            title="${!p.active?'Ative o produto antes de marcar em oferta':''}"
+            onclick="${!p.active
+              ? `showToast('Reative o produto antes de marcar em oferta.',true)`
+              : `(function(btn){const isOn=btn.className.includes(' on');btn.className='toggle-btn '+(isOn?'off':'on');showToast('Oferta '+(isOn?'desativada':'ativada')+' com sucesso');})(this)`
+            }"
+          ><div class="toggle-knob"></div></button>
+          ${!p.active?`<span style="font-size:10px;color:var(--slate);font-style:italic">N/A</span>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function refreshCatalogTable() {
+  const tbody = document.getElementById('catalogTbody');
+  if (tbody) tbody.innerHTML = renderCatalogRows();
+}
+
+/* ═══ Add Product Modal ═══ */
+function openAddProductModal() {
+  apLookedUp = false;
+  apProductData = null;
+  document.getElementById('apEan').value = '';
+  document.getElementById('apPrice').value = '';
+  document.getElementById('apName').value = '';
+  document.getElementById('addProductError').style.display = 'none';
+  document.getElementById('addProductError').textContent = '';
+  document.getElementById('apProductInfo').style.display = 'none';
+  document.getElementById('apNameGroup').style.display = 'none';
+  document.getElementById('apLookupBtn').textContent = 'Buscar';
+  document.getElementById('apLookupBtn').disabled = false;
+  document.getElementById('apSubmitBtn').disabled = false;
+  document.getElementById('apSubmitBtn').textContent = 'Adicionar ao Catalogo';
+  document.getElementById('addProductModal').classList.add('show');
+  setTimeout(() => document.getElementById('apEan').focus(), 100);
+}
+
+function closeAddProductModal() {
+  document.getElementById('addProductModal').classList.remove('show');
+}
+
+function onApEanInput() {
+  apLookedUp = false;
+  apProductData = null;
+  document.getElementById('apProductInfo').style.display = 'none';
+  document.getElementById('apNameGroup').style.display = 'none';
+  document.getElementById('addProductError').style.display = 'none';
+}
+
+async function lookupEan() {
+  const ean = document.getElementById('apEan').value.trim().replace(/\D/g,'');
+  if (!ean || ean.length < 8) {
+    showApError('Informe um EAN valido com pelo menos 8 digitos.');
+    return;
+  }
+  const btn = document.getElementById('apLookupBtn');
+  btn.textContent = '...';
+  btn.disabled = true;
+  document.getElementById('apProductInfo').style.display = 'none';
+  document.getElementById('apNameGroup').style.display = 'none';
+  document.getElementById('addProductError').style.display = 'none';
+  try {
+    const r = await fetch(`${API}/products/ean/${ean}`, {
+      headers: { Authorization: `Bearer ${session.token}` }
+    });
+    const data = await r.json();
+    if (r.ok && data.found) {
+      apProductData = data;
+      apLookedUp = true;
+      document.getElementById('apProductName').textContent = data.description || ean;
+      document.getElementById('apProductBrand').textContent = data.brand ? `Marca: ${data.brand}` : (data.category || '');
+      const thumb = document.getElementById('apProductThumb');
+      if (data.thumbnail) {
+        thumb.innerHTML = `<img src="${data.thumbnail}" style="width:100%;height:100%;object-fit:cover">`;
+      } else {
+        thumb.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--slate2)" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>`;
+      }
+      document.getElementById('apProductInfo').style.display = 'block';
+    } else {
+      apLookedUp = true;
+      document.getElementById('apNameGroup').style.display = 'block';
+      document.getElementById('apName').focus();
+      showApError('Produto nao encontrado na base nacional. Informe o nome manualmente.', false);
+    }
+  } catch (e) {
+    showApError('Erro ao consultar o EAN. Verifique sua conexao e tente novamente.');
+  } finally {
+    btn.textContent = 'Buscar';
+    btn.disabled = false;
+  }
+}
+
+function showApError(msg, isError = true) {
+  const el = document.getElementById('addProductError');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.color = isError ? '' : 'var(--slate)';
+  el.style.background = isError ? '' : '#F8F9FA';
+  el.style.border = isError ? '' : '1px solid var(--border)';
+}
+
+async function submitAddProduct() {
+  const ean = document.getElementById('apEan').value.trim().replace(/\D/g,'');
+  const priceRaw = document.getElementById('apPrice').value.trim().replace(',','.');
+  const manualName = document.getElementById('apName').value.trim();
+  const price = parseFloat(priceRaw);
+
+  if (!ean || ean.length < 8) { showApError('Informe um EAN valido.'); return; }
+  if (!apLookedUp) { showApError('Clique em "Buscar" para validar o EAN antes de continuar.'); return; }
+  if (isNaN(price) || price <= 0) { showApError('Informe um preco valido maior que zero.'); return; }
+  const productName = (apProductData?.description) || manualName;
+  if (!productName) { showApError('Informe o nome do produto.'); return; }
+
+  const btn = document.getElementById('apSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  document.getElementById('addProductError').style.display = 'none';
+
+  try {
+    const r = await fetch(`${API}/merchant/prices/single`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ ean, price })
+    });
+    const data = await r.json();
+    if (!r.ok) { showApError(data.error || 'Erro ao salvar produto.'); btn.disabled=false; btn.textContent='Adicionar ao Catalogo'; return; }
+
+    const priceFormatted = 'R$ ' + price.toFixed(2).replace('.',',');
+    const existing = catalogProducts.findIndex(p => p.ean === ean);
+    if (existing >= 0) {
+      catalogProducts[existing].price = priceFormatted;
+    } else {
+      catalogProducts.unshift({ ean, name: productName, price: priceFormatted, pos: '—', active: true, oferta: false });
+    }
+    refreshCatalogTable();
+    closeAddProductModal();
+    showToast(`Produto "${productName}" adicionado ao catalogo com sucesso!`);
+  } catch (e) {
+    showApError('Erro de conexao. Tente novamente.');
+    btn.disabled = false;
+    btn.textContent = 'Adicionar ao Catalogo';
+  }
 }
 
 /* ═══ Alertas ═══ */
