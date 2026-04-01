@@ -1,0 +1,39 @@
+PROMPT DE CORREÇÃO: SINCRONIZAÇÃO TOTAL DE BI (APP ↔ WEB)
+Objetivo: Resolver a falha de integração de dados entre a Área Supermercado (App) e o Portal Supermercado (Web), garantindo que todas as métricas de Business Intelligence (BI) capturadas no mobile sejam exibidas de forma idêntica no dashboard web.
+
+1. DIAGNÓSTICO DE ENDPOINTS (BACKEND)
+Verificação de API: Certifique-se de que o Portal Supermercado (Web) está consumindo exatamente os mesmos endpoints de BI que a Área Supermercado (App).
+
+Métricas Ausentes: Investigue por que os módulos de "Market Share Interno" e "Fluxo de Clientes por Hora" não estão retornando dados na interface Web.
+
+Ação: Valide se as queries de banco de dados (SQL/NoSQL) que alimentam o gráfico de "Fluxo de Clientes" (baseado em GPS/Check-in) estão acessíveis para a Role de usuário 'Supermercado' na plataforma Web.
+
+2. INTEGRAÇÃO DE MÉTRICAS "MISSING"
+Implementar/Corrigir os seguintes componentes no Portal Web para espelhar o App:
+
+Fluxo de Clientes por Hora: O gráfico de picos de movimento (Heatmap temporal) deve ser renderizado na Web usando os mesmos dados de telemetria coletados pelo App.
+
+Market Share Interno (Participação por Marca): O cálculo de vendas por marca dentro das categorias deve ser global. Se o lojista visualizar o giro de estoque no App, a mesma "rosca" ou "barra" de Market Share deve aparecer no Portal Web.
+
+Filtros Globais: Garanta que os filtros de Dia, Semana, Mês e Ano aplicados na Web disparem as mesmas funções de agregação de dados utilizadas no App.
+
+3. ARQUITETURA "SINGLE SOURCE OF TRUTH"
+Lógica Centralizada: Remova qualquer lógica de cálculo de BI que esteja "hardcoded" no frontend do App. Mova todos os cálculos de Market Share e Fluxo para o Controller da API, para que o App e a Web recebam apenas o JSON final processado.
+
+Consistência Visual: Mantenha a identidade corporativa (sem emojis, logo oficial sem fundo). Os nomes das métricas devem ser idênticos em ambas as plataformas para evitar confusão do lojista.
+
+4. REQUISITOS TÉCNICOS DE REPARAÇÃO
+Verifique se há algum conflito de CORS ou de Token de Autenticação impedindo que o Portal Web acesse as rotas de analytics de alta performance.
+
+Se estiver usando cache (ex: Redis ou Cloudflare), limpe o cache de BI para garantir que as atualizações em tempo real do App fluam para a Web.
+
+🧪 TESTE DE VALIDAÇÃO (DEBUG)
+Solicite que a IA do Replit execute o seguinte teste de estresse:
+
+Ação no App: Simule a entrada de 50 usuários em um intervalo de 1 hora em um supermercado específico de Brasília.
+
+Verificação no App: O gráfico de "Fluxo de Clientes" deve mostrar o pico.
+
+Verificação na Web: O Portal Supermercado deve exibir exatamente o mesmo pico no gráfico correspondente, sem divergência de números.
+
+Ação de Venda: Valide uma nota fiscal com 5 itens da marca 'Parmalat'. O "Market Share Interno" deve subir proporcionalmente tanto no App quanto na Web em tempo real.
