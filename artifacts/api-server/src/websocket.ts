@@ -59,7 +59,8 @@ export type WSEventType =
   | "bi:refresh"
   | "alert:updated"
   | "alert:resolved"
-  | "alert:created";
+  | "alert:created"
+  | "campaign:changed";
 
 export interface WSEvent {
   type: WSEventType;
@@ -122,4 +123,12 @@ export function emitPlanChanged(merchantId: number, newPlan: string) {
 
 export function emitSessionInvalidated(merchantId: number) {
   emitToMerchant(merchantId, "session:invalidated", { reason: "password_changed" });
+}
+
+export function emitCampaignChanged(merchantId: number, action: "created" | "updated" | "deleted", campaignId: number, payload?: Record<string, unknown>) {
+  emitToMerchant(merchantId, "campaign:changed", {
+    action,
+    campaignId,
+    ...payload,
+  });
 }

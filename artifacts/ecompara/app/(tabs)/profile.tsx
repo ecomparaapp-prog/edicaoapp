@@ -27,6 +27,7 @@ import { Colors } from "@/constants/colors";
 import { useApp, type User } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 import RetailerBI from "@/components/RetailerBI";
+import { realtimeService } from "@/services/realtimeService";
 
 const MOCK_ALERTS = [
   { id: "a1", type: "price_report", product: "Leite Parmalat 1L", reported: "R$ 4,89", current: "R$ 5,49", reporter: "Ana S.", time: "Há 12 min", urgent: true },
@@ -654,6 +655,14 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
 
   useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
 
+  // Atualiza campanhas em tempo real via WebSocket
+  useEffect(() => {
+    const off = realtimeService.on("campaign:changed", () => {
+      fetchCampaigns();
+    });
+    return off;
+  }, [fetchCampaigns]);
+
   const handleShare = async () => {
     try {
       await Share.share({
@@ -950,21 +959,58 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
                 <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center" }}>Toque para criar sua primeira campanha e alcançar mais clientes</Text>
               </Pressable>
             ) : (
-              campaigns.slice(0, 3).map((camp) => {
+              campaigns.map((camp) => {
                 const isActive = camp.status === "active";
                 const isPaused = camp.status === "paused";
+                const isEnded = camp.status === "ended";
                 const ctr = camp.impressions > 0 ? ((camp.clicks / camp.impressions) * 100).toFixed(1) : "0.0";
                 const TYPE_LABELS: Record<string, string> = { banner: "Banner", oferta: "Oferta Flash", destaque: "Destaque" };
+                const handleToggle = async () => {
+                  if (isEnded || !merchantSession?.token) return;
+                  const newStatus = isActive ? "paused" : "active";
+                  try {
+                    const { getApiBaseUrl } = await import("@/lib/apiBaseUrl");
+                    const base = getApiBaseUrl();
+                    const r = await fetch(`${base}/campaigns/${camp.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${merchantSession.token}` },
+                      body: JSON.stringify({ status: newStatus }),
+                    });
+                    const data = await r.json();
+                    if (!r.ok) {
+                      if (data.error === "limite_plano") {
+                        Alert.alert("Limite do Plano", data.message);
+                      } else {
+                        Alert.alert("Erro", data.error || "Falha ao atualizar campanha.");
+                      }
+                      return;
+                    }
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    await fetchCampaigns();
+                  } catch { Alert.alert("Erro", "Falha de conexão."); }
+                };
                 return (
-                  <View key={camp.id} style={[styles.campaignCard, { backgroundColor: C.surfaceElevated, borderColor: C.border }]}>
+                  <View key={camp.id} style={[styles.campaignCard, { backgroundColor: C.surfaceElevated, borderColor: isActive ? C.primary + "40" : C.border }]}>
                     <View style={styles.campaignHeader}>
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.campaignTitle, { color: C.text }]} numberOfLines={1}>{camp.name}</Text>
                         <Text style={[styles.campaignSub, { color: C.textMuted }]}>{TYPE_LABELS[camp.campaign_type] || camp.campaign_type}{camp.product_name ? ` • ${camp.product_name}` : ""}</Text>
                       </View>
-                      <View style={[styles.activeBadge, { backgroundColor: isActive ? C.success : isPaused ? "#FFC107" : "#9E9E9E" }]}>
-                        <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: "#fff", marginRight: 4 }} />
-                        <Text style={styles.activeBadgeText}>{isActive ? "Ativo" : isPaused ? "Pausado" : "Encerrado"}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <View style={[styles.activeBadge, { backgroundColor: isActive ? "#E8F5E9" : isPaused ? "#FFF8E1" : "#F5F5F5" }]}>
+                          <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: isActive ? "#4CAF50" : isPaused ? "#FFC107" : "#9E9E9E", marginRight: 4 }} />
+                          <Text style={[styles.activeBadgeText, { color: isActive ? "#2E7D32" : isPaused ? "#F57F17" : "#616161" }]}>{isActive ? "Ativa" : isPaused ? "Pausada" : "Encerrada"}</Text>
+                        </View>
+                        {!isEnded && (
+                          <Pressable
+                            onPress={handleToggle}
+                            style={{ backgroundColor: isActive ? "#FFF3E0" : C.primary + "15", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: isActive ? "#FFB74D" : C.primary + "40" }}
+                          >
+                            <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: isActive ? "#E65100" : C.primary }}>
+                              {isActive ? "Pausar" : "Ativar"}
+                            </Text>
+                          </Pressable>
+                        )}
                       </View>
                     </View>
                     <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
@@ -981,6 +1027,12 @@ function RetailerPanel({ topPad, bottomPad, isDark, C, onSwitchToCustomer, onMer
                         <Text style={{ fontSize: 10, color: C.textMuted, fontFamily: "Inter_400Regular" }}>CTR</Text>
                       </View>
                     </View>
+                    {camp.radius === 10 && (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 }}>
+                        <Feather name="map-pin" size={10} color={C.textMuted} />
+                        <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: C.textMuted }}>Raio estendido 10km (Plus)</Text>
+                      </View>
+                    )}
                   </View>
                 );
               })

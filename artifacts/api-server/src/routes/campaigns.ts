@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { campaignsTable, merchantUsersTable } from "@workspace/db/schema";
 import { eq, and, count } from "drizzle-orm";
 import { merchantAuthMiddleware } from "./merchant-auth";
+import { emitCampaignChanged } from "../websocket";
 
 const campaignsRouter = Router();
 
@@ -70,6 +71,7 @@ campaignsRouter.post("/campaigns", async (req, res) => {
     })
     .returning();
 
+  emitCampaignChanged(uid, "created", created.id, { campaign: created });
   res.status(201).json({ campaign: created });
 });
 
@@ -114,6 +116,7 @@ campaignsRouter.patch("/campaigns/:id", async (req, res) => {
   if (endDate != null) updates.endDate = endDate ? new Date(endDate) : null;
 
   const [updated] = await db.update(campaignsTable).set(updates).where(eq(campaignsTable.id, id)).returning();
+  emitCampaignChanged(uid, "updated", id, { campaign: updated, status: updated.status });
   res.json({ campaign: updated });
 });
 
@@ -129,6 +132,7 @@ campaignsRouter.delete("/campaigns/:id", async (req, res) => {
   }
 
   await db.delete(campaignsTable).where(eq(campaignsTable.id, id));
+  emitCampaignChanged(uid, "deleted", id);
   res.json({ ok: true });
 });
 

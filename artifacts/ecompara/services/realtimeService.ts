@@ -8,7 +8,8 @@ export type RealtimeEventType =
   | "csv:import:error"
   | "plan:changed"
   | "session:invalidated"
-  | "bi:refresh";
+  | "bi:refresh"
+  | "campaign:changed";
 
 export interface RealtimeEvent {
   type: RealtimeEventType;
