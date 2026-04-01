@@ -196,6 +196,12 @@
   .settings-field{display:flex;flex-direction:column;gap:5px}
   .divider{border:none;border-top:1px solid var(--border);margin:20px 0}
 
+  /* ── Flash Offer ── */
+  .fo-select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:#fff;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;margin-bottom:14px}
+  .fo-select:focus{outline:none;border-color:var(--red)}
+  .fo-preview{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:none}
+  .fo-countdown{background:linear-gradient(135deg,#CC0000,#991B1B);color:#fff;border-radius:10px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}
+
   /* ── Change Password Modal ── */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;display:none}
   .modal-overlay.show{display:flex}
@@ -440,6 +446,88 @@
   </main>
 </div>
 
+<!-- Flash Offer Active Banner -->
+<div id="flashOfferBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:150;background:linear-gradient(135deg,#CC0000,#991B1B);color:#fff;padding:8px 24px;align-items:center;gap:10px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.2)">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+  <span id="flashOfferBannerText" style="flex:1"></span>
+</div>
+
+<!-- Flash Offer Modal -->
+<div class="modal-overlay" id="flashOfferModal" onclick="if(event.target===this)closeFlashOfferModal()">
+  <div class="modal" style="width:460px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;background:#FEF2F2;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="modal-title" style="margin:0">Oferta Relampago</div>
+      </div>
+      <button onclick="closeFlashOfferModal()" style="background:none;border:none;cursor:pointer;color:var(--slate);padding:4px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-sub">Ative um desconto imediato em um produto. Ele sera destacado no app para todos os usuarios na sua regiao durante o periodo selecionado.</div>
+    <div id="foError" class="auth-error"></div>
+
+    <div class="field-group">
+      <label class="field-label">Produto</label>
+      <select class="fo-select" id="foProduct" onchange="updateFoPreview()">
+        <option value="">Selecione um produto ativo...</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Desconto</label>
+      <select class="fo-select" id="foDiscount" onchange="updateFoPreview()">
+        <option value="5">5%</option>
+        <option value="10" selected>10%</option>
+        <option value="15">15%</option>
+        <option value="20">20%</option>
+        <option value="30">30%</option>
+        <option value="50">50%</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Duracao da Oferta</label>
+      <select class="fo-select" id="foDuration">
+        <option value="30">30 minutos</option>
+        <option value="60" selected>1 hora</option>
+        <option value="120">2 horas</option>
+        <option value="240">4 horas</option>
+        <option value="480">8 horas</option>
+        <option value="1440">24 horas</option>
+      </select>
+    </div>
+
+    <div class="fo-preview" id="foPreview">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--red);margin-bottom:8px">Previa da Oferta</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div id="foPreviewName" style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:2px"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+            <span id="foPreviewOriginal" style="font-size:12px;color:var(--slate);text-decoration:line-through"></span>
+            <span style="font-size:10px;font-weight:700;background:#FEF2F2;color:var(--red);padding:2px 6px;border-radius:4px" id="foPreviewBadge"></span>
+          </div>
+        </div>
+        <div id="foPreviewNew" style="font-size:22px;font-weight:800;color:var(--red)"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button onclick="closeFlashOfferModal()"
+        style="flex:1;padding:12px;background:none;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;color:var(--slate);cursor:pointer">
+        Cancelar
+      </button>
+      <button id="foSubmitBtn" onclick="submitFlashOffer()"
+        style="flex:2;padding:12px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Ativar Oferta Agora
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Add Product Modal -->
 <div class="modal-overlay" id="addProductModal" onclick="if(event.target===this)closeAddProductModal()">
   <div class="modal" style="width:480px">
@@ -538,6 +626,8 @@ let biCache = null;
 let biPeriod = 'week';
 let apLookedUp = false;
 let apProductData = null;
+let activeFlashOffer = null;
+let flashOfferTimer = null;
 let catalogProducts = [
   {ean:'7891025123417',name:'Leite Parmalat 1L',price:'R$ 5,49',pos:'#1 na regiao',active:true,oferta:true},
   {ean:'7896006716015',name:'Arroz Tio Joao 5kg',price:'R$ 24,90',pos:'#2 na regiao',active:true,oferta:false},
@@ -954,9 +1044,9 @@ function renderDashboard(bi) {
       <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
       <div><div class="action-btn-label">Importar CSV</div><div class="action-btn-sub">Upload em lote de precos</div></div>
     </div>
-    <div class="action-btn" onclick="showToast('Oferta Relampago criada com sucesso')">
+    <div class="action-btn" id="flashOfferBtn" onclick="openFlashOfferModal()">
       <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-      <div><div class="action-btn-label">Oferta Relampago</div><div class="action-btn-sub">Lancamento imediato</div></div>
+      <div><div class="action-btn-label">Oferta Relampago</div><div class="action-btn-sub" id="flashOfferBtnSub">Lancamento imediato</div></div>
     </div>
     <div class="action-btn" onclick="showQRCode()">
       <div class="action-btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-3v2h3"/><path d="M21 21h-3v-2h3"/><path d="M14 21v-2h2"/><path d="M14 16v2h2"/></svg></div>
@@ -1955,6 +2045,169 @@ function showToast(msg, isErr = false) {
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+/* ═══ Flash Offer ═══ */
+function openFlashOfferModal() {
+  document.getElementById('foError').style.display = 'none';
+  document.getElementById('foPreview').style.display = 'none';
+  document.getElementById('foSubmitBtn').disabled = false;
+  document.getElementById('foSubmitBtn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Ativar Oferta Agora`;
+
+  const sel = document.getElementById('foProduct');
+  sel.innerHTML = '<option value="">Selecione um produto ativo...</option>';
+  catalogProducts.filter(p => p.active).forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.ean;
+    opt.textContent = `${p.name} — ${p.price}`;
+    opt.dataset.name = p.name;
+    opt.dataset.price = p.price;
+    sel.appendChild(opt);
+  });
+
+  if (activeFlashOffer) {
+    showToast('Ja existe uma oferta relampago ativa. Aguarde o encerramento para criar outra.', true);
+    return;
+  }
+  document.getElementById('flashOfferModal').classList.add('show');
+}
+
+function closeFlashOfferModal() {
+  document.getElementById('flashOfferModal').classList.remove('show');
+}
+
+function parseBRLPrice(str) {
+  return parseFloat((str || '').replace('R$','').replace('.','').replace(',','.').trim());
+}
+
+function updateFoPreview() {
+  const sel = document.getElementById('foProduct');
+  const opt = sel.options[sel.selectedIndex];
+  const discount = parseInt(document.getElementById('foDiscount').value, 10);
+  const preview = document.getElementById('foPreview');
+  if (!sel.value || !opt.dataset.price) { preview.style.display = 'none'; return; }
+  const original = parseBRLPrice(opt.dataset.price);
+  if (isNaN(original) || original <= 0) { preview.style.display = 'none'; return; }
+  const discounted = original * (1 - discount / 100);
+  document.getElementById('foPreviewName').textContent = opt.dataset.name;
+  document.getElementById('foPreviewOriginal').textContent = opt.dataset.price;
+  document.getElementById('foPreviewBadge').textContent = `-${discount}%`;
+  document.getElementById('foPreviewNew').textContent = 'R$ ' + discounted.toFixed(2).replace('.',',');
+  preview.style.display = 'block';
+}
+
+async function submitFlashOffer() {
+  const sel = document.getElementById('foProduct');
+  const opt = sel.options[sel.selectedIndex];
+  const discount = parseInt(document.getElementById('foDiscount').value, 10);
+  const durationMin = parseInt(document.getElementById('foDuration').value, 10);
+
+  if (!sel.value) {
+    const err = document.getElementById('foError');
+    err.textContent = 'Selecione um produto para a oferta.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const original = parseBRLPrice(opt.dataset.price);
+  if (isNaN(original) || original <= 0) {
+    const err = document.getElementById('foError');
+    err.textContent = 'Preco do produto invalido.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const discounted = parseFloat((original * (1 - discount / 100)).toFixed(2));
+  const ean = sel.value;
+  const productName = opt.dataset.name;
+
+  const btn = document.getElementById('foSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Ativando...';
+
+  try {
+    const r = await fetch(`${API}/merchant/prices/single`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ ean, price: discounted })
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      const err = document.getElementById('foError');
+      err.textContent = data.error || 'Erro ao ativar oferta.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Ativar Oferta Agora`;
+      return;
+    }
+
+    const expiresAt = Date.now() + durationMin * 60 * 1000;
+    activeFlashOffer = { ean, productName, originalPrice: original, discountedPrice: discounted, discount, durationMin, expiresAt };
+
+    const idx = catalogProducts.findIndex(p => p.ean === ean);
+    if (idx >= 0) {
+      catalogProducts[idx].price = 'R$ ' + discounted.toFixed(2).replace('.',',');
+      refreshCatalogTable();
+    }
+
+    closeFlashOfferModal();
+    showToast(`Oferta Relampago ativada: ${productName} com ${discount}% de desconto por ${durationMin < 60 ? durationMin + ' min' : (durationMin/60) + 'h'}!`);
+    startFlashOfferCountdown();
+
+  } catch (e) {
+    const err = document.getElementById('foError');
+    err.textContent = 'Erro de conexao. Tente novamente.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Ativar Oferta Agora`;
+  }
+}
+
+function startFlashOfferCountdown() {
+  if (flashOfferTimer) clearInterval(flashOfferTimer);
+  updateFlashOfferUI();
+  flashOfferTimer = setInterval(() => {
+    if (!activeFlashOffer) { clearInterval(flashOfferTimer); return; }
+    if (Date.now() >= activeFlashOffer.expiresAt) {
+      clearInterval(flashOfferTimer);
+      activeFlashOffer = null;
+      updateFlashOfferUI();
+      showToast('Oferta Relampago encerrada. O preco retornou ao normal.');
+    } else {
+      updateFlashOfferUI();
+    }
+  }, 1000);
+}
+
+function updateFlashOfferUI() {
+  const btn = document.getElementById('flashOfferBtn');
+  const sub = document.getElementById('flashOfferBtnSub');
+  const banner = document.getElementById('flashOfferBanner');
+
+  if (!activeFlashOffer) {
+    if (sub) sub.textContent = 'Lancamento imediato';
+    if (btn) btn.style.border = '';
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+
+  const remaining = Math.max(0, activeFlashOffer.expiresAt - Date.now());
+  const totalSec = Math.floor(remaining / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const timeStr = h > 0
+    ? `${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`
+    : `${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+
+  if (sub) sub.textContent = `Ativa — ${timeStr} restantes`;
+  if (btn) btn.style.border = '2px solid var(--red)';
+
+  if (banner) {
+    banner.style.display = 'flex';
+    const bannerText = document.getElementById('flashOfferBannerText');
+    if (bannerText) bannerText.textContent = `Oferta ativa: ${activeFlashOffer.productName} com ${activeFlashOffer.discount}% OFF (R$ ${activeFlashOffer.discountedPrice.toFixed(2).replace('.',',')} vs R$ ${activeFlashOffer.originalPrice.toFixed(2).replace('.',',')}) — encerra em ${timeStr}`;
+  }
 }
 
 function showQRCode() {
