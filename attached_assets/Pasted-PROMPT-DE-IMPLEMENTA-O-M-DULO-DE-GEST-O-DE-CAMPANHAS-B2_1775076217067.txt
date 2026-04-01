@@ -1,0 +1,52 @@
+PROMPT DE IMPLEMENTAÇÃO: MÓDULO DE GESTÃO DE CAMPANHAS (B2B)
+Objetivo: Adicionar a funcionalidade "Campanhas" na Sidebar do Portal Supermercado (Web) e na Área Supermercado (App), permitindo a criação e gestão de ofertas patrocinadas com base no plano de assinatura do lojista.
+
+1. ATUALIZAÇÃO DA SIDEBAR E NAVEGAÇÃO
+Localização: Adicionar o item "Campanhas" dentro da seção de "Gestão" na Sidebar.
+
+Ícone: Utilizar um ícone sóbrio e profissional (ex: Megaphone ou Layers da biblioteca Lucide).
+
+Identidade: Manter o padrão visual corporativo: sem emojis, tipografia Inter ou Roboto e logo oficial (sem fundo) no cabeçalho.
+
+2. DASHBOARD DE GESTÃO DE CAMPANHAS
+Criar uma tela centralizada que exiba:
+
+Lista de Campanhas: Tabela ou lista de cards contendo: Nome da Campanha, Produto (EAN), Status (Ativa, Pausada, Finalizada), Data de Início/Fim e Alcance (Cliques/Visualizações).
+
+Ações: Botões para "Pausar", "Editar" ou "Excluir" campanhas existentes.
+
+Botão de Criar: Botão fixo no topo: "Nova Campanha".
+
+3. FLUXO DE CRIAÇÃO (ESPELHAMENTO DO APP)
+O formulário de criação deve ser um espelho da funcionalidade "Lançamento de Oferta" já existente no App:
+
+Seleção de Produto: Busca por EAN ou nome no catálogo do supermercado.
+
+Configuração de Preço: Valor promocional da campanha.
+
+Raio de Atuação: Definir se a campanha será exibida no raio padrão (5km) ou estendido (10km para Plano Plus).
+
+Duração: Seleção de período (Data inicial e final).
+
+4. LÓGICA DE NEGÓCIO E TRAVA DE PLANOS (TIERING)
+Implementar a regra de validação de campanha no backend:
+
+Plano Normal (R$ 299,90): O sistema deve contar as campanhas com status: ACTIVE. Se já houver 1 campanha ativa, desabilitar o botão "Nova Campanha" e exibir uma mensagem profissional: "Seu plano atual permite 01 campanha ativa por vez. Para campanhas ilimitadas, faça o upgrade para o Plano Plus."
+
+Plano Plus (R$ 599,90): Permitir a criação ilimitada de campanhas.
+
+Bônus Plus: Exibir o saldo de R$ 100,00 de incentivo para a primeira campanha do mês (conforme regra de negócio anterior).
+
+5. INTEGRAÇÃO TÉCNICA (SINGLE SOURCE OF TRUTH)
+Sincronização: Toda campanha criada no Portal Web deve aparecer instantaneamente na Área Supermercado do App.
+
+API: Utilizar o endpoint /api/v1/campaigns para garantir que o banco de dados seja a única fonte de verdade para ambas as plataformas.
+
+🧪 TESTE DE VALIDAÇÃO (O QUE A IA DEVE ENTREGAR)
+Peça para a IA realizar estes três testes após codificar:
+
+Teste de Limite (Normal): Tentar criar uma segunda campanha em uma conta de Plano Normal. O sistema deve bloquear e sugerir o upgrade.
+
+Teste de Criação (Plus): Criar três campanhas simultâneas em uma conta Plus e verificar se todas aparecem na lista de "Campanhas Ativas" tanto na Web quanto no App.
+
+Teste de Status: Pausar uma campanha na Web e verificar se o status mudou para "Pausada" imediatamente na visualização do App.
