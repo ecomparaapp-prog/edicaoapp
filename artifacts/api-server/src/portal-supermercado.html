@@ -1116,89 +1116,101 @@ function renderDashboard(bi) {
   </div>
 
   <!-- KPIs — Metricas de Exposicao -->
-  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate);margin-bottom:10px">Metricas de Exposicao — ${periodLabels[biPeriod]||''}</div>
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background:#EFF6FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
-      <div class="kpi-label">Visitas ao Supermercado</div>
-      <div class="kpi-value">${fmt(totalVisits)}</div>
-      ${delta(totalVisits, flow.prevTotalVisits)}
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#2196F3">Metricas de Exposicao — ${periodLabels[biPeriod]||''}</span>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background:#F5F3FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9C27B0" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
-      <div class="kpi-label">Conversao por Banner</div>
-      <div class="kpi-value">${fmt(conv.fromBanners)}</div>
-      ${delta(conversionRate, conv.prevConversionRate)}
+    <div class="kpi-grid" style="margin-bottom:14px">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:#EFF6FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="kpi-label">Visitas ao Supermercado</div>
+        <div class="kpi-value">${fmt(totalVisits)}</div>
+        ${delta(totalVisits, flow.prevTotalVisits)}
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:#F5F3FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9C27B0" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+        <div class="kpi-label">Conversao por Banner</div>
+        <div class="kpi-value">${fmt(conv.fromBanners)}</div>
+        ${delta(conversionRate, conv.prevConversionRate)}
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="kpi-label">Confirmacoes de Compra</div>
+        <div class="kpi-value">${fmt(purchaseConf)}</div>
+        ${delta(purchaseConf, flow.prevPurchaseConfirmations)}
+      </div>
+      <div class="kpi-card" onclick="nav(document.querySelector('[data-section=alertas]'),'alertas')" style="cursor:pointer">
+        <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M12 22v-2"/><path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg></div>
+        <div class="kpi-label">Tempo Medio na Loja</div>
+        <div class="kpi-value">${flow.avgTimeInStore || '—'} <span style="font-size:14px;font-weight:400;color:var(--slate)">min</span></div>
+        <span class="kpi-delta neutral">Pico: ${flow.peakDay || '—'} as ${flow.peakHour || '—'}h</span>
+      </div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-      <div class="kpi-label">Confirmacoes de Compra</div>
-      <div class="kpi-value">${fmt(purchaseConf)}</div>
-      ${delta(purchaseConf, flow.prevPurchaseConfirmations)}
+    <!-- Insight dentro do card de Exposicao -->
+    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:11px 14px;display:flex;gap:10px;align-items:flex-start">
+      <div style="flex-shrink:0;margin-top:1px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div style="font-size:11.5px;color:#1565C0;line-height:1.65;min-width:0">
+        <strong style="color:#1565C0">Insight:</strong>
+        ${conversionRate >= 10
+          ? ` Sua taxa de conversao de <strong>${fmt(conversionRate,1)}%</strong> esta acima da media do setor (~8%) — ${fmt(Math.round(conversionRate))} em cada 100 visitantes chegou ate sua loja. Continue investindo em banners e atualizacao de precos para manter esse ritmo.`
+          : conversionRate >= 5
+          ? ` Sua taxa de conversao e de <strong>${fmt(conversionRate,1)}%</strong>. Ha espaco para crescer: lojas que manteem precos atualizados e banners ativos chegam a 10%+. Tente publicar uma Oferta Relampago nos horarios de pico.`
+          : ` Sua taxa de conversao esta em <strong>${fmt(conversionRate,1)}%</strong>. Para melhorar, atualize os precos dos produtos mais buscados e ative um banner de oferta — clientes que veem precos competitivos tem 3x mais chance de visitar sua loja.`
+        }${flow.peakDay ? ` Seu horario de maior movimento e <strong>${flow.peakDay} as ${flow.peakHour||'—'}h</strong> — garanta que seus precos estejam atualizados antes desse horario.` : ''}
+      </div>
     </div>
-    <div class="kpi-card" onclick="nav(document.querySelector('[data-section=alertas]'),'alertas')">
-      <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><path d="M12 22v-2"/><path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg></div>
-      <div class="kpi-label">Tempo Medio na Loja</div>
-      <div class="kpi-value">${flow.avgTimeInStore || '—'} <span style="font-size:14px;font-weight:400;color:var(--slate)">min</span></div>
-      <span class="kpi-delta neutral">Pico: ${flow.peakDay || '—'} as ${flow.peakHour || '—'}h</span>
-    </div>
-  </div>
-
-  <!-- Insight — Metricas de Exposicao -->
-  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#1E40AF;line-height:1.6">
-    <strong>Insight:</strong>
-    ${conversionRate >= 10
-      ? `Sua taxa de conversao de <strong>${fmt(conversionRate,1)}%</strong> esta acima da media do setor (~8%) — ${fmt(Math.round(conversionRate))} em cada 100 visitantes chegou ate sua loja. Continue investindo em banners e atualizacao de precos para manter esse ritmo.`
-      : conversionRate >= 5
-      ? `Sua taxa de conversao e de <strong>${fmt(conversionRate,1)}%</strong>. Ha espaco para crescer: lojas que manteem precos atualizados e banners ativos chegam a 10%+. Tente publicar uma Oferta Relampago nos horarios de pico.`
-      : `Sua taxa de conversao esta em <strong>${fmt(conversionRate,1)}%</strong>. Para melhorar, atualize os precos dos produtos mais buscados e ative um banner de oferta — clientes que veem precos competitivos tem 3x mais chance de visitar sua loja.`
-    }
-    ${flow.peakDay ? ` Seu horario de maior movimento e <strong>${flow.peakDay} as ${flow.peakHour||'—'}h</strong> — garanta que seus precos estejam atualizados antes desse horario.` : ''}
   </div>
 
   ${isPlus && loyalty.avgTicket ? `
   <!-- KPIs Plus — Metricas de Publico -->
-  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--slate);margin-bottom:10px;margin-top:4px">Metricas de Publico — Plano Plus</div>
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background:#FFF7ED"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-      <div class="kpi-label">Ticket Medio</div>
-      <div class="kpi-value">R$ ${fmt(loyalty.avgTicket)}</div>
-      ${delta(loyalty.avgTicket, loyalty.prevAvgTicket)}
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#D97706">Metricas de Publico — Plano Plus</span>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-      <div class="kpi-label">Frequencia de Compra</div>
-      <div class="kpi-value">${fmt(loyalty.purchaseFrequency,1)}x</div>
-      <span class="kpi-delta neutral">por semana por cliente</span>
+    <div class="kpi-grid" style="margin-bottom:14px">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:#FFF7ED"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="kpi-label">Ticket Medio</div>
+        <div class="kpi-value">R$ ${fmt(loyalty.avgTicket)}</div>
+        ${delta(loyalty.avgTicket, loyalty.prevAvgTicket)}
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:#F0FDF4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+        <div class="kpi-label">Frequencia de Compra</div>
+        <div class="kpi-value">${fmt(loyalty.purchaseFrequency,1)}x</div>
+        <span class="kpi-delta neutral">por semana por cliente</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:#EFF6FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="kpi-label">NPS do Supermercado</div>
+        <div class="kpi-value">${fmt(loyalty.npsScore)}</div>
+        <span class="kpi-delta neutral">${loyalty.npsResponses || 0} respostas</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg></div>
+        <div class="kpi-label">Churn Rate</div>
+        <div class="kpi-value">${fmt(loyalty.churnRate,1)}%</div>
+        ${delta(loyalty.prevChurnRate, loyalty.churnRate)}
+      </div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background:#EFF6FF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2196F3" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-      <div class="kpi-label">NPS do Supermercado</div>
-      <div class="kpi-value">${fmt(loyalty.npsScore)}</div>
-      <span class="kpi-delta neutral">${loyalty.npsResponses || 0} respostas</span>
+    <!-- Insight dentro do card de Publico -->
+    <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:11px 14px;display:flex;gap:10px;align-items:flex-start">
+      <div style="flex-shrink:0;margin-top:1px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div style="font-size:11.5px;color:#92400E;line-height:1.65;min-width:0">
+        <strong style="color:#92400E">Insight:</strong>
+        ${loyalty.avgTicket
+          ? ` Seu ticket medio de <strong>R$ ${fmt(loyalty.avgTicket)}</strong> mostra o quanto cada cliente gasta por visita. Para aumentar esse valor, experimente destacar combos de produtos relacionados — por exemplo, arroz + feijao + oleo — no banner da loja.`
+          : ' Assim que houver compras confirmadas pelo app, o ticket medio vai aparecer aqui.'
+        }${loyalty.churnRate > 15
+          ? ` Atencao: o churn de <strong>${fmt(loyalty.churnRate,1)}%</strong> indica que alguns clientes pararam de visitar sua loja. Considere ativar uma Oferta Relampago para reconquista-los.`
+          : loyalty.churnRate <= 15 && loyalty.churnRate > 0
+          ? ` Seu churn de <strong>${fmt(loyalty.churnRate,1)}%</strong> esta sob controle — continue atualizando precos regularmente para manter a fidelidade dos clientes.`
+          : ''
+        }${loyalty.purchaseFrequency ? ` Frequencia de compra de <strong>${fmt(loyalty.purchaseFrequency,1)}x por semana</strong> — clientes frequentes sao os mais valiosos: priorize manter precos competitivos nos itens basicos que eles compram toda semana.` : ''}
+      </div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background:#FEF2F2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg></div>
-      <div class="kpi-label">Churn Rate</div>
-      <div class="kpi-value">${fmt(loyalty.churnRate,1)}%</div>
-      ${delta(loyalty.prevChurnRate, loyalty.churnRate)}
-    </div>
-  </div>
-  <!-- Insight — Metricas de Publico Plus -->
-  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#1E40AF;line-height:1.6">
-    <strong>Insight:</strong>
-    ${loyalty.avgTicket
-      ? `Seu ticket medio de <strong>R$ ${fmt(loyalty.avgTicket)}</strong> mostra o quanto cada cliente gasta por visita. Para aumentar esse valor, experimente destacar combos de produtos relacionados — por exemplo, arroz + feijao + oleo — no banner da loja.`
-      : 'Assim que houver compras confirmadas pelo app, o ticket medio vai aparecer aqui.'
-    }
-    ${loyalty.churnRate > 15
-      ? ` Atencao: o churn de <strong>${fmt(loyalty.churnRate,1)}%</strong> indica que alguns clientes pararam de visitar sua loja. Considere ativar uma Oferta Relampago para reconquista-los.`
-      : loyalty.churnRate <= 15 && loyalty.churnRate > 0
-      ? ` Seu churn de <strong>${fmt(loyalty.churnRate,1)}%</strong> esta sob controle — continue atualizando precos regularmente para manter a fidelidade dos clientes.`
-      : ''
-    }
-    ${loyalty.purchaseFrequency ? ` Frequencia de compra de <strong>${fmt(loyalty.purchaseFrequency,1)}x por semana</strong> — clientes frequentes sao os mais valiosos: priorize manter precos competitivos nos itens basicos que eles compram toda semana.` : ''}
   </div>
   ` : ''}
 
