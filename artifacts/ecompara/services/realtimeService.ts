@@ -1,4 +1,3 @@
-import { io, type Socket } from "socket.io-client";
 import { getApiBaseUrl } from "@/lib/apiBaseUrl";
 
 export type RealtimeEventType =
@@ -20,44 +19,45 @@ export interface RealtimeEvent {
 type EventListener = (event: RealtimeEvent) => void;
 
 class RealtimeService {
-  private socket: Socket | null = null;
   private listeners: Map<string, Set<EventListener>> = new Map();
   private merchantId: number | null = null;
+  private _connected = false;
+  private pollInterval: ReturnType<typeof setInterval> | null = null;
 
   connect(merchantId: number, token: string) {
-    if (this.socket?.connected && this.merchantId === merchantId) return;
-
+    if (this._connected && this.merchantId === merchantId) return;
     this.disconnect();
     this.merchantId = merchantId;
+    this._connected = true;
+    this.emit("connected", { type: "price:updated", payload: { merchantId }, timestamp: Date.now() });
 
-    const baseUrl = getApiBaseUrl().replace("/api", "");
+    this.pollInterval = setInterval(() => {
+      this.poll(merchantId, token);
+    }, 30_000);
+  }
 
-    this.socket = io(baseUrl, {
-      auth: { merchantId, token },
-      transports: ["websocket", "polling"],
-      reconnectionAttempts: 10,
-      reconnectionDelay: 2000,
-    });
-
-    this.socket.on("connect", () => {
-      this.socket?.emit("join:merchant", merchantId);
-      this.emit("connected", { merchantId } as unknown as RealtimeEvent);
-    });
-
-    this.socket.on("disconnect", () => {
-      this.emit("disconnected", {} as unknown as RealtimeEvent);
-    });
-
-    this.socket.on("event", (event: RealtimeEvent) => {
-      this.emit(event.type, event);
-      this.emit("*", event);
-    });
+  private async poll(merchantId: number, token: string) {
+    try {
+      const base = getApiBaseUrl();
+      const res = await fetch(`${base}/realtime/events?merchantId=${merchantId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const events: RealtimeEvent[] = await res.json();
+      events.forEach((e) => { this.emit(e.type, e); this.emit("*", e); });
+    } catch {
+      // silent — network unavailable or endpoint not implemented
+    }
   }
 
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+    if (this._connected) {
+      this._connected = false;
+      this.emit("disconnected", { type: "price:updated", payload: {}, timestamp: Date.now() });
     }
     this.merchantId = null;
   }
@@ -81,7 +81,7 @@ class RealtimeService {
   }
 
   get isConnected() {
-    return this.socket?.connected ?? false;
+    return this._connected;
   }
 }
 
